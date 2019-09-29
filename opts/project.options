@@ -1,0 +1,36 @@
+(compiler
+
+    (alias "vbcc/classic")
+
+    (makefile "makefiles/vbcc-classic/makefile")
+
+    (make "make -f %makefile %target")
+
+    (executable "bin/vbcc-classic/powerpctest.library")
+
+    (stack "262144")
+
+    (target "")
+
+    (options
+
+        "-cpu=68030"
+
+        "-sc"
+
+        "-cpp-comments"
+
+        "-c99"
+
+        "-Ivincludeos3:"
+
+        "-Iinclude_h:"
+
+        "-nostdlib"
+
+        "-O2"
+
+        "-speed"
+    )
+)
+
