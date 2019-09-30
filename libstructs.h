@@ -19,6 +19,9 @@
 // SOFTWARE.
 
 #include <powerpc/powerpc.h>
+#include <powerpc/portsPPC.h>
+#include <powerpc/semaphoresPPC.h>
+#include <powerpc/tasksPPC.h>
 #include <exec/exec.h>
 #include <dos/dos.h>
 
@@ -31,6 +34,8 @@ struct MsgPort*     zp_MCPort;
 ULONG               zp_Status;
 struct PPCBase*     zp_PowerPCBase;
 ULONG               zp_PageTableSize;
+struct UtilityBase* zp_UtilityBase;
+ULONG               zp_CacheGap[7];
 };
 
 struct InternalConsts {
@@ -67,4 +72,112 @@ ULONG               id_XPMIBase;
 ULONG               id_StartBat;
 ULONG               id_SizeBat;
 };
+
+struct BATs {
+ULONG               bt_ibat0u;
+ULONG               bt_ibat0l;
+ULONG               bt_ibat1u;
+ULONG               bt_ibat1l;
+ULONG               bt_ibat2u;
+ULONG               bt_ibat2l;
+ULONG               bt_ibat3u;
+ULONG               bt_ibat3l;
+ULONG               bt_dbat0u;
+ULONG               bt_dbat0l;
+ULONG               bt_dbat1u;
+ULONG               bt_dbat1l;
+ULONG               bt_dbat2u;
+ULONG               bt_dbat2l;
+ULONG               bt_dbat3u;
+ULONG               bt_dbat3l;
+};
+
+struct PrivatePPCBase {
+struct PPCBase              pp_PowerPCBase;
+ULONG                       pp_Reserved[4];
+UBYTE                       pp_DebugLevel;
+UBYTE                       pp_EnAlignExc;
+UBYTE                       pp_EnDAccessExc;
+UBYTE                       pp_Pad;
+ULONG                       pp_TaskExitCode;
+ULONG                       pp_PPCMemBase;
+ULONG                       pp_Atomic;
+ULONG                       pp_TaskExcept;
+ULONG                       pp_PPCMemSize;
+ULONG                       pp_MCPort;
+ULONG                       pp_L2Size;
+ULONG                       pp_CurrentL2Size;
+ULONG                       pp_L2State;
+ULONG                       pp_CPUSDR1;
+ULONG                       pp_CPUHID0;
+ULONG                       pp_CPUSpeed;
+ULONG                       pp_CPUInfo;
+struct MinList              pp_WaitingTasks;
+struct MinList              pp_AllTasks;
+struct MinList              pp_Snoop;
+struct MinList              pp_Semaphores;
+struct MinList              pp_RemovedExc;
+struct MinList              pp_ReadyExc;
+struct MinList              pp_InstalledExc;
+struct MinList              pp_ExcInterrupt;
+struct MinList              pp_ExcIABR;
+struct MinList              pp_ExcPerfMon;
+struct MinList              pp_ExcTrace;
+struct MinList              pp_ExcSystemCall;
+struct MinList              pp_ExcDecrementer;
+struct MinList              pp_ExcFPUn;
+struct MinList              pp_ExcProgram;
+struct MinList              pp_ExcAlign;
+struct MinList              pp_ExcIAccess;
+struct MinList              pp_ExcDAccess;
+struct MinList              pp_ExcMCheck;
+struct MinList              pp_ExcSysMan;
+struct MinList              pp_ExcTherMan;
+struct MinList              pp_WaitTime;
+struct MinList              pp_Ports;
+struct MinList              pp_NewTasks;
+struct MinList              pp_ReadyTasks;
+struct MinList              pp_RemovedTasks;
+struct MinList              pp_MsgQueue;
+struct SignalSemaphorePPC   pp_SemWaitList;
+struct SignalSemaphorePPC   pp_SemTaskList;
+struct SignalSemaphorePPC   pp_SemSemList;
+struct SignalSemaphorePPC   pp_SemPortList;
+struct SignalSemaphorePPC   pp_SemSnoopList;
+struct SignalSemaphorePPC   pp_SemMemory;
+ULONG                       pp_AlignmentExcHigh;
+ULONG                       pp_AlignmentExcLow;
+ULONG                       pp_DataExcHigh;
+ULONG                       pp_DataExcLow;
+struct MsgPortPPC*          pp_CurrentPort;
+UBYTE                       pp_ExternalInt;
+UBYTE                       pp_EnAltivec;
+UBYTE                       pp_ExceptionMode;
+UBYTE                       pp_CacheDoDFlushAll;
+UBYTE                       pp_CacheDState;
+UBYTE                       pp_CacheDLockState;
+UBYTE                       pp_FlagReschedule;
+UBYTE                       pp_FlagWait;
+UBYTE                       pp_FlagPortInUse;
+UBYTE                       pp_FlagBusyCounter;
+UBYTE                       pp_Pad2[2];
+ULONG                       pp_NumAllTasks;
+struct TaskPPC*             pp_ThisPPCProc;
+ULONG                       pp_StartTBL;
+ULONG                       pp_CurrentTBL;
+ULONG                       pp_SystemLoad;
+ULONG                       pp_NICETable;
+ULONG                       pp_LowActivityPrio;
+ULONG                       pp_IdSysTasks;
+ULONG                       pp_IdUsrTasks;
+ULONG                       pp_LowActPrioOffset;
+ULONG                       pp_ErrorStrings;
+ULONG                       pp_BusClock;
+ULONG                       pp_Quantum;
+ULONG                       pp_NumRun68k;
+struct BATs                 pp_ExceptionBATs;
+struct BATs                 pp_StoredBATs;
+struct BATs                 pp_SystemBATs;
+};
+
 
