@@ -89,10 +89,12 @@ BPTR myClose(__reg("a6") struct PPCBase* PowerPCBase)
 
 BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase)
 {
+    return NULL;
+#if 0
     if (!(PowerPCBase->PPC_LibNode.lib_OpenCnt))
     {
         PowerPCBase->PPC_LibNode.lib_Flags |= LIBF_DELEXP;
-        return 0;
+        return NULL;
     }
 
     struct ExecBase *SysBase = PowerPCBase->PPC_SysLib;
@@ -105,6 +107,7 @@ BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase)
     //FreeVec((APTR) ppc code functions
     Enable();
     return mySeglist;
+#endif
 }
 
 /********************************************************************************************

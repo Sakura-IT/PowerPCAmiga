@@ -117,7 +117,7 @@ static struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts)
     return PowerPCBase;
 }
 
-static struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
+__entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
               __reg("a0") BPTR seglist, __reg("a6") struct ExecBase* __sys)
 {
     struct ExecBase *SysBase;
