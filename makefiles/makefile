@@ -11,13 +11,25 @@ OBJDIR = o/vbcc-classic/
 CC = vbcc:bin/vc
 LD = vbcc:bin/vc
 CCPPC = vbcc:bin/vc +warpos -c99 -Iinclude_h: -O2
+ASPPC = vbcc:bin/vasmppc_std -many -mppc32 -mavec -Fhunk
 
 # target 'all' (default target)
 
 all : $(EXE)
+$(OBJDIR)assetupppc.o : setupppc.s
+	$(ASPPC) -o $(OBJDIR)assetupppc.o setupppc.s
 
-#$(OBJDIR)kernelend.o : kernelend.c
-#	$(CCPPC) -c -o $(OBJDIR)kernelend.o kernelend.c
+$(OBJDIR)setupppc.o : setupppc.c
+	$(CCPPC) -c -o $(OBJDIR)setupppc.o setupppc.c
+
+$(OBJDIR)functionsppc.o : functionsppc.c
+	$(CCPPC) -c -o $(OBJDIR)functionsppc.o functionsppc.c
+
+$(OBJDIR)supportppc.o : supportppc.c
+	$(CCPPC) -c -o $(OBJDIR)supportppc.o supportppc.c
+
+$(OBJDIR)support68k.o : support68k.c
+	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)support68k.o support68k.c
 
 $(OBJDIR)functions68k.o : functions68k.c
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)functions68k.o functions68k.c
@@ -25,7 +37,7 @@ $(OBJDIR)functions68k.o : functions68k.c
 $(OBJDIR)libinit.o : libinit.c
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)libinit.o libinit.c
 
-OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68k.o $(OBJDIR)setupppc.o $(OBJDIR)ppcfunctions.o
+OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)assetupppc.o $(OBJDIR)setupppc.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppc.o
 
 $(EXE) : $(OBJS)
 	$(LD) $(shell vbccprefs) -o $(EXE) $(OBJS)
