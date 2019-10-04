@@ -39,5 +39,6 @@
 .long		0					#SizeBAT
 
 .SkipCom:   mflr	r3
+            subi    r3,r3,4
             b   _setupPPC
 

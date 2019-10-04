@@ -19,10 +19,16 @@
 // SOFTWARE.
 
 #include <exec/types.h>
+#include "libstructs.h"
 
 
-__section (".setupppc","acrx") void setupPPC(ULONG initData)
+static void flushD()="\tdcbf\tr0,r3\n";
+
+__section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 {
-    return;
+fakeEnd:
+    initData->id_Status = 0x496e6974;    //Init
+    flushD();
+    goto fakeEnd;
 }
 

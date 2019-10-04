@@ -424,20 +424,21 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         switch (status)
         {
             case 0x496e6974:        //Init
-            {
-                PrintCrtErr(myConsts, "PowerPC CPU not responding");
-                return NULL;
-            }
-#if 0
             case 0x426f6f6e:        //Boon
             {
                 PrintCrtErr(myConsts, "PowerPC CPU possibly crashed during setup");
                 return NULL;
             }
+#if 0
+            case 0xabcdabcd:
+            {
+                PrintCrtErr(myConsts, "PowerPC CPU not responding");
+                return NULL;
+            }
 #endif
             default:
             {
-                PrintCrtErr(myConsts, "PowerPC CPU possibly crashed during setup");
+                PrintCrtErr(myConsts, "PowerPC CPU not responding");
                 return NULL;
             }
         }
