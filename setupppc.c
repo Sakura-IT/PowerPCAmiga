@@ -20,15 +20,38 @@
 
 #include <exec/types.h>
 #include "libstructs.h"
+#include "constants.h"
 
 
-static void flushD()="\tdcbf\tr0,r3\n";
+void    Reset(void);
+ULONG   ReadPVR(void);
 
 __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 {
-fakeEnd:
+    ULONG mem = 0;
+
     initData->id_Status = 0x496e6974;    //Init
-    flushD();
+
+    Reset();
+
+    for (LONG i=0; i<64; i++)
+    {
+        *((ULONG*)(mem)) = 0;
+        mem += 4;
+    }
+
+    ULONG myPVR = ReadPVR();
+
+    if ((myPVR>>16) == ID_MPC834X)
+    {
+        initData->id_Status = 0xaaaaaaaa;
+    }
+    else
+    {
+        initData->id_Status = 0xbbbbbbbb;
+    }
+
+fakeEnd:
     goto fakeEnd;
 }
 

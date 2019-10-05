@@ -22,6 +22,8 @@
 #define HW_SETDEBUGMODE		    12	//Private
 #define HW_PPCSTATE		        13	//Private
 
+#define ID_MPC834X  			0x8083
+
 #define MEMF_PPC                0x2000
 #define MEM_GAP                 0x480000
 #define TF_PPC			        1<<2
