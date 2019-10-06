@@ -39,18 +39,7 @@
 #include "librev.h"
 #include "constants.h"
 #include "libstructs.h"
-
-static void illegal(void) = "\tillegal\n";
-
-static void writememLong(ULONG Base, ULONG offset, ULONG value);
-static ULONG readmemLong(ULONG Base, ULONG offset);
-
-static void getENVs(struct InternalConsts* myConsts);
-static void PrintError(struct InternalConsts* myConsts, UBYTE* errortext);
-static void PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
-static struct InitData *SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice);
-static struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum);
-static struct InitData *SetupMPC107(void);
+#include "internals68k.h"
 
 
 int main (void)
@@ -107,7 +96,7 @@ static void CleanUp(struct InternalConsts *myConsts)
     return;
 }
 
-static struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts)
+struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts)
 {
     struct PPCBase *PowerPCBase = NULL;
     struct ExecBase *SysBase = myConsts->ic_SysBase;
@@ -359,7 +348,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     {
         case DEVICE_HARRIER:
         {
-            cardData = SetupHarrier(myConsts, devfuncnum);
+            cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice);
             break;
         }
 
@@ -371,7 +360,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
         case DEVICE_MPC107:
         {
-            cardData = SetupMPC107();
+            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice);
             break;
         }
 
@@ -520,7 +509,7 @@ static const APTR LibVectors[] =
 
 */
 
-static ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
+ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
 {
     LONG res;
     ULONG buffer;
@@ -536,7 +525,7 @@ static ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
     return buffer;
 }
 
-static void getENVs(struct InternalConsts* myConsts)
+void getENVs(struct InternalConsts* myConsts)
 {
     myConsts->ic_env1 = 0;
     myConsts->ic_env2 = 0;
@@ -559,14 +548,14 @@ static void getENVs(struct InternalConsts* myConsts)
     return;
 }
 
-static ULONG readmemLong(ULONG Base, ULONG offset)
+ULONG readmemLong(ULONG Base, ULONG offset)
 {
     ULONG res;
     res = *((ULONG*)(Base + offset));
     return res;
 }
 
-static void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmemBase)
+void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmemBase)
 {
     ULONG res;
 
@@ -591,14 +580,14 @@ static void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG
     return;
 }
 
-static void writememLong(ULONG Base, ULONG offset, ULONG value)
+void writememLong(ULONG Base, ULONG offset, ULONG value)
 {
     *((ULONG*)(Base + offset)) = value;
     return;
 }
 
-static struct InitData* SetupKiller(struct InternalConsts* myConsts,
-                                    ULONG devfuncnum, struct PciDevice* ppcdevice)
+struct InitData* SetupKiller(struct InternalConsts* myConsts,
+                             ULONG devfuncnum, struct PciDevice* ppcdevice)
 {
     UWORD res;
     ULONG ppcmemBase, configBase, fakememBase, vgamemBase, winSize, startAddress;
@@ -730,24 +719,26 @@ static struct InitData* SetupKiller(struct InternalConsts* myConsts,
 
     return killerData;
 }
-static struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum)
+struct InitData* SetupHarrier(struct InternalConsts* myConsts,
+                              ULONG devfuncnum, struct PciDevice* ppcdevice)
 {
     return NULL;
 }
 
-static struct InitData* SetupMPC107(void)
+struct InitData* SetupMPC107(struct InternalConsts* myConsts,
+                             ULONG devfuncnum, struct PciDevice* ppcdevice)
 {
     return NULL;
 }
 
-static void PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext)
+void PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext)
 {
     PrintError(myConsts, crterrtext);
     CleanUp(myConsts);
     return;
 }
 
-static void PrintError(struct InternalConsts* myConsts, UBYTE* errortext)
+void PrintError(struct InternalConsts* myConsts, UBYTE* errortext)
 {
     struct IntuitionBase* IntuitionBase;
     struct EasyStruct MyReq =

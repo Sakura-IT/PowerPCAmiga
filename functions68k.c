@@ -29,12 +29,7 @@
 #include <powerpc/tasksPPC.h>
 
 #include "constants.h"
-
-
-#define _LVOSetHardware         -540
-#define _LVOCreateTaskPPC       -336
-
-BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
+#include "internals68k.h"
 
 /********************************************************************************************
 *

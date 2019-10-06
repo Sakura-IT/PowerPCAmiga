@@ -21,15 +21,8 @@
 #include <exec/types.h>
 #include "libstructs.h"
 #include "constants.h"
+#include "internalsPPC.h"
 
-
-void    Reset(void);
-ULONG   ReadPVR(void);
-ULONG   SetIdle(void);
-
-
-static ULONG getLeadZ(ULONG value)="\tcntlzw\tr3,r3\n";
-static ULONG getPVR(void)="\tmfpvr\tr3\n";
 
 void mmuSetup(void)
 {
