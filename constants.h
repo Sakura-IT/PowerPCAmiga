@@ -18,6 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#define BASE_KMSG               0x200000
+#define SIZE_KBASE              0xc0000
+#define SIZE_KFIFO              0x10000
+#define FIFO_OFFSET             0x380000
+
 #define HW_CPUTYPE		        11	//Private
 #define HW_SETDEBUGMODE		    12	//Private
 #define HW_PPCSTATE		        13	//Private

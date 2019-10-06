@@ -25,10 +25,56 @@
 
 void    Reset(void);
 ULONG   ReadPVR(void);
+ULONG   SetIdle(void);
+
+void killerFIFOs(struct InitData* initData)
+{
+    ULONG memBase  = initData->id_MemBase;
+    ULONG memFIFO  = memBase + BASE_KMSG;
+    ULONG memFIFO2 = memFIFO + SIZE_KBASE;
+    ULONG memIF    = FIFO_OFFSET;
+    ULONG memIP    = memIF + SIZE_KFIFO;
+    ULONG memOF    = memIF + (SIZE_KFIFO * 2);
+    ULONG memOP    = memIF + (SIZE_KFIFO * 3);
+
+    ULONG memIF2   = memIF;
+    ULONG memIP2   = memIP;
+    ULONG memOF2   = memOF;
+    ULONG memOP2   = memOP;
+
+    struct killFIFO* baseFIFO = (struct killFIFO*)(memIF + (SIZE_KFIFO *4));
+
+    for (int i=0; i<4096; i++)
+    {
+        *((ULONG*)(memIP)) = 0;
+        *((ULONG*)(memOP)) = 0;
+        *((ULONG*)(memIF)) = memFIFO;
+        *((ULONG*)(memOF)) = memFIFO2;
+
+        memIP    += 4;
+        memOP    += 4;
+        memIF    += 4;
+        memOF    += 4;
+        memFIFO  += 192;
+        memFIFO2 += 192;
+    }
+
+    baseFIFO->kf_MIIFT = memBase + memIF2 + 4;
+    baseFIFO->kf_MIIFH = memBase + memIF2;
+    baseFIFO->kf_MIIPT = memBase + memIP2;
+    baseFIFO->kf_MIIPH = memBase + memIP2;
+    baseFIFO->kf_MIOFH = memBase + memOF2;
+    baseFIFO->kf_MIOFT = memBase + memOF2 + 4;
+    baseFIFO->kf_MIOPT = memBase + memOP2;
+    baseFIFO->kf_MIOPH = memBase + memOP2;
+
+    return;
+}
 
 __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 {
     ULONG mem = 0;
+    ULONG setupFlag = 0;
 
     initData->id_Status = 0x496e6974;    //Init
 
@@ -44,11 +90,26 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
     if ((myPVR>>16) == ID_MPC834X)
     {
-        initData->id_Status = 0xaaaaaaaa;
+        struct PPCZeroPage *myZP = 0;
+        myZP->zp_MemSize = initData->id_MemSize;
+
+        killerFIFOs(initData);
+
+        //Ipic
+        //InstallExceptions
+
+        //mmuSetup(memlen)
+
+        myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
+
+	ULONG copySrc = SetIdle();
+        setupFlag = 1;
     }
-    else
+
+    if(!(setupFlag))
     {
-        initData->id_Status = 0xbbbbbbbb;
+        setupFlag = 1; //placeholder
+        //error
     }
 
 fakeEnd:

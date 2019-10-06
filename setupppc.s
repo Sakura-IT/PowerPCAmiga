@@ -20,7 +20,7 @@
 
 .include    constantsppc.i
 
-.global     _setupPPC, _Reset, _ReadPVR
+.global     _setupPPC, _Reset, _ReadPVR, _SetIdle
 
 
 .section "setupppc","acrx"
@@ -41,14 +41,13 @@
 .long		0					#StartBAT
 .long		0					#SizeBAT
 
-.SkipCom:   mflr	r3
-            subi    r3,r3,4
-            subi    r1,r3,256
-            b   _setupPPC
+.SkipCom:	mflr	r3
+		subi    r3,r3,4
+		subi    r1,r3,256
+		b   _setupPPC
 		
-_Reset:
-        mflr    r6
-        mfmsr	r5
+_Reset:		mflr    r6
+		mfmsr	r5
 		andi.	r5,r5,PSL_IP
 		mtmsr	r5				#Clear MSR, keep Interrupt Prefix for now
 		isync
@@ -84,9 +83,7 @@ _Reset:
 
 .long	0x3f800000				#Value of 1.0
 
-ifpdr_value:
-    	
-        mflr	r3
+ifpdr_value:	mflr	r3
 		lfs     f0,0(r3)
 		lfs     f1,0(r3)
 		lfs     f2,0(r3)
@@ -122,22 +119,22 @@ ifpdr_value:
 		sync
 							#Clear BAT and Segment mapping registers
 		li      r3,0
-        mtibatu 0,r3
-        mtibatu 1,r3
-        mtibatu 2,r3
-        mtibatu 3,r3
-        mtibatl 0,r3
-        mtibatl 1,r3
-        mtibatl 2,r3
-        mtibatl 3,r3
-        mtdbatu 0,r3
-        mtdbatu 1,r3
-        mtdbatu 2,r3
-        mtdbatu 3,r3
-        mtdbatl 0,r3
-        mtdbatl 1,r3
-        mtdbatl 2,r3
-        mtdbatl 3,r3
+        	mtibatu 0,r3
+        	mtibatu 1,r3
+        	mtibatu 2,r3
+        	mtibatu 3,r3
+        	mtibatl 0,r3
+        	mtibatl 1,r3
+        	mtibatl 2,r3
+        	mtibatl 3,r3
+        	mtdbatu 0,r3
+        	mtdbatu 1,r3
+        	mtdbatu 2,r3
+        	mtdbatu 3,r3
+        	mtdbatl 0,r3
+        	mtdbatl 1,r3
+        	mtdbatl 2,r3
+        	mtdbatl 3,r3
 
 		mfpvr	r4
 		rlwinm	r5,r4,16,16,31
@@ -148,9 +145,7 @@ ifpdr_value:
 		cmpwi	r5,0x70
 		bne     .SkipExtraBats
 
-.ExtraBats:	
-
-        mtspr	ibat4u,r3
+.ExtraBats:	mtspr	ibat4u,r3
 		mtspr	ibat5u,r3
 		mtspr	ibat6u,r3
 		mtspr	ibat7u,r3
@@ -167,9 +162,7 @@ ifpdr_value:
 		mtspr	dbat6l,r3
 		mtspr	dbat7l,r3
 
-.SkipExtraBats:	
-
-        isync
+.SkipExtraBats:	isync
 		sync
 		sync
 
@@ -190,13 +183,29 @@ ifpdr_value:
 		mtsr	14,r3
 		mtsr	15,r3
 		
-        isync
+		isync
 		sync
 		sync
 
 		mtlr	r6
 		blr
 
-_ReadPVR:
-        mfpvr   r3
-        blr
+#*********************************************************
+
+_ReadPVR:      	mfpvr   r3
+        	blr
+
+#*********************************************************
+
+_SetIdle:      	mflr    r4
+        	bl      .End
+
+.Start:		nop
+		nop
+		b      .Start
+
+.End:		mflr	r3
+        	mtlr    r4
+        	blr
+
+#*********************************************************

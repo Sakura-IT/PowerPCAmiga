@@ -36,6 +36,7 @@ struct PPCBase*     zp_PowerPCBase;
 ULONG               zp_PageTableSize;
 struct UtilityBase* zp_UtilityBase;
 ULONG               zp_CacheGap[7];
+ULONG               zp_MemSize;
 };
 
 struct InternalConsts {
@@ -180,4 +181,15 @@ struct BATs                 pp_StoredBATs;
 struct BATs                 pp_SystemBATs;
 };
 
+struct killFIFO {
+ULONG                       kf_MIOFH;
+ULONG                       kf_MIOPT;
+ULONG                       kf_MIIFT;
+ULONG                       kf_MIIPH;
+ULONG                       kf_CacheGap[4];
+ULONG                       kf_MIOFT;
+ULONG                       kf_MIOPH;
+ULONG                       kf_MIIFH;
+ULONG                       kf_MIIPT;
+};
 
