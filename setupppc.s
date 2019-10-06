@@ -20,7 +20,7 @@
 
 .include    constantsppc.i
 
-.global     _setupPPC, _Reset, _ReadPVR, _SetIdle
+.global     _setupPPC, _Reset, _SetIdle
 
 
 .section "setupppc","acrx"
@@ -192,16 +192,10 @@ ifpdr_value:	mflr	r3
 
 #*********************************************************
 
-_ReadPVR:      	mfpvr   r3
-        	blr
-
-#*********************************************************
-
 _SetIdle:      	mflr    r4
         	bl      .End
 
 .Start:		nop
-		nop
 		b      .Start
 
 .End:		mflr	r3

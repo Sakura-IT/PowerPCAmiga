@@ -412,6 +412,11 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                 PrintCrtErr(myConsts, "Memory corruption detected during setup");
                 return NULL;
             }
+            case 0x45727234:        //Err4
+            {
+                PrintCrtErr(myConsts, "General PPC setup error");
+                return NULL;
+            }
         }
         if (status == 0x426f6f6e)
         {

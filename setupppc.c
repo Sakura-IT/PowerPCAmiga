@@ -27,6 +27,41 @@ void    Reset(void);
 ULONG   ReadPVR(void);
 ULONG   SetIdle(void);
 
+
+static ULONG getLeadZ(ULONG value)="\tcntlzw\tr3,r3\n";
+static ULONG getPVR(void)="\tmfpvr\tr3\n";
+
+void mmuSetup(void)
+{
+    ULONG leadZeros;
+    struct PPCZeroPage *myZP = 0;
+    ULONG PTSizeShift        = (ULONG)(myZP->zp_MemSize);
+    ULONG shiftVal           = 24;
+
+    leadZeros   = getLeadZ(PTSizeShift);
+    PTSizeShift = shiftVal - leadZeros;
+
+    myZP->zp_PageTableSize = (1<<PTSizeShift);
+
+    //bl .SetupPT
+
+    return;
+}
+
+void installExceptions(ULONG Src)
+{
+    ULONG memExc = 0x100;
+    for (int i=0; i<20; i++)
+    {
+        *((ULONG*)(memExc))   = *((ULONG*)(Src));
+        *((ULONG*)(memExc+4)) = *((ULONG*)(Src+4));
+
+        memExc += 0x100;
+    } //add kernel copy
+
+    return;
+}
+
 void killerFIFOs(struct InitData* initData)
 {
     ULONG memBase  = initData->id_MemBase;
@@ -74,7 +109,8 @@ void killerFIFOs(struct InitData* initData)
 __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 {
     ULONG mem = 0;
-    ULONG setupFlag = 0;
+    ULONG copySrc = 0;
+    struct PPCZeroPage *myZP = 0;
 
     initData->id_Status = 0x496e6974;    //Init
 
@@ -86,31 +122,30 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
         mem += 4;
     }
 
-    ULONG myPVR = ReadPVR();
+    ULONG myPVR = getPVR();
 
     if ((myPVR>>16) == ID_MPC834X)
     {
-        struct PPCZeroPage *myZP = 0;
         myZP->zp_MemSize = initData->id_MemSize;
 
         killerFIFOs(initData);
 
-        //Ipic
-        //InstallExceptions
-
-        //mmuSetup(memlen)
-
-        myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
-
-	ULONG copySrc = SetIdle();
-        setupFlag = 1;
+	    copySrc = SetIdle();
     }
 
-    if(!(setupFlag))
+    if(!(copySrc))
     {
-        setupFlag = 1; //placeholder
-        //error
+        while (1)
+        {
+            initData->id_Status = 0x45727234;
+        }
     }
+
+    installExceptions(copySrc);
+
+    mmuSetup();
+
+    myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
 
 fakeEnd:
     goto fakeEnd;
