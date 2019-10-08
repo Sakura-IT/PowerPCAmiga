@@ -25,5 +25,9 @@ void    Reset  (void);
 ULONG   ReadPVR(void);
 ULONG   SetIdle(void);
 
-ULONG getLeadZ(ULONG value)= "\tcntlzw\tr3,r3\n";
-ULONG getPVR(void)=          "\tmfpvr\tr3\n";
+ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
+ULONG getPVR(void)                        = "\tmfpvr\tr3\n";
+ULONG getSDR1(void)                       = "\tmfsdr1\tr3\n";
+void  setSDR1(ULONG value)                = "\tmtsdr1\tr3\n";
+void  setSRIn(ULONG keyVal, ULONG segVal) = "\tmtsrin\tr3,r4\n";
+ULONG getSRIn(ULONG address)              = "\tmfsrin\tr3,r3\n";

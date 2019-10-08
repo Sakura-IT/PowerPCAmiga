@@ -21,8 +21,80 @@
 #include <exec/types.h>
 #include "libstructs.h"
 #include "constants.h"
-#include "internalsPPC.h"
+#include "internalsppc.h"
 
+
+BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
+{
+    ULONG currSR, uPTE, lPTE, hashOne, hashTwo, mySDR;
+
+    struct PPCZeroPage *myZP = 0;
+
+    while (startEffAddr > endEffAddr)
+    {
+        currSR = getSRIn(startEffAddr);
+        uPTE   = ((((currSR << 7) & 0x7fffff80) | ((startEffAddr >> 22) & 0x3f)) | 0x80000000);
+        lPTE   = (((physAddr & 0xfffff000) | ((WIMG << 3) & 0x78)) | 0x180 | ppKey);
+
+	    hashOne = ((startEffAddr >> 12) ^ (currSR & 0x0007ffff));
+
+        mySDR = getSDR1();
+
+        //etc
+
+        startEffAddr += 4096;
+        physAddr     += 4096;
+    }
+
+    return TRUE;
+}
+
+void setupPT(void)
+{
+    struct PPCZeroPage *myZP = 0;
+
+    ULONG memSize = myZP->zp_MemSize;
+    ULONG ptSize  = myZP->zp_PageTableSize;
+
+    if (ptSize < 0x100000)
+    {
+        ptSize = 0x100000;
+    }
+
+    ULONG ptLoc    = memSize - ptSize;
+    LONG  HTABMASK = 0xffff;
+    ULONG mask     = (HTABMASK <<16);
+    ULONG HTABORG  = (memSize & mask);
+    ULONG testVal  = (HTABORG & mask);
+
+    while (!(testVal) || !(HTABMASK))
+    {
+            HTABMASK = HTABMASK >> 1;
+            mask = HTABMASK << 16;
+            testVal = (HTABORG & mask);
+    }
+
+    HTABORG |= HTABMASK;
+    setSDR1(HTABORG);
+
+    ULONG numClear = ptSize >> 2;
+
+    for (int i = 0; i < numClear; i++)
+    {
+        *((ULONG*)(ptLoc)) = 0;
+        ptLoc += 4;
+    }
+
+    ULONG keyVal = 0x20000000;
+    ULONG segVal = 0;
+
+    for (int i = 0; i < 16; i++)
+    {
+        setSRIn(keyVal, segVal);
+	    segVal += 0x10000000;
+        keyVal += 1;
+    }
+}
 
 void mmuSetup(void)
 {
@@ -36,7 +108,7 @@ void mmuSetup(void)
 
     myZP->zp_PageTableSize = (1<<PTSizeShift);
 
-    //bl .SetupPT
+    setupPT();
 
     return;
 }
@@ -65,12 +137,16 @@ void killerFIFOs(struct InitData* initData)
     ULONG memOF    = memIF + (SIZE_KFIFO * 2);
     ULONG memOP    = memIF + (SIZE_KFIFO * 3);
 
-    ULONG memIF2   = memIF;
-    ULONG memIP2   = memIP;
-    ULONG memOF2   = memOF;
-    ULONG memOP2   = memOP;
-
     struct killFIFO* baseFIFO = (struct killFIFO*)(memIF + (SIZE_KFIFO *4));
+
+    baseFIFO->kf_MIIFT = memBase + memIF + 4;
+    baseFIFO->kf_MIIFH = memBase + memIF;
+    baseFIFO->kf_MIIPT = memBase + memIP;
+    baseFIFO->kf_MIIPH = memBase + memIP;
+    baseFIFO->kf_MIOFH = memBase + memOF;
+    baseFIFO->kf_MIOFT = memBase + memOF + 4;
+    baseFIFO->kf_MIOPT = memBase + memOP;
+    baseFIFO->kf_MIOPH = memBase + memOP;
 
     for (int i=0; i<4096; i++)
     {
@@ -87,14 +163,6 @@ void killerFIFOs(struct InitData* initData)
         memFIFO2 += 192;
     }
 
-    baseFIFO->kf_MIIFT = memBase + memIF2 + 4;
-    baseFIFO->kf_MIIFH = memBase + memIF2;
-    baseFIFO->kf_MIIPT = memBase + memIP2;
-    baseFIFO->kf_MIIPH = memBase + memIP2;
-    baseFIFO->kf_MIOFH = memBase + memOF2;
-    baseFIFO->kf_MIOFT = memBase + memOF2 + 4;
-    baseFIFO->kf_MIOPT = memBase + memOP2;
-    baseFIFO->kf_MIOPH = memBase + memOP2;
 
     return;
 }
