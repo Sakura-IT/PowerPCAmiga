@@ -26,24 +26,59 @@
 
 BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {
-    ULONG currSR, uPTE, lPTE, hashOne, hashTwo, mySDR;
+    ULONG currSR, uPTE, lPTE, hash, hashTwo, mySDR, PTEG, tempPTEG, flag, checkPTEG;
 
     struct PPCZeroPage *myZP = 0;
 
-    while (startEffAddr > endEffAddr)
+    while (startEffAddr < endEffAddr)
     {
+        flag   = 0;
         currSR = getSRIn(startEffAddr);
         uPTE   = ((((currSR << 7) & 0x7fffff80) | ((startEffAddr >> 22) & 0x3f)) | 0x80000000);
         lPTE   = (((physAddr & 0xfffff000) | ((WIMG << 3) & 0x78)) | 0x180 | ppKey);
 
-	    hashOne = ((startEffAddr >> 12) ^ (currSR & 0x0007ffff));
+	hash = (((startEffAddr >> 12) & 0xffff) ^ (currSR & 0x0007ffff));
 
         mySDR = getSDR1();
 
-        //etc
+        while (1)
+        {
+            tempPTEG = ((((hash >> 10) & 0x1ff) & mySDR) | ((mySDR >> 16) & 0x1ff));
+            PTEG = 0;
+            PTEG = (((hash << 6) & 0xffc0) | ((tempPTEG << 16) & 0x01ff0000) | (mySDR & 0x3f));
 
-        startEffAddr += 4096;
-        physAddr     += 4096;
+            for (int n=0; n<8; n++)
+            {
+                checkPTEG = *((ULONG*)(PTEG));
+
+                if (!(checkPTEG & 0x80000000))
+                {
+                    *((ULONG*)(PTEG))   = uPTE;
+                    *((ULONG*)(PTEG) + 1) = lPTE;
+
+                    startEffAddr += 4096;
+                    physAddr     += 4096;
+                    flag = 1;
+                    break;
+                }
+                
+                PTEG += 4;
+            }
+
+            if (flag)
+            {
+                break;
+            }
+
+            if (uPTE & 0x40)
+            {
+                return FALSE;
+            }
+
+            hash ^= 0xffffffff;
+            uPTE |= 0x40;
+        }
+
     }
 
     return TRUE;
@@ -69,9 +104,9 @@ void setupPT(void)
 
     while (!(testVal) || !(HTABMASK))
     {
-            HTABMASK = HTABMASK >> 1;
-            mask = HTABMASK << 16;
-            testVal = (HTABORG & mask);
+        HTABMASK = HTABMASK >> 1;
+        mask = HTABMASK << 16;
+        testVal = (HTABORG & mask);
     }
 
     HTABORG |= HTABMASK;
@@ -91,7 +126,7 @@ void setupPT(void)
     for (int i = 0; i < 16; i++)
     {
         setSRIn(keyVal, segVal);
-	    segVal += 0x10000000;
+	segVal += 0x10000000;
         keyVal += 1;
     }
 }
@@ -191,7 +226,7 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
         killerFIFOs(initData);
 
-	    copySrc = SetIdle();
+	copySrc = SetIdle();
     }
 
     if(!(copySrc))
