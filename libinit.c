@@ -115,8 +115,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct PciBase *MediatorPCIBase;
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
-    ULONG medflag = 0;
-    ULONG gfxisati = 0;
+    ULONG medflag   = 0;
+    ULONG gfxisati  = 0;
+    ULONG gfxnotv45 = 0;
     struct ConfigDev *cd = NULL;
     struct PciDevice *ppcdevice = NULL;
     struct PciDevice *gfxdevice = NULL;
@@ -246,6 +247,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO45, 0)))
     {
         gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO3, 0);
+        gfxnotv45 = 1;
     }
 
     if (!(gfxdevice))
@@ -284,6 +286,14 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         myConsts->ic_gfxSize = -(((gfxdevice->pd_Size2)<<1)&-16L);
         myConsts->ic_gfxConfig = 0;
         myConsts->ic_gfxType = VENDOR_3DFX;
+        if (gfxnotv45)
+        {
+            myConsts->ic_gfxSubType = DEVICE_VOODOO3;
+        }
+        else
+        {
+            myConsts->ic_gfxSubType = DEVICE_VOODOO45;
+        }
     }
 
     if ((!(medflag)) && (myConsts->ic_gfxMem >>31))
@@ -697,18 +707,19 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts,
 
     CopyMemQuick((const APTR)(mySegPointer+4), (APTR)(killerData), mySegSize);
 
-    killerData->id_Status = 0xabcdabcd;
-    killerData->id_MemBase = ppcmemBase;
-    killerData->id_MemSize = 0x4000000;
-    killerData->id_GfxMemBase = myConsts->ic_gfxMem;
-    killerData->id_GfxMemSize = myConsts->ic_gfxSize;
-    killerData->id_GfxType = myConsts->ic_gfxType;
-    killerData->id_GfxConfigMemBase = myConsts->ic_gfxConfig;
-    killerData->id_Environment1 = myConsts->ic_env1;
-    killerData->id_Environment2 = myConsts->ic_env2;
-    killerData->id_Environment3 = myConsts->ic_env3;
-    killerData->id_StartBat = myConsts->ic_startBAT;
-    killerData->id_SizeBat = myConsts->ic_sizeBAT;
+    killerData->id_Status        = 0xabcdabcd;
+    killerData->id_MemBase       = ppcmemBase;
+    killerData->id_MemSize       = 0x4000000;
+    killerData->id_GfxMemBase    = myConsts->ic_gfxMem;
+    killerData->id_GfxMemSize    = myConsts->ic_gfxSize;
+    killerData->id_GfxType       = myConsts->ic_gfxType;
+    killerData->id_GfxSubType    = myConsts->ic_gfxSubType;
+    killerData->id_GfxConfigBase = myConsts->ic_gfxConfig;
+    killerData->id_Environment1  = myConsts->ic_env1;
+    killerData->id_Environment2  = myConsts->ic_env2;
+    killerData->id_Environment3  = myConsts->ic_env3;
+    killerData->id_StartBat      = myConsts->ic_startBAT;
+    killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
     writememLong(ppcmemBase, 0x100, 0x48012f00);
     writememLong(configBase, IMMR_IMMRBAR, IMMR_ADDR_DEFAULT);

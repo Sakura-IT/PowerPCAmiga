@@ -26,7 +26,7 @@
 
 BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {
-    ULONG currSR, uPTE, lPTE, hash, hashTwo, mySDR, PTEG, tempPTEG, flag, checkPTEG;
+    ULONG currSR, uPTE, lPTE, hash, mySDR, PTEG, tempPTEG, flag, checkPTEG;
 
     struct PPCZeroPage *myZP = 0;
 
@@ -37,7 +37,7 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
         uPTE   = ((((currSR << 7) & 0x7fffff80) | ((startEffAddr >> 22) & 0x3f)) | 0x80000000);
         lPTE   = (((physAddr & 0xfffff000) | ((WIMG << 3) & 0x78)) | 0x180 | ppKey);
 
-	hash = (((startEffAddr >> 12) & 0xffff) ^ (currSR & 0x0007ffff));
+        hash = (((startEffAddr >> 12) & 0xffff) ^ (currSR & 0x0007ffff));
 
         mySDR = getSDR1();
 
@@ -45,9 +45,9 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
         {
             tempPTEG = ((((hash >> 10) & 0x1ff) & mySDR) | ((mySDR >> 16) & 0x1ff));
             PTEG = 0;
-            PTEG = (((hash << 6) & 0xffc0) | ((tempPTEG << 16) & 0x01ff0000) | (mySDR & 0x3f));
+            PTEG = (((hash << 6) & 0xffc0) | ((tempPTEG << 16) & 0x01ff0000) | (mySDR & 0xfc000000));
 
-            for (int n=0; n<8; n++)
+            for (int n=8; n>0; n--)
             {
                 checkPTEG = *((ULONG*)(PTEG));
 
@@ -126,14 +126,15 @@ void setupPT(void)
     for (int i = 0; i < 16; i++)
     {
         setSRIn(keyVal, segVal);
-	segVal += 0x10000000;
+        segVal += 0x10000000;
         keyVal += 1;
     }
 }
 
-void mmuSetup(void)
+void mmuSetup(struct InitData* initData)
 {
-    ULONG leadZeros;
+    ULONG leadZeros, ibatl, ibatu, dbatl, dbatu, batSize;
+    ULONG startEffAddr, endEffAddr, physAddr, WIMG, ppKey;
     struct PPCZeroPage *myZP = 0;
     ULONG PTSizeShift        = (ULONG)(myZP->zp_MemSize);
     ULONG shiftVal           = 24;
@@ -144,6 +145,136 @@ void mmuSetup(void)
     myZP->zp_PageTableSize = (1<<PTSizeShift);
 
     setupPT();
+
+    ULONG myPVR = getPVR();
+
+    if ((myPVR >> 16) == ID_MPC834X)
+    {
+        startEffAddr = IMMR_ADDR_DEFAULT;
+    }
+//    else
+//    {
+//        error
+//    }
+    endEffAddr   = startEffAddr + 0x100000;
+    physAddr     = startEffAddr;
+    WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+    ppKey        = PP_USER_RW;
+
+    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+
+    startEffAddr = VECTOR_TABLE_DEFAULT;
+    endEffAddr   = startEffAddr + 0x20000;
+    physAddr     = startEffAddr;
+    WIMG         = PTE_CACHE_INHIBITED;
+    ppKey        = PP_USER_RW;
+
+    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+
+    switch (initData->id_GfxType)
+    {
+        case VENDOR_ATI:
+        {
+            startEffAddr = initData->id_GfxConfigBase;
+            endEffAddr   = startEffAddr + 0x10000;
+            physAddr     = startEffAddr + 0x60000000;
+            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            ppKey        = PP_USER_RW;
+
+            setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+
+            if ((initData->id_GfxMemBase & 0xf7ffffff) || (initData->id_GfxConfigBase & 0xf7ffffff))
+            {
+                batSize = BAT_BL_128M;
+            }
+            else
+            {
+                batSize = BAT_BL_256M;
+            }
+
+            ibatl = ((initData->id_GfxMemBase + 0x60000000) | BAT_READ_WRITE);
+            ibatu = initData->id_GfxMemBase | batSize | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
+            dbatl = ibatl | BAT_WRITE_THROUGH;
+            dbatu = ibatu;
+
+            setBAT1(ibatl, ibatu, dbatl, dbatu);
+            mSync();
+
+            break;
+        }
+
+        case VENDOR_3DFX:
+        {
+            startEffAddr = initData->id_GfxMemBase;
+            endEffAddr   = startEffAddr + 0x2000000;
+            if (initData->id_GfxSubType == DEVICE_VOODOO45)
+            {
+                endEffAddr += 0x6000000;
+            }
+            physAddr     = startEffAddr + 0x60000000;
+            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            ppKey        = PP_USER_RW;
+
+            setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+
+            ibatu = initData->id_GfxMemBase + 0x2000000;
+            if (initData->id_GfxSubType == DEVICE_VOODOO45)
+            {
+                ibatu += 0x6000000;
+            }
+            ibatl = ibatu + 0x60000000 | BAT_READ_WRITE;
+            dbatl = ibatl | BAT_WRITE_THROUGH;
+            ibatu |= (BAT_BL_32M | BAT_VALID_SUPERVISOR | BAT_VALID_USER);
+            dbatu = ibatu;
+
+            setBAT1(ibatl, ibatu, dbatl, dbatu);
+            mSync();
+
+            break;
+        }
+
+        default:
+        {
+            //error
+            break;
+        }
+    }
+
+    ibatl = BAT_READ_WRITE;
+    ibatu = BAT_BL_2M | BAT_VALID_SUPERVISOR;
+    dbatl = ibatl;
+    dbatu = ibatu;
+
+    setBAT0(ibatl, ibatu, dbatl, dbatu);
+    mSync();
+
+    ibatl = 0x200000 | BAT_READ_WRITE;
+    ibatu = (initData->id_MemBase + 0x200000) | BAT_BL_2M | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
+    dbatl = ibatl | BAT_CACHE_INHIBITED;
+    dbatu = ibatu;
+
+    setBAT2(ibatl, ibatu, dbatl, dbatu);
+
+                                     //adding using second ATI card as memory
+    physAddr     = 0x400000;
+    startEffAddr = physAddr + (initData->id_MemBase);
+    endEffAddr   = startEffAddr + (initData->id_MemSize);
+    WIMG         = PTE_COPYBACK;
+    ppKey        = PP_USER_RW;
+
+    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+
+    physAddr    = 0;
+
+    for (int n=64; n>0; n--)
+    {
+        tlbIe(physAddr);
+        physAddr += 0x1000;
+    }
+
+    tlbSync();
+
+    setMSR(PSL_IR | PSL_DR | PSL_FP);
 
     return;
 }
@@ -226,7 +357,7 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
         killerFIFOs(initData);
 
-	copySrc = SetIdle();
+        copySrc = SetIdle();
     }
 
     if(!(copySrc))
@@ -239,7 +370,7 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
     installExceptions(copySrc);
 
-    mmuSetup();
+    mmuSetup(initData);
 
     myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
 
