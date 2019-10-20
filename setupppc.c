@@ -34,8 +34,8 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
     {
         flag   = 0;
         currSR = getSRIn(startEffAddr);
-        uPTE   = ((((currSR << 7) & 0x7fffff80) | ((startEffAddr >> 22) & 0x3f)) | 0x80000000);
-        lPTE   = (((physAddr & 0xfffff000) | ((WIMG << 3) & 0x78)) | 0x180 | ppKey);
+        uPTE   = ((((currSR << 7) & 0x7fffff80) | ((startEffAddr >> 22) & 0x3f)) | PTE_VALID);
+        lPTE   = (((physAddr & 0xfffff000) | ((WIMG << 3) & 0x78)) | PTE_REFERENCED | PTE_CHANGED | ppKey);
 
         hash = (((startEffAddr >> 12) & 0xffff) ^ (currSR & 0x0007ffff));
 
@@ -51,13 +51,13 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
             {
                 checkPTEG = *((ULONG*)(PTEG));
 
-                if (!(checkPTEG & 0x80000000))
+                if (!(checkPTEG & PTE_VALID))
                 {
-                    *((ULONG*)(PTEG))   = uPTE;
+                    *((ULONG*)(PTEG))     = uPTE;
                     *((ULONG*)(PTEG) + 1) = lPTE;
 
-                    startEffAddr += 4096;
-                    physAddr     += 4096;
+                    startEffAddr += MMU_PAGESIZE;
+                    physAddr     += MMU_PAGESIZE;
                     flag = 1;
                     break;
                 }
@@ -70,13 +70,13 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
                 break;
             }
 
-            if (uPTE & 0x40)
+            if (uPTE & PTE_HASHID)
             {
                 return FALSE;
             }
 
             hash ^= 0xffffffff;
-            uPTE |= 0x40;
+            uPTE |= PTE_HASHID;
         }
 
     }
@@ -177,7 +177,7 @@ void mmuSetup(struct InitData* initData)
         {
             startEffAddr = initData->id_GfxConfigBase;
             endEffAddr   = startEffAddr + 0x10000;
-            physAddr     = startEffAddr + 0x60000000;
+            physAddr     = startEffAddr + OFFSET_PCIMEM;
             WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
@@ -192,12 +192,11 @@ void mmuSetup(struct InitData* initData)
                 batSize = BAT_BL_256M;
             }
 
-            ibatl = ((initData->id_GfxMemBase + 0x60000000) | BAT_READ_WRITE);
+            ibatl = ((initData->id_GfxMemBase + OFFSET_PCIMEM) | BAT_READ_WRITE);
             ibatu = initData->id_GfxMemBase | batSize | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
             dbatl = ibatl | BAT_WRITE_THROUGH;
-            dbatu = ibatu;
 
-            setBAT1(ibatl, ibatu, dbatl, dbatu);
+            setBAT1(ibatl, ibatu, dbatl, ibatu);
             mSync();
 
             break;
@@ -211,7 +210,7 @@ void mmuSetup(struct InitData* initData)
             {
                 endEffAddr += 0x6000000;
             }
-            physAddr     = startEffAddr + 0x60000000;
+            physAddr     = startEffAddr + OFFSET_PCIMEM;
             WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
@@ -222,12 +221,11 @@ void mmuSetup(struct InitData* initData)
             {
                 ibatu += 0x6000000;
             }
-            ibatl = ibatu + 0x60000000 | BAT_READ_WRITE;
+            ibatl = ibatu + OFFSET_PCIMEM | BAT_READ_WRITE;
             dbatl = ibatl | BAT_WRITE_THROUGH;
             ibatu |= (BAT_BL_32M | BAT_VALID_SUPERVISOR | BAT_VALID_USER);
-            dbatu = ibatu;
 
-            setBAT1(ibatl, ibatu, dbatl, dbatu);
+            setBAT1(ibatl, ibatu, dbatl, ibatu);
             mSync();
 
             break;
@@ -242,21 +240,18 @@ void mmuSetup(struct InitData* initData)
 
     ibatl = BAT_READ_WRITE;
     ibatu = BAT_BL_2M | BAT_VALID_SUPERVISOR;
-    dbatl = ibatl;
-    dbatu = ibatu;
 
-    setBAT0(ibatl, ibatu, dbatl, dbatu);
+    setBAT0(ibatl, ibatu, ibatl, ibatu);
     mSync();
 
-    ibatl = 0x200000 | BAT_READ_WRITE;
-    ibatu = (initData->id_MemBase + 0x200000) | BAT_BL_2M | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
+    ibatl = OFFSET_MESSAGES | BAT_READ_WRITE;
+    ibatu = (initData->id_MemBase + OFFSET_MESSAGES) | BAT_BL_2M | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
     dbatl = ibatl | BAT_CACHE_INHIBITED;
-    dbatu = ibatu;
 
-    setBAT2(ibatl, ibatu, dbatl, dbatu);
+    setBAT2(ibatl, ibatu, dbatl, ibatu);
 
                                      //adding using second ATI card as memory
-    physAddr     = 0x400000;
+    physAddr     = OFFSET_SYSMEM;
     startEffAddr = physAddr + (initData->id_MemBase);
     endEffAddr   = startEffAddr + (initData->id_MemSize);
     WIMG         = PTE_COPYBACK;

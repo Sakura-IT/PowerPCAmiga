@@ -63,7 +63,12 @@
 
 #define OFFSET_KERNEL           0x3000
 #define OFFSET_ZEROPAGE         0x10000
+#define OFFSET_MESSAGES         0x200000
+#define OFFSET_SYSMEM         0x400000
+#define OFFSET_PCIMEM           0x60000000
 #define VECTOR_TABLE_DEFAULT    0xfff00000
+
+#define MMU_PAGESIZE            0x1000
 
 // MSR settings
 
@@ -128,6 +133,7 @@
 #define PTE_REFERENCED		    0x00000100
 #define PTE_CHANGED		        0x00000080
 #define PTE_HASHID		        0x00000040
+#define PTE_VALID               0x80000000
 
 // PageTable Access bits
 #define PP_USER_RW              2
