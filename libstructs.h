@@ -55,6 +55,7 @@ ULONG                   ic_env1;
 ULONG                   ic_env2;
 ULONG                   ic_env3;
 UWORD                   ic_gfxType;
+UWORD                   ic_gfxSubType;
 };
 
 struct InitData {
@@ -64,8 +65,9 @@ ULONG               id_MemBase;
 ULONG               id_MemSize;
 ULONG               id_GfxMemBase;
 ULONG               id_GfxMemSize;
-ULONG               id_GfxType;
-ULONG               id_GfxConfigMemBase;
+UWORD               id_GfxType;
+UWORD               id_GfxSubType;
+ULONG               id_GfxConfigBase;
 ULONG               id_Environment1;
 ULONG               id_Environment2;
 ULONG               id_Environment3;
