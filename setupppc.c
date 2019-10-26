@@ -28,8 +28,6 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
 {
     ULONG currSR, uPTE, lPTE, hash, mySDR, PTEG, tempPTEG, flag, checkPTEG;
 
-    struct PPCZeroPage *myZP = 0;
-
     while (startEffAddr < endEffAddr)
     {
         flag   = 0;
@@ -44,8 +42,7 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
         while (1)
         {
             tempPTEG = ((((hash >> 10) & 0x1ff) & mySDR) | ((mySDR >> 16) & 0x1ff));
-            PTEG = 0;
-            PTEG = (((hash << 6) & 0xffc0) | ((tempPTEG << 16) & 0x01ff0000) | (mySDR & 0xfc000000));
+            PTEG = (((hash << 6) & 0xffc0) | ((tempPTEG << 16) & 0x01ff0000) | (mySDR & 0xfe000000));
 
             for (int n=8; n>0; n--)
             {
@@ -62,7 +59,7 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
                     break;
                 }
                 
-                PTEG += 4;
+                PTEG += 8;
             }
 
             if (flag)
@@ -91,18 +88,18 @@ void setupPT(void)
     ULONG memSize = myZP->zp_MemSize;
     ULONG ptSize  = myZP->zp_PageTableSize;
 
-    if (ptSize < 0x100000)
+    if (ptSize < 0x10000)
     {
-        ptSize = 0x100000;
+        ptSize = 0x10000;
     }
 
     ULONG ptLoc    = memSize - ptSize;
     LONG  HTABMASK = 0xffff;
     ULONG mask     = (HTABMASK <<16);
-    ULONG HTABORG  = (memSize & mask);
+    ULONG HTABORG  = (ptLoc & mask);
     ULONG testVal  = (HTABORG & mask);
 
-    while (!(testVal) || !(HTABMASK))
+    while ((testVal) && (HTABMASK))
     {
         HTABMASK = HTABMASK >> 1;
         mask = HTABMASK << 16;
@@ -161,7 +158,11 @@ void mmuSetup(struct InitData* initData)
     WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
     ppKey        = PP_USER_RW;
 
-    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+    if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+    {
+        initData->id_Status = 0x45727231;
+        return;
+    }
 
     startEffAddr = VECTOR_TABLE_DEFAULT;
     endEffAddr   = startEffAddr + 0x20000;
@@ -169,7 +170,11 @@ void mmuSetup(struct InitData* initData)
     WIMG         = PTE_CACHE_INHIBITED;
     ppKey        = PP_USER_RW;
 
-    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+    if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+    {
+        initData->id_Status = 0x45727231;
+        return;
+    }
 
     switch (initData->id_GfxType)
     {
@@ -181,7 +186,11 @@ void mmuSetup(struct InitData* initData)
             WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
-            setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+            if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+            {
+                initData->id_Status = 0x45727231;
+                return;
+            }
 
             if ((initData->id_GfxMemBase & 0xf7ffffff) || (initData->id_GfxConfigBase & 0xf7ffffff))
             {
@@ -214,7 +223,11 @@ void mmuSetup(struct InitData* initData)
             WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
-            setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+            if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+            {
+                initData->id_Status = 0x45727231;
+                return;
+            }
 
             ibatu = initData->id_GfxMemBase + 0x2000000;
             if (initData->id_GfxSubType == DEVICE_VOODOO45)
@@ -253,11 +266,15 @@ void mmuSetup(struct InitData* initData)
                                      //adding using second ATI card as memory
     physAddr     = OFFSET_SYSMEM;
     startEffAddr = physAddr + (initData->id_MemBase);
-    endEffAddr   = startEffAddr + (initData->id_MemSize);
+    endEffAddr   = (initData->id_MemBase) + (initData->id_MemSize);
     WIMG         = PTE_COPYBACK;
     ppKey        = PP_USER_RW;
 
-    setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey);
+    if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+    {
+        initData->id_Status = 0x45727231;
+        return;
+    }
 
     physAddr    = 0;
 
@@ -367,7 +384,10 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
     mmuSetup(initData);
 
+    while (initData->id_Status != 0x496e6974);
+
     myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
+    initData->id_Status = 0x426f6f6e;   //Boon
 
 fakeEnd:
     goto fakeEnd;

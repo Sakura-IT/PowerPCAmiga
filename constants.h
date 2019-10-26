@@ -64,7 +64,7 @@
 #define OFFSET_KERNEL           0x3000
 #define OFFSET_ZEROPAGE         0x10000
 #define OFFSET_MESSAGES         0x200000
-#define OFFSET_SYSMEM         0x400000
+#define OFFSET_SYSMEM           0x400000
 #define OFFSET_PCIMEM           0x60000000
 #define VECTOR_TABLE_DEFAULT    0xfff00000
 

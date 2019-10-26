@@ -31,7 +31,7 @@ struct ExecBase*    zp_SysBase;
 struct MemHeader*   zp_PPCMemHeader;
 struct DosLibrary*  zp_DOSBase;
 struct MsgPort*     zp_MCPort;
-ULONG               zp_Status;
+volatile ULONG      zp_Status;
 struct PPCBase*     zp_PowerPCBase;
 ULONG               zp_PageTableSize;
 struct UtilityBase* zp_UtilityBase;
