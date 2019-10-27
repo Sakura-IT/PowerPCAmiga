@@ -33,6 +33,6 @@ void   getENVs    (struct InternalConsts* myConsts);
 void   PrintError (struct InternalConsts* myConsts, UBYTE* errortext);
 void   PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
 
-struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice);
-struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice);
-struct InitData *SetupMPC107 (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice);
+struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
+struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
+struct InitData *SetupMPC107 (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);

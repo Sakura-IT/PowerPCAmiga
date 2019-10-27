@@ -18,94 +18,94 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#define PPCEXCEPTION __section ("kernel","acrx") __entry __interrupt
 
-
-__section ("kernel","acrx") __entry __interrupt void ExcFPUnav(void)
+PPCEXCEPTION void ExcFPUnav(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcAlignment(void)
+PPCEXCEPTION void ExcAlignment(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcInsStor(void)
+PPCEXCEPTION void ExcInsStor(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcDatStor(void)
+PPCEXCEPTION void ExcDatStor(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcTrace(void)
+PPCEXCEPTION void ExcTrace(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcBreakPoint(void)
+PPCEXCEPTION void ExcBreakPoint(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcDec(void)
+PPCEXCEPTION void ExcDec(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcPrIvate(void)
+PPCEXCEPTION void ExcPrIvate(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcMachCheck(void)
+PPCEXCEPTION void ExcMachCheck(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcSysCall(void)
+PPCEXCEPTION void ExcSysCall(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcPerfMon(void)
+PPCEXCEPTION void ExcPerfMon(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcSysMan(void)
+PPCEXCEPTION void ExcSysMan(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcTherMan(void)
+PPCEXCEPTION void ExcTherMan(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcVMXUnav(void)
+PPCEXCEPTION void ExcVMXUnav(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcITLBMiss(void)
+PPCEXCEPTION void ExcITLBMiss(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcDLoadTLBMiss(void)
+PPCEXCEPTION void ExcDLoadTLBMiss(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcDStoreTLBMiss(void)
+PPCEXCEPTION void ExcDStoreTLBMiss(void)
 {
     return;
 }
 
-__section ("kernel","acrx") __entry __interrupt void ExcExternal(void)
+PPCEXCEPTION void ExcExternal(void)
 {
     return;
 }

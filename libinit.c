@@ -96,10 +96,14 @@ static void CleanUp(struct InternalConsts *myConsts)
     return;
 }
 
-struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts)
+struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
 {
+    ULONG funSize;
+
     struct PPCBase *PowerPCBase = NULL;
     struct ExecBase *SysBase = myConsts->ic_SysBase;
+
+    funSize = *((ULONG*)(funPointer - 4));
 
     CacheClearU();
 
@@ -125,7 +129,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     ULONG cardNumber = 0;
     BYTE memPrio;
     ULONG card, devfuncnum, res, i, n, testLen;
-    ULONG testSize, bytesFree;
+    ULONG testSize, bytesFree, initPointer, kernelPointer, funPointer;
     volatile ULONG status;
     struct PPCZeroPage *myZeroPage;
     struct MemHeader *myPPCMemHeader;
@@ -354,23 +358,28 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         Enable();
     }
 
+    illegal();
+    initPointer   = (*((ULONG*)(myConsts->ic_SegList << 2)) << 2);      //setup
+    kernelPointer = (*((ULONG*)(initPointer)) << 2);                   //kernel
+    funPointer    = (*((ULONG*)(kernelPointer)) << 2);                //functions
+
     switch (ppcdevice->pd_DeviceID)
     {
         case DEVICE_HARRIER:
         {
-            cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice);
+            cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice, initPointer);
             break;
         }
 
         case DEVICE_MPC8343E:
         {
-            cardData = SetupKiller(myConsts, devfuncnum, ppcdevice);
+            cardData = SetupKiller(myConsts, devfuncnum, ppcdevice, initPointer);
             break;
         }
 
         case DEVICE_MPC107:
         {
-            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice);
+            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice, initPointer);
             break;
         }
 
@@ -481,7 +490,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enqueue(&SysBase->MemList, (struct Node*)myPPCMemHeader);
 
-    PowerPCBase = mymakeLibrary(myConsts);
+    PowerPCBase = mymakeLibrary(myConsts, funPointer);
 
     Enable();
 
@@ -596,13 +605,11 @@ void writememLong(ULONG Base, ULONG offset, ULONG value)
     return;
 }
 
-struct InitData* SetupKiller(struct InternalConsts* myConsts,
-                             ULONG devfuncnum, struct PciDevice* ppcdevice)
+struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
+                             struct PciDevice* ppcdevice, ULONG initPointer)
 {
     UWORD res;
-    ULONG ppcmemBase, configBase, fakememBase, vgamemBase, winSize, startAddress;
-    ULONG mySegSize;
-    ULONG mySegPointer;
+    ULONG ppcmemBase, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize;
     struct InitData* killerData;
 
     struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
@@ -702,10 +709,9 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts,
     fakememBase = ppcmemBase + OFFSET_ZEROPAGE;
     killerData = ((struct InitData*)(fakememBase + OFFSET_KERNEL));
 
-    mySegPointer = (*((ULONG*)(myConsts->ic_SegList << 2)) << 2);
-    mySegSize = *((ULONG*)(mySegPointer - 4));
+    segSize = *((ULONG*)(initPointer - 4));
 
-    CopyMemQuick((const APTR)(mySegPointer+4), (APTR)(killerData), mySegSize);
+    CopyMemQuick((const APTR)(initPointer+4), (APTR)(killerData), segSize);
 
     killerData->id_Status        = 0xabcdabcd;
     killerData->id_MemBase       = ppcmemBase;
@@ -730,14 +736,14 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts,
 
     return killerData;
 }
-struct InitData* SetupHarrier(struct InternalConsts* myConsts,
-                              ULONG devfuncnum, struct PciDevice* ppcdevice)
+struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
+                              struct PciDevice* ppcdevice, ULONG initPointer)
 {
     return NULL;
 }
 
-struct InitData* SetupMPC107(struct InternalConsts* myConsts,
-                             ULONG devfuncnum, struct PciDevice* ppcdevice)
+struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
+                             struct PciDevice* ppcdevice, ULONG initPointer)
 {
     return NULL;
 }

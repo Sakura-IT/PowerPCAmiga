@@ -22,59 +22,61 @@
 #include <powerpc/tasksPPC.h>
 #include <powerpc/powerpc.h>
 
-void InsertOnPri(struct PPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask)
+#define PPCFUNCTION __section ("functions","acrx") __entry
+
+PPCFUNCTION void InsertOnPri(struct PPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask)
 {
     return;
 }
 
-APTR AllocVec68K(struct PPCBase* PowerPCBase, ULONG size)
+PPCFUNCTION APTR AllocVec68K(struct PPCBase* PowerPCBase, ULONG size)
 {
     return NULL;
 }
 
-LONG FreeVec68K(struct PPCBase* PowerPCBase, APTR memBlock)
+PPCFUNCTION LONG FreeVec68K(struct PPCBase* PowerPCBase, APTR memBlock)
 {
     return 0;
 }
 
-void FlushDCache(struct PPCBase* PowerPCBase)
+PPCFUNCTION void FlushDCache(struct PPCBase* PowerPCBase)
 {
     return;
 }
 
-LONG AtomicTest(struct PPCBase* PowerPCBase, APTR testLocation)
+PPCFUNCTION LONG AtomicTest(struct PPCBase* PowerPCBase, APTR testLocation)
 {
     return NULL;
 }
 
-void AtomicDone(APTR testLocation)
+PPCFUNCTION void AtomicDone(APTR testLocation)
 {
     return;
 }
 
-void DisablePPC(void)
+PPCFUNCTION void DisablePPC(void)
 {
     return;
 }
 
-void EnablePPC(void)
+PPCFUNCTION void EnablePPC(void)
 {
     return;
 }
 
 //unique for every bridge or use ifs?
 
-ULONG CreateMsgFramePPC(struct PPCBase* PowerPCBase)
+PPCFUNCTION ULONG CreateMsgFramePPC(struct PPCBase* PowerPCBase)
 {
     return 0;
 }
 
-void SendMsgFramePPC(struct PPCBase* PowerPCBase, ULONG msgFrame)
+PPCFUNCTION void SendMsgFramePPC(struct PPCBase* PowerPCBase, ULONG msgFrame)
 {
     return;
 }
 
-void FreeMsgFramePPC(struct PPCBase* PowerPCBase, ULONG msgFrame)
+PPCFUNCTION void FreeMsgFramePPC(struct PPCBase* PowerPCBase, ULONG msgFrame)
 {
     return;
 }
@@ -86,42 +88,42 @@ ULONG GetMsgFramePPC(struct PPCBase* PowerPCBase)
 }
 #endif
 
-LONG StricmpPPC(STRPTR string1, STRPTR string2)
+PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
 {
     return 0;
 }
 
-ULONG GetLen(STRPTR string)
+PPCFUNCTION ULONG GetLen(STRPTR string)
 {
     return 0;
 }
 
-STRPTR CopyStr(APTR source, APTR dest)
+PPCFUNCTION STRPTR CopyStr(APTR source, APTR dest)
 {
     return NULL;
 }
 
-void CauseDECInterrupt(struct PPCBase* PowerPCBase)
+PPCFUNCTION void CauseDECInterrupt(struct PPCBase* PowerPCBase)
 {
     return;
 }
 
-ULONG CheckExcSignal(struct PPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal)
+PPCFUNCTION ULONG CheckExcSignal(struct PPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal)
 {
     return 0;
 }
 
-void EndTaskPPC(void)
+PPCFUNCTION void EndTaskPPC(void)
 {
     return;
 }
 
-APTR AllocatePPC(struct PPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
+PPCFUNCTION APTR AllocatePPC(struct PPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
 {
     return NULL;
 }
 
-void DeallocatePPC(struct PPCBase* PowerPCBase, struct MemHeader* memHeader,
+PPCFUNCTION void DeallocatePPC(struct PPCBase* PowerPCBase, struct MemHeader* memHeader,
                    APTR memoryBlock, ULONG byteSize)
 {
     return;
