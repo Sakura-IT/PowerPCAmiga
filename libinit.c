@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 #include <libraries/mediatorpci.h>
 
 #include <proto/exec.h>
@@ -39,14 +38,25 @@
 #include "librev.h"
 #include "constants.h"
 #include "libstructs.h"
-#include "Internals68k.h"
 #include "Internalsppc.h"
+#include "Internals68k.h"
 
+/********************************************************************************************
+*
+*	Standard dummy entry of a device/library
+*
+*********************************************************************************************/
 
 int main (void)
 {
     return -1;
 }
+
+/********************************************************************************************
+*
+*	Supported ATI cards and PPC chipsets
+*
+*********************************************************************************************/
 
 static const ULONG cardList[] =
 {
@@ -65,6 +75,12 @@ static const ULONG atiList[] =
     DEVICE_RV280SE,
     0
 };
+
+/********************************************************************************************
+*
+*	Exiting and clean-up
+*
+*********************************************************************************************/
 
 static void CleanUp(struct InternalConsts *myConsts)
 {
@@ -97,21 +113,29 @@ static void CleanUp(struct InternalConsts *myConsts)
     return;
 }
 
+/********************************************************************************************
+*
+*	Setting up our library
+*
+*********************************************************************************************/
+
 struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
 {
-    ULONG funSize;
-    char *baseMem;
-    APTR funMem;
+    ULONG funSize, funOffset;
+    UBYTE *baseMem;
+    APTR funMem, funAddr;
 
     struct PPCBase *PowerPCBase = NULL;
     struct ExecBase *SysBase = myConsts->ic_SysBase;
 
     funSize = *((ULONG*)(funPointer - 4));
 
-    if (!(funMem = AllocVec(funSize, MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
+    if (!(funMem = myAllocVec32(NULL, funSize, MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
     {
         return NULL;
     }
+
+    funOffset = (ULONG)funMem - (funPointer + 4);
 
     CopyMemQuick((APTR)(funPointer+4), funMem, funSize);
 
@@ -125,10 +149,39 @@ struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
     PowerPCBase->PPC_LibNode.lib_PosSize = sizeof(struct PrivatePPCBase);
     PowerPCBase->PPC_LibNode.lib_NegSize = NEGSIZE;
 
+    baseMem = (UBYTE*)PowerPCBase;
+
+    for (int n=0; n<(TOTAL_FUNCS); n++)
+    {
+        funAddr = LibVectors[n];
+        if (n > (NUM_OF_68K_FUNCS-1))
+        {
+            funAddr = (UBYTE*)funAddr + funOffset;
+        }
+        *((ULONG*)(baseMem - 4)) = (ULONG)funAddr;
+        *((UWORD*)(baseMem - 6)) = 0x4ef9;
+
+        baseMem -= 6;
+    }
+
     CacheClearU();
+
+    InitStruct(&LibInitData[0], PowerPCBase, 0);
+
+    PowerPCBase->PPC_LibNode.lib_Node.ln_Name = LIBNAME;        //Initializer of ln_Name does not seem to work with vbcc
+
+    AddLibrary((struct Library*)PowerPCBase);
+
+    PowerPCBase->PPC_SysLib = SysBase;
 
     return PowerPCBase;
 }
+
+/********************************************************************************************
+*
+*	the libinit routine. Called when the library is opened.
+*
+*********************************************************************************************/
 
 __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
               __reg("a0") BPTR seglist, __reg("a6") struct ExecBase* __sys)
@@ -520,6 +573,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     return PowerPCBase;
 }
 
+/********************************************************************************************
+*
+*	Our Resident struct.
+*
+*********************************************************************************************/
+
 static const struct Resident RomTag =
 {
     RTC_MATCHWORD,
@@ -534,7 +593,11 @@ static const struct Resident RomTag =
     (APTR)&LibInit
 };
 
-
+/********************************************************************************************
+*
+*	All the different functions of this library
+*
+*********************************************************************************************/
 
 static const APTR LibVectors[] =
 {
@@ -688,7 +751,11 @@ static const APTR LibVectors[] =
     (APTR) -1
 };
 
-
+/********************************************************************************************
+*
+*	Reading and handling of environment variables
+*
+*********************************************************************************************/
 
 ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
 {
@@ -729,6 +796,12 @@ void getENVs(struct InternalConsts* myConsts)
     return;
 }
 
+/********************************************************************************************
+*
+*	Various support routines for the K1/M1 set-up.
+*
+*********************************************************************************************/
+
 ULONG readmemLong(ULONG Base, ULONG offset)
 {
     ULONG res;
@@ -766,6 +839,12 @@ void writememLong(ULONG Base, ULONG offset, ULONG value)
     *((ULONG*)(Base + offset)) = value;
     return;
 }
+
+/********************************************************************************************
+*
+*	Setting up the K1/M1 card
+*
+*********************************************************************************************/
 
 struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
                              struct PciDevice* ppcdevice, ULONG initPointer)
@@ -898,17 +977,36 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     return killerData;
 }
+
+/********************************************************************************************
+*
+*   Setting up cards based on the Harrier chipset (PowerPlus III).
+*
+*********************************************************************************************/
+
 struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
                               struct PciDevice* ppcdevice, ULONG initPointer)
 {
     return NULL;
 }
 
+/********************************************************************************************
+*
+*	Setting up cards based on the MPC107 chipset.
+*
+*********************************************************************************************/
+
 struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
                              struct PciDevice* ppcdevice, ULONG initPointer)
 {
     return NULL;
 }
+
+/********************************************************************************************
+*
+*	Routines for ouputting error messages.
+*
+*********************************************************************************************/
 
 void PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext)
 {

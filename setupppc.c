@@ -386,7 +386,7 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
     while (initData->id_Status != 0x496e6974);
 
-    myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
+    //myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
     initData->id_Status = 0x426f6f6e;   //Boon
 
 fakeEnd:

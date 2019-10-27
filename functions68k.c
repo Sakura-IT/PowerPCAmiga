@@ -259,9 +259,19 @@ APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG mem
 
     ULONG oldmemblock;
     struct Task *myTask;
+    struct ExecBase *SysBase;
 
     ULONG memblock = 0;
-    struct ExecBase *SysBase = PowerPCBase->PPC_SysLib;
+
+    if (PowerPCBase)
+    {
+        SysBase = PowerPCBase->PPC_SysLib;
+    }
+    else
+    {
+        SysBase = *((struct ExecBase **)4UL);
+    }
+
     attributes &= MEMF_CLEAR;
     attributes |= (MEMF_PUBLIC | MEMF_PPC);
     memsize += 0x38;

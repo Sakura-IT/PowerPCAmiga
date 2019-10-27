@@ -26,15 +26,15 @@
 #define REVISION    14
 
 #define LIBNAME "powerpctest.library"
-#define VSTRING "$VER: powerptestc.library 17.14 (14.09.19)\r\n"
+#define VSTRING "$VER: powerptestc.library 17.14 (27.10.19)\r\n"
 
 #define VERPCI      13
 #define REVPCI      8
 
 #define LIB_PRIORITY 0
 
-
 const UWORD LibInitData[] = {
+
 INITBYTE(8, NT_LIBRARY),
 INITBYTE(14, LIBF_SUMMING|LIBF_CHANGED),
 INITWORD(20, VERSION),
