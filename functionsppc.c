@@ -19,13 +19,13 @@
 // SOFTWARE.
 
 #include <exec/types.h>
+#include <devices/timer.h>
 #include <powerpc/powerpc.h>
 #include <powerpc/tasksPPC.h>
 #include <powerpc/memoryPPC.h>
 #include <powerpc/semaphoresPPC.h>
 #include <powerpc/portsPPC.h>
-
-#define PPCFUNCTION __section ("functions","acrx") __entry
+#include "Internalsppc.h"
 
 PPCFUNCTION ULONG myRun68K(struct PPCBase* PowerPCBase, struct PPCArgs* PPStruct)
 {
@@ -477,4 +477,28 @@ PPCFUNCTION BOOL myIsExceptionMode(struct PPCBase* PowerPCBase)
     return FALSE;
 }
 
+PPCFUNCTION VOID myAllocPrivateMem(void)
+{
+    return;
+}
 
+PPCFUNCTION VOID myFreePrivateMem(void)
+{
+    return;
+}
+
+PPCFUNCTION VOID myResetPPC(void)
+{
+    return;
+}
+
+PPCFUNCTION BOOL myChangeStack(struct PPCBase* PowerPCBase, ULONG NewStackSize)
+{
+    return FALSE;
+}
+
+PPCFUNCTION ULONG myRun68KLowLevel(struct PPCBase* PowerPCBase, ULONG Code, LONG Offset, ULONG a0,
+                                 ULONG a1, ULONG d0, ULONG d1)
+{
+    return 0;
+}

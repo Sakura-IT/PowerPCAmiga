@@ -39,7 +39,8 @@
 #include "librev.h"
 #include "constants.h"
 #include "libstructs.h"
-#include "internals68k.h"
+#include "Internals68k.h"
+#include "Internalsppc.h"
 
 
 int main (void)
@@ -99,11 +100,30 @@ static void CleanUp(struct InternalConsts *myConsts)
 struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
 {
     ULONG funSize;
+    char *baseMem;
+    APTR funMem;
 
     struct PPCBase *PowerPCBase = NULL;
     struct ExecBase *SysBase = myConsts->ic_SysBase;
 
     funSize = *((ULONG*)(funPointer - 4));
+
+    if (!(funMem = AllocVec(funSize, MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
+    {
+        return NULL;
+    }
+
+    CopyMemQuick((APTR)(funPointer+4), funMem, funSize);
+
+    if (!(baseMem = (char *)AllocVec((sizeof(struct PrivatePPCBase)) + (NEGSIZE), MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
+    {
+        return NULL;
+    }
+
+    PowerPCBase = (struct PPCBase*)(baseMem + (NEGSIZE));
+
+    PowerPCBase->PPC_LibNode.lib_PosSize = sizeof(struct PrivatePPCBase);
+    PowerPCBase->PPC_LibNode.lib_NegSize = NEGSIZE;
 
     CacheClearU();
 
@@ -358,7 +378,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         Enable();
     }
 
-    illegal();
     initPointer   = (*((ULONG*)(myConsts->ic_SegList << 2)) << 2);      //setup
     kernelPointer = (*((ULONG*)(initPointer)) << 2);                   //kernel
     funPointer    = (*((ULONG*)(kernelPointer)) << 2);                //functions
@@ -516,17 +535,160 @@ static const struct Resident RomTag =
 };
 
 
-/*
+
 static const APTR LibVectors[] =
 {
-    LibOpen,
-    LibClose,
-    LibExpunge,
-    LibReserved,
+    (APTR)myOpen,
+    (APTR)myClose,
+    (APTR)myExpunge,
+    (APTR)myReserved,
+    (APTR)myRunPPC,
+	(APTR)myWaitForPPC,
+	(APTR)myGetCPU,
+	(APTR)myPowerDebugMode,
+	(APTR)myAllocVec32,
+	(APTR)myFreeVec32,
+	(APTR)mySPrintF68K,
+	(APTR)myAllocXMsg,
+	(APTR)myFreeXMsg,
+	(APTR)myPutXMsg,
+	(APTR)myGetPPCState,
+	(APTR)mySetCache68K,
+	(APTR)myCreatePPCTask,
+	(APTR)myCausePPCInterrupt,
+
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+    (APTR)myReserved,
+
+
+    (APTR)myRun68K,
+	(APTR)myWaitFor68K,
+	(APTR)mySPrintF,
+	(APTR)myRun68KLowLevel,
+	(APTR)myAllocVecPPC,
+	(APTR)myFreeVecPPC,
+	(APTR)myCreateTaskPPC,
+	(APTR)myDeleteTaskPPC,
+	(APTR)myFindTaskPPC,
+	(APTR)myInitSemaphorePPC,
+	(APTR)myFreeSemaphorePPC,
+	(APTR)myAddSemaphorePPC,
+	(APTR)myRemSemaphorePPC,
+	(APTR)myObtainSemaphorePPC,
+	(APTR)myAttemptSemaphorePPC,
+	(APTR)myReleaseSemaphorePPC,
+	(APTR)myFindSemaphorePPC,
+	(APTR)myInsertPPC,
+	(APTR)myAddHeadPPC,
+	(APTR)myAddTailPPC,
+	(APTR)myRemovePPC,
+	(APTR)myRemHeadPPC,
+	(APTR)myRemTailPPC,
+	(APTR)myEnqueuePPC,
+	(APTR)myFindNamePPC,
+	(APTR)myFindTagItemPPC,
+	(APTR)myGetTagDataPPC,
+	(APTR)myNextTagItemPPC,
+	(APTR)myAllocSignalPPC,
+	(APTR)myFreeSignalPPC,
+	(APTR)mySetSignalPPC,
+	(APTR)mySignalPPC,
+	(APTR)myWaitPPC,
+	(APTR)mySetTaskPriPPC,
+	(APTR)mySignal68K,
+	(APTR)mySetCache,
+	(APTR)mySetExcHandler,
+	(APTR)myRemExcHandler,
+	(APTR)mySuper,
+	(APTR)myUser,
+	(APTR)mySetHardware,
+	(APTR)myModifyFPExc,
+	(APTR)myWaitTime,
+	(APTR)myChangeStack,
+	(APTR)myLockTaskList,
+	(APTR)myUnLockTaskList,
+	(APTR)mySetExcMMU,
+	(APTR)myClearExcMMU,
+	(APTR)myChangeMMU,
+	(APTR)myGetInfo,
+	(APTR)myCreateMsgPortPPC,
+	(APTR)myDeleteMsgPortPPC,
+	(APTR)myAddPortPPC,
+	(APTR)myRemPortPPC,
+	(APTR)myFindPortPPC,
+	(APTR)myWaitPortPPC,
+	(APTR)myPutMsgPPC,
+	(APTR)myGetMsgPPC,
+	(APTR)myReplyMsgPPC,
+	(APTR)myFreeAllMem,
+	(APTR)myCopyMemPPC,
+	(APTR)myAllocXMsgPPC,
+	(APTR)myFreeXMsgPPC,
+	(APTR)myPutXMsgPPC,
+	(APTR)myGetSysTimePPC,
+	(APTR)myAddTimePPC,
+	(APTR)mySubTimePPC,
+	(APTR)myCmpTimePPC,
+	(APTR)mySetReplyPortPPC,
+	(APTR)mySnoopTask,
+	(APTR)myEndSnoopTask,
+	(APTR)myGetHALInfo,
+	(APTR)mySetScheduling,
+	(APTR)myFindTaskByID,
+	(APTR)mySetNiceValue,
+	(APTR)myTrySemaphorePPC,
+	(APTR)myAllocPrivateMem,
+	(APTR)myFreePrivateMem,
+	(APTR)myResetPPC,
+	(APTR)myNewListPPC,
+	(APTR)mySetExceptPPC,
+	(APTR)myObtainSemaphoreSharedPPC,
+	(APTR)myAttemptSemaphoreSharedPPC,
+	(APTR)myProcurePPC,
+	(APTR)myVacatePPC,
+	(APTR)myCauseInterrupt,
+	(APTR)myCreatePoolPPC,
+	(APTR)myDeletePoolPPC,
+	(APTR)myAllocPooledPPC,
+	(APTR)myFreePooledPPC,
+	(APTR)myRawDoFmtPPC,
+	(APTR)myPutPublicMsgPPC,
+	(APTR)myAddUniquePortPPC,
+	(APTR)myAddUniqueSemaphorePPC,
+	(APTR)myIsExceptionMode,
     (APTR) -1
 };
 
-*/
+
 
 ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
 {

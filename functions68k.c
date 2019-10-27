@@ -122,7 +122,7 @@ ULONG myReserved(void)
 *
 ********************************************************************************************/
 
-LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PowerPC* message)
+LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     return 0;
 }
@@ -133,7 +133,7 @@ LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PowerP
 *
 ********************************************************************************************/
 
-LONG myForWaitPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PowerPC* message)
+LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     return 0;
 }
@@ -202,7 +202,7 @@ ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
 *
 ********************************************************************************************/
 
-ULONG myPPCState(__reg("a6") struct PPCBase* PowerPCBase)
+ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
 {
     struct PPCArgs pa;
     LONG status;

@@ -41,13 +41,3 @@ INITWORD(20, VERSION),
 INITWORD(22, REVISION),
 (ULONG) 0};
 
-
-//INITBYTE( (UWORD)(&(((struct Node *) 0)->ln_Type)),NT_LIBRARY),
-//INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),
-//INITLONG(OFFSET(Node, ln_Name), LIBNAME),
-//INITBYTE(OFFSET(Library, lib_Flags), LIBF_SUMMING|LIBF_CHANGED),
-//INITWORD(OFFSET(Library, lib_Version), VERSION),
-//INITWORD(OFFSET(Library, lib_Revision), REVISION),
-//INITLONG(OFFSET(Library, lib_IdString), VSTRING),
-//0,0};
-
