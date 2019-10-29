@@ -137,7 +137,7 @@ struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
 
     funOffset = (ULONG)funMem - (funPointer + 4);
 
-    CopyMemQuick((APTR)(funPointer+4), funMem, funSize);
+    CopyMem((APTR)(funPointer+4), funMem, funSize);
 
     if (!(baseMem = (char *)AllocVec((sizeof(struct PrivatePPCBase)) + (NEGSIZE), MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
     {
@@ -565,6 +565,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     PowerPCBase = mymakeLibrary(myConsts, funPointer);
 
     Enable();
+
+    CopyMem((const APTR)(kernelPointer + 4), (APTR)(cardData->id_MemBase + OFFSET_KERNEL), *((ULONG*)(kernelPointer - 4)));
+
+    CacheClearU();
 
     PrintError(myConsts, "Test completed!");
 

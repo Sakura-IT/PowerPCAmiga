@@ -22,9 +22,10 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
 
-void    Reset  (void);
-ULONG   ReadPVR(void);
-ULONG   SetIdle(void);
+void        Reset  (void);
+ULONG       ReadPVR(void);
+ULONG       SetIdle(void);
+ULONG   GetExcTable(void);
 
 ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
 ULONG getPVR(void)                        = "\tmfpvr\tr3\n";

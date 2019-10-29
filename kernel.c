@@ -90,21 +90,6 @@ PPCEXCEPTION void ExcVMXUnav(void)
     return;
 }
 
-PPCEXCEPTION void ExcITLBMiss(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcDLoadTLBMiss(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcDStoreTLBMiss(void)
-{
-    return;
-}
-
 PPCEXCEPTION void ExcExternal(void)
 {
     return;

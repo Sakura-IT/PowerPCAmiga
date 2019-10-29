@@ -23,6 +23,50 @@
 #include "constants.h"
 #include "internalsppc.h"
 
+#if 0
+static const WORD ExcDataTable[] =
+{
+    0x0200,
+    0x0300,
+    0x0400,
+    0x0500,
+    0x0600,
+    0x0700,
+    0x0800,
+    0x0900,
+    0x0c00,
+    0x0d00,
+    0x0f00,
+    0x0f20,
+    0x1000,
+    0x1100,
+    0x1200,
+    0x1300,
+    0x1400,
+    0x1700,
+    -1
+};      //See kernel.s - Needs to have same layout
+
+    	    #00 - 0x0200 + 0x3000
+	    	b	_ExcDatStor		       	   #04   0x0300
+	    	b	_ExcInsStor		       	   #08   0x0400
+            b   _ExcExternal               #0c   0x0500
+	    	b	_ExcAlignment	       	   #10   0x0600
+	    	b	_ExcPrIvate			       #14   0x0700
+            b	_ExcFPUnav		       	   #18   0x0800
+	    	b	_ExcDec			    	   #1c   0x0900
+	    	b	_ExcSysCall		       	   #20   0x0c00
+	    	b	_ExcTrace		       	   #24   0x0d00
+	    	b	_ExcPerfMon		       	   #28   0x0f00
+	    	b	_ExcVMXUnav	       		   #2c   0x0f20
+	    	b	_ExcITLBMiss    		   #30   0x1000
+	    	b	_ExcDLoadTLBMiss		   #34   0x1100
+	    	b	_ExcDStoreTLBMiss		   #38   0x1200
+	    	b	_ExcBreakPoint	       	   #3c   0x1300
+	    	b	_ExcSysMan	       		   #40   0x1400
+	    	b	_ExcTherMan	       		   #44   0x1700
+
+#endif
 
 BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {
@@ -291,17 +335,30 @@ void mmuSetup(struct InitData* initData)
     return;
 }
 
-void installExceptions(ULONG Src)
+void installExceptions(void)
 {
+    UWORD excVector;
     ULONG memExc = 0x100;
-    for (int i=0; i<20; i++)
+    ULONG ExcDataTable;
+
+    for (int i=0; i<0x20; i++)
     {
-        *((ULONG*)(memExc))   = *((ULONG*)(Src));
-        *((ULONG*)(memExc+4)) = *((ULONG*)(Src+4));
-
+        *((ULONG*)(memExc))   = 0x48000000;
         memExc += 0x100;
-    } //add kernel copy
+    }
 
+    ExcDataTable = GetExcTable();
+
+    for (int i=0; i<0x20; i++)
+    {
+        excVector = *((UWORD*)(ExcDataTable+(i*2)));
+        if (excVector == 0xffff)
+        {
+            break;
+        }
+        *((UWORD*)(excVector)) = 0x4800;
+        *((UWORD*)(excVector+2)) = ((UWORD)i*4) + OFFSET_KERNEL - excVector;
+    }
     return;
 }
 
@@ -368,28 +425,19 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
         myZP->zp_MemSize = initData->id_MemSize;
 
         killerFIFOs(initData);
-
-        copySrc = SetIdle();
     }
 
-    if(!(copySrc))
-    {
-        while (1)
-        {
-            initData->id_Status = 0x45727234;
-        }
-    }
-
-    installExceptions(copySrc);
+    installExceptions();
 
     mmuSetup(initData);
 
     while (initData->id_Status != 0x496e6974);
 
-    //myZP->zp_PPCMemBase = 0x426f6f6e;   //Boon
     initData->id_Status = 0x426f6f6e;   //Boon
 
-fakeEnd:
-    goto fakeEnd;
+    while (1)
+    {
+        mem += 4;   //fake end
+    }
 }
 

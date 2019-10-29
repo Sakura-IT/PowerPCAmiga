@@ -32,6 +32,25 @@
 
 .set PSL_FP,	                0x00002000        #/* B.6. floating point enable */
 .set PSL_IP,	                0x00000040	      #/* ..6. interrupt prefix */
+.set PSL_TGPR,               	0x00020000	      #/* ..6. temp. gpr remapping (mpc603e) */
+
+.set DMISS,                     976
+.set DCMP,                      977
+.set HASH1,                     978
+.set HASH2,                     979
+.set IMISS,                     980
+.set ICMP,                      981
+.set RPA,                       982
+
+.set PTE_GUARDED,               0x00000001
+.set PTE_REFERENCED,            0x00000100
+.set PTE_CHANGED,               0x00000080
+.set PTE_HASHID,                0x00000040
+
+.set DSISR_NOTFOUND,    		0x40000000
+.set DSISR_PROTECT,	        	0x08000000
+
+.set SRR1_KEY,	                0x00080000
 
 .set ibat4u,560
 .set ibat4l,561
