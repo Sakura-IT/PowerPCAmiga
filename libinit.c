@@ -169,6 +169,7 @@ struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
     InitStruct(&LibInitData[0], PowerPCBase, 0);
 
     PowerPCBase->PPC_LibNode.lib_Node.ln_Name = LIBNAME;        //Initializer of ln_Name does not seem to work with vbcc
+    PowerPCBase->PPC_LibNode.lib_IdString = VSTRING;
 
     AddLibrary((struct Library*)PowerPCBase);
 
@@ -431,7 +432,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         Enable();
     }
 
-    initPointer   = (*((ULONG*)(myConsts->ic_SegList << 2)) << 2);      //setup
+    initPointer   = (*((ULONG*)(seglist << 2)) << 2);                   //setup
     kernelPointer = (*((ULONG*)(initPointer)) << 2);                   //kernel
     funPointer    = (*((ULONG*)(kernelPointer)) << 2);                //functions
 
@@ -566,6 +567,35 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
+    if (!(PowerPCBase))
+    {
+        PrintCrtErr(myConsts, "Error during library function setup");
+        return NULL;
+    }
+
+    PowerPCBase->PPC_DosLib = (APTR)DOSBase;
+    PowerPCBase->PPC_SegList= (APTR)seglist;
+
+    myZeroPage->zp_SysBase      = SysBase;
+    myZeroPage->zp_PPCMemHeader = myPPCMemHeader;
+    myZeroPage->zp_DOSBase      = DOSBase;
+    myZeroPage->zp_PowerPCBase  = PowerPCBase;
+    myZeroPage->zp_UtilityBase  = UtilityBase;
+    myZeroPage->zp_PPCMemBase   = (ULONG)myZeroPage;
+
+    struct Library* WarpBase = MakeLibrary(&WarpVectors[0], &WarpInitData[0], 0 ,124, 0);
+
+    if (!(WarpBase))
+    {
+        PrintCrtErr(myConsts, "Could not set up dummy warp.library");
+        return NULL;
+    }
+
+    WarpBase->lib_Node.ln_Name = "warp.library";        //Initializer of ln_Name does not seem to work with vbcc
+    WarpBase->lib_IdString =     "$VER: warp.library 5.1 (22.3.17)\r\n";
+
+    AddLibrary(WarpBase);
+
     CopyMem((const APTR)(kernelPointer + 4), (APTR)(cardData->id_MemBase + OFFSET_KERNEL), *((ULONG*)(kernelPointer - 4)));
 
     CacheClearU();
@@ -602,6 +632,15 @@ static const struct Resident RomTag =
 *	All the different functions of this library
 *
 *********************************************************************************************/
+
+static const APTR WarpVectors[] =
+{
+	(APTR)warpOpen,				   //for WarpDT
+	(APTR)warpClose,
+	(APTR)myReserved,
+	(APTR)myReserved,
+    (APTR) -1
+};
 
 static const APTR LibVectors[] =
 {

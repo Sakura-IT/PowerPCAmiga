@@ -37,7 +37,7 @@
 *
 *********************************************************************************************/
 
-struct Library* myOpen(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K struct Library* myOpen(__reg("a6") struct PPCBase* PowerPCBase)
 {
     struct Task* myTask;
 
@@ -53,13 +53,24 @@ struct Library* myOpen(__reg("a6") struct PPCBase* PowerPCBase)
     return ((struct Library*)PowerPCBase);
 }
 
+LIBFUNC68K struct Library* warpOpen(__reg("a6") struct Library* WarpBase)
+{
+    if (WarpBase)
+    {
+        WarpBase->lib_OpenCnt += 1;
+        WarpBase->lib_Flags &= (~LIBF_DELEXP);
+    }
+
+    return (WarpBase);
+}
+
 /********************************************************************************************
 *
 *	void Close (void)
 *
 *********************************************************************************************/
 
-BPTR myClose(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K BPTR myClose(__reg("a6") struct PPCBase* PowerPCBase)
 {
     BPTR mySeglist = 0;
 
@@ -76,13 +87,30 @@ BPTR myClose(__reg("a6") struct PPCBase* PowerPCBase)
     return 0;
 }
 
+LIBFUNC68K BPTR warpClose(__reg("a6") struct Library* WarpBase)
+{
+    BPTR mySeglist = 0;
+
+    if (WarpBase->lib_OpenCnt -=1)
+    {
+        return 0;
+    }
+
+    if (WarpBase->lib_Flags &= (~LIBF_DELEXP))
+    {
+        //mySeglist = warpExpunge(WarpBase);    If implementing Expunge, pay attention to this.
+        return mySeglist;
+    }
+    return 0;
+}
+
 /********************************************************************************************
 *
 *	void Expunge (void)
 *
 *********************************************************************************************/
 
-BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase)
 {
     return NULL;
 #if 0
@@ -111,7 +139,7 @@ BPTR myExpunge(__reg("a6") struct PPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-ULONG myReserved(void)
+LIBFUNC68K ULONG myReserved(void)
 {
     return 0;
 }
@@ -122,7 +150,7 @@ ULONG myReserved(void)
 *
 ********************************************************************************************/
 
-LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
+LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     return 0;
 }
@@ -133,7 +161,7 @@ LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArg
 *
 ********************************************************************************************/
 
-LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
+LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     return 0;
 }
@@ -144,7 +172,7 @@ LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PP
 *
 *********************************************************************************************/
 
-ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
 {
     struct PPCArgs pa;
     LONG status;
@@ -202,7 +230,7 @@ ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
 *
 ********************************************************************************************/
 
-ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
 {
     struct PPCArgs pa;
     LONG status;
@@ -231,7 +259,7 @@ ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
 *********************************************************************************************/
 
 
-struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems)
+LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems)
 {
     struct PPCArgs pa;
 
@@ -254,7 +282,7 @@ struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("
 *
 ********************************************************************************************/
 
-APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG memsize, __reg("d1") ULONG attributes)
+LIBFUNC68K APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG memsize, __reg("d1") ULONG attributes)
 {
 
     ULONG oldmemblock;
@@ -295,7 +323,7 @@ APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG mem
 *
 ********************************************************************************************/
 
-void myFreeVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("a1") APTR memblock)
+LIBFUNC68K void myFreeVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("a1") APTR memblock)
 {
     ULONG oldmemblock;
     struct ExecBase *SysBase = PowerPCBase->PPC_SysLib;
@@ -314,7 +342,7 @@ void myFreeVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("a1") APTR membl
 *
 ********************************************************************************************/
 
-struct Message* myAllocXMsg(__reg("a6") struct PPCBase* PowerPCBase,
+LIBFUNC68K struct Message* myAllocXMsg(__reg("a6") struct PPCBase* PowerPCBase,
                             __reg("d0") ULONG bodysize, __reg("a0") struct MsgPort* replyport)
 {
     struct Message* myXMsg;
@@ -341,7 +369,7 @@ struct Message* myAllocXMsg(__reg("a6") struct PPCBase* PowerPCBase,
 *
 ********************************************************************************************/
 
-void myFreeXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct Message* myXMsg)
+LIBFUNC68K void myFreeXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct Message* myXMsg)
 {
     FreeVec32((APTR)myXMsg);
     return;
@@ -353,7 +381,7 @@ void myFreeXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct Mess
 *
 ********************************************************************************************/
 
-void mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG cacheflags,
+LIBFUNC68K void mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG cacheflags,
                    __reg("a0") APTR start, __reg("d1") ULONG length)
 {
     struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
@@ -418,7 +446,7 @@ void mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG ca
 *
 ********************************************************************************************/
 
-void myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG debuglevel)
+LIBFUNC68K void myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG debuglevel)
 {
     struct PPCArgs pa;
 
@@ -459,7 +487,7 @@ void PutChProc(__reg("a6") struct ExecBase* SysBase, __reg("d0") UBYTE mychar,
     return;
 }
 
-void mySPrintF68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Formatstring,
+LIBFUNC68K void mySPrintF68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Formatstring,
                   __reg("a1") APTR values)
 {
     struct ExecBase *SysBase = PowerPCBase->PPC_SysLib;
@@ -475,7 +503,7 @@ void mySPrintF68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Fo
 *
 ********************************************************************************************/
 
-void myPutXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
+LIBFUNC68K void myPutXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
                __reg("a1") struct Message* message)
 {
     return;
@@ -488,7 +516,7 @@ void myPutXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct MsgPo
 *
 ********************************************************************************************/
 
-void myCausePPCInterrupt(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K void myCausePPCInterrupt(__reg("a6") struct PPCBase* PowerPCBase)
 {
     return;
 }

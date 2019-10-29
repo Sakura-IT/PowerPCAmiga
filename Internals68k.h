@@ -21,9 +21,12 @@
 void illegal(void) = "\tillegal\n";           //debug function
 
 static const APTR LibVectors[TOTAL_FUNCS+1];
+static const APTR WarpVectors[5];
 
 #define _LVOSetHardware         -540
 #define _LVOCreateTaskPPC       -336
+
+#define LIBFUNC68K __entry
 
 BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
 
@@ -37,6 +40,9 @@ void   PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
 struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
 struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
 struct InitData *SetupMPC107 (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
+
+struct Library* warpOpen         (__reg("a6") struct Library* WarpBase);
+BPTR            warpClose        (__reg("a6") struct Library* WarpBase);
 
 struct Library* myOpen         (__reg("a6") struct PPCBase* PowerPCBase);
 BPTR            myClose        (__reg("a6") struct PPCBase* PowerPCBase);

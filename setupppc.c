@@ -23,50 +23,6 @@
 #include "constants.h"
 #include "internalsppc.h"
 
-#if 0
-static const WORD ExcDataTable[] =
-{
-    0x0200,
-    0x0300,
-    0x0400,
-    0x0500,
-    0x0600,
-    0x0700,
-    0x0800,
-    0x0900,
-    0x0c00,
-    0x0d00,
-    0x0f00,
-    0x0f20,
-    0x1000,
-    0x1100,
-    0x1200,
-    0x1300,
-    0x1400,
-    0x1700,
-    -1
-};      //See kernel.s - Needs to have same layout
-
-    	    #00 - 0x0200 + 0x3000
-	    	b	_ExcDatStor		       	   #04   0x0300
-	    	b	_ExcInsStor		       	   #08   0x0400
-            b   _ExcExternal               #0c   0x0500
-	    	b	_ExcAlignment	       	   #10   0x0600
-	    	b	_ExcPrIvate			       #14   0x0700
-            b	_ExcFPUnav		       	   #18   0x0800
-	    	b	_ExcDec			    	   #1c   0x0900
-	    	b	_ExcSysCall		       	   #20   0x0c00
-	    	b	_ExcTrace		       	   #24   0x0d00
-	    	b	_ExcPerfMon		       	   #28   0x0f00
-	    	b	_ExcVMXUnav	       		   #2c   0x0f20
-	    	b	_ExcITLBMiss    		   #30   0x1000
-	    	b	_ExcDLoadTLBMiss		   #34   0x1100
-	    	b	_ExcDStoreTLBMiss		   #38   0x1200
-	    	b	_ExcBreakPoint	       	   #3c   0x1300
-	    	b	_ExcSysMan	       		   #40   0x1400
-	    	b	_ExcTherMan	       		   #44   0x1700
-
-#endif
 
 BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {

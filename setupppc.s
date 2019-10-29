@@ -20,7 +20,7 @@
 
 .include    constantsppc.i
 
-.global     _setupPPC, _Reset, _SetIdle, _GetExcTable
+.global     _setupPPC, _Reset, _GetExcTable
 
 
 .section "setupppc","acrx"
@@ -192,23 +192,11 @@ ifpdr_value:	mflr	r3
 
 #*********************************************************
 
-_SetIdle:      	mflr    r4
-        	bl      .End
-
-.Start:		nop
-		b      .Start
-
-.End:		mflr	r3
-        	mtlr    r4
-        	blr
-
-#*********************************************************
-
 _GetExcTable:
         mflr    r4
         bl      .EndTable
 
-.short 0x0200, 0x0300, 0x0400, 0x0500, 0x0600, 0x0700, 0x0800, 0x0900, 0x0c00
+.word 0x0200, 0x0300, 0x0400, 0x0500, 0x0600, 0x0700, 0x0800, 0x0900, 0x0c00
 .word 0x0d00, 0x0f00, 0x0f20, 0x1000, 0x1100, 0x1200, 0x1300, 0x1400, 0x1700
 .long -1
 

@@ -24,7 +24,6 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 
 void        Reset  (void);
 ULONG       ReadPVR(void);
-ULONG       SetIdle(void);
 ULONG   GetExcTable(void);
 
 ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
