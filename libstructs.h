@@ -46,7 +46,7 @@ struct DosLibrary*      ic_DOSBase;
 struct PciBase*         ic_PciBase;
 struct PPCBase*         ic_PowerPCBase;
 struct ExpansionBase*   ic_ExpansionBase;
-ULONG                    ic_MemBase;
+ULONG                   ic_MemBase;
 ULONG                   ic_gfxMem;
 ULONG                   ic_gfxSize;
 ULONG                   ic_gfxConfig;

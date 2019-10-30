@@ -56,7 +56,7 @@ FUNC68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem
 }
 
 
-FUNC68K APTR MasterControl(void)        //return should be void
+FUNC68K void MasterControl(void)
 {
     struct ExecBase* SysBase = *((struct ExecBase **)4UL);
     ULONG mySignal = 0;
@@ -68,11 +68,9 @@ FUNC68K APTR MasterControl(void)        //return should be void
 
     struct Task* myTask = SysBase->ThisTask;
 
-    illegal();
+    struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
 
-    APTR myData = myTask->tc_UserData;
-
-    return(myData);
+    return;
 }
 
 FUNC68K ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)

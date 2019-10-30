@@ -27,6 +27,7 @@ static const APTR WarpVectors[5];
 #define _LVOCreateTaskPPC       -336
 
 #define LIBFUNC68K __entry
+#define FUNC68K __entry
 
 BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
 
@@ -36,6 +37,7 @@ ULONG  readmemLong (ULONG Base, ULONG offset);
 void   getENVs    (struct InternalConsts* myConsts);
 void   PrintError (struct InternalConsts* myConsts, UBYTE* errortext);
 void   PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
+void   MasterControl(void);
 
 struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
 struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
