@@ -20,47 +20,67 @@
 
 #include <exec/exec.h>
 #include <dos/dos.h>
+#include <powerpc/powerpc.h>
 
-void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
+#include <proto/exec.h>
+
+#include "constants.h"
+#include "Internals68k.h"
+
+FUNC68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
     return;
 }
 
-APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
+FUNC68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
                   __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase)
 {
     return NULL;
 }
 
-APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
+FUNC68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
                    __reg("a6") struct ExecBase* SysBase)
 {
     return NULL;
 }
 
-BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
+FUNC68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
 {
     return NULL;
 }
 
-BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
+FUNC68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
                      __reg("a6") struct DosLibrary* DOSBase)
 {
     return NULL;
 }
 
 
-void MasterControl(void)
+FUNC68K APTR MasterControl(void)        //return should be void
 {
-    return;
+    struct ExecBase* SysBase = *((struct ExecBase **)4UL);
+    ULONG mySignal = 0;
+
+    while (!(mySignal & SIGBREAKF_CTRL_F))
+    {
+        mySignal = Wait(SIGBREAKF_CTRL_F);
+    }
+
+    struct Task* myTask = SysBase->ThisTask;
+
+    illegal();
+
+    APTR myData = myTask->tc_UserData;
+
+    return(myData);
 }
 
-ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)
+FUNC68K ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
     return 0;
 }
 
-ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
+FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
     return 0;
 }

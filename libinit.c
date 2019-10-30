@@ -32,6 +32,10 @@
 #include <exec/execbase.h>
 
 #include <dos/var.h>
+#include <dos/dosextens.h>
+
+#include <utility/tagitem.h>
+#include <dos/dostags.h>
 
 #include <powerpc/powerpc.h>
 #include <intuition/intuition.h>
@@ -193,6 +197,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct PciBase *MediatorPCIBase;
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
+    struct Process *myProc;
     ULONG medflag   = 0;
     ULONG gfxisati  = 0;
     ULONG gfxnotv45 = 0;
@@ -531,6 +536,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     }
 
     myZeroPage = (struct PPCZeroPage*)cardData->id_MemBase;
+    myConsts->ic_MemBase = (ULONG)myZeroPage;
 
     nameSpace = AllocVec(16L, MEMF_PUBLIC|MEMF_CLEAR|MEMF_REVERSE);
 
@@ -599,6 +605,20 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     CopyMem((const APTR)(kernelPointer + 4), (APTR)(cardData->id_MemBase + OFFSET_KERNEL), *((ULONG*)(kernelPointer - 4)));
 
     CacheClearU();
+
+    if(!(myProc = CreateNewProcTags(
+                           NP_Entry, (ULONG)&MasterControl,
+                           NP_Name, "MasterControl",
+                           NP_Priority, 1,
+                           NP_StackSize, 0x20000,
+                           TAG_DONE)))
+    {
+        PrintCrtErr(myConsts, "Error setting up 68K MasterControl process");
+        return NULL;
+    }
+
+    myProc->pr_Task.tc_UserData = (APTR)myConsts;
+    Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
 
     PrintError(myConsts, "Test completed!");
 
