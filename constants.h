@@ -23,6 +23,7 @@
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
 
+#define PPERR_MISCERR           3
 
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000

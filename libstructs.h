@@ -24,6 +24,33 @@
 #include <powerpc/tasksPPC.h>
 #include <exec/exec.h>
 #include <dos/dos.h>
+#include <powerpc/portsPPC.h>
+#include <powerpc/tasksPPC.h>
+#include <powerpc/powerpc.h>
+
+struct MsgFrame {
+struct Message      mf_Message;
+ULONG               mf_Identifier;
+struct MsgPort*     mf_MirrorPort;
+struct MsgPortPPC*  mf_PPCPort;
+struct PPCArgs      mf_PPCArgs;
+struct MsgPort*     mf_MCPort;          //Needed?
+ULONG               mf_Signals;
+ULONG               mf_Arg[3];
+};
+
+struct MirrorTask {
+struct MinNode      mt_Node;
+struct Task*        mt_MirrorTask;
+struct MsgPortPPC*  mt_MirrorPort;
+ULONG               mt_Flags;
+};
+
+struct CurrentProc {
+struct PPCArgs*     cp_PPCArgs;
+struct MirrorTask*  cp_MirrorNode;
+struct MsgPortPPC*  cp_MirrorPort;
+};
 
 struct PPCZeroPage {
 ULONG               zp_PPCMemBase;
@@ -98,7 +125,8 @@ ULONG               bt_dbat3l;
 
 struct PrivatePPCBase {
 struct PPCBase              pp_PowerPCBase;
-ULONG                       pp_Reserved[4];
+struct MinList              pp_MirrorList;
+ULONG                       pp_Reserved[2];
 UBYTE                       pp_DebugLevel;
 UBYTE                       pp_EnAlignExc;
 UBYTE                       pp_EnDAccessExc;

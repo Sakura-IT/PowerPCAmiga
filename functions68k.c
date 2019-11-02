@@ -29,6 +29,7 @@
 #include <powerpc/tasksPPC.h>
 
 #include "constants.h"
+#include "libstructs.h"
 #include "internals68k.h"
 
 /********************************************************************************************
@@ -152,6 +153,45 @@ LIBFUNC68K ULONG myReserved(void)
 
 LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
+    struct CurrentProc myCP;
+    struct MinList myList;
+    struct MirrorTask* myMirror;
+
+    struct ExecBase* SysBase      = PowerPCBase->PPC_SysLib;
+    struct Task* thisTask         = SysBase->ThisTask;
+
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+
+    myCP.cp_MirrorPort = NULL;
+    myCP.cp_PPCArgs = PPStruct;
+    myCP.cp_MirrorNode = NULL;
+
+    if (thisTask->tc_Node.ln_Type != NT_PROCESS)
+    {
+        return (PPERR_MISCERR);
+    }
+
+    myList = myBase->pp_MirrorList;
+    myMirror = (struct MirrorTask*)myList.mlh_Head;
+
+    while (myMirror->mt_Node.mln_Succ)
+    {
+        if (thisTask == myMirror->mt_MirrorTask)
+        {
+           if (myMirror->mt_Flags)
+           {
+               return (PPERR_ASYNCERR);
+           }
+           myCP.cp_MirrorPort = myMirror->mt_MirrorPort;
+           myCP.cp_MirrorNode = myMirror;
+
+           break;
+        }
+
+    myMirror = (struct MirrorTask*)myMirror->mt_Node.mln_Succ;
+
+    }
+
     return 0;
 }
 
