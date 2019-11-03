@@ -260,7 +260,18 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
             cmndName = (STRPTR)thisTask->tc_Node.ln_Name;
             cmndSize = 255;
         }
-    // add name to process struct and fall-through
+
+    char* destName = (char*)((ULONG)newPPCTask + 1720);
+
+    ULONG pointer = 0;
+
+    while ((cmndName[pointer]) && (pointer < (cmndSize + 1)))
+    {
+        destName[pointer] = cmndName[pointer];
+        pointer += 1;
+    }
+    ULONG appendix = (ULONG)&destName[pointer];
+    *((ULONG*)(appendix)) = 0x5F505043;             //_PPC
 
     }
 
