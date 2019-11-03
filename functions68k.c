@@ -22,6 +22,7 @@
 #include <proto/powerpc.h>
 #include <exec/execbase.h>
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
@@ -153,18 +154,21 @@ LIBFUNC68K ULONG myReserved(void)
 
 LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
-    struct CurrentProc myCP;
     struct MinList myList;
     struct MirrorTask* myMirror;
+    ULONG  stackMem;
+    ULONG  taskName;
+    UWORD  cmndSize;
+    struct TaskPPC* newPPCTask;
+    struct CommandLineInterface* comLineInt;
+    STRPTR cmndName;
 
+    struct MirrorTask* thisMirrorNode   = NULL;
     struct ExecBase* SysBase      = PowerPCBase->PPC_SysLib;
     struct Task* thisTask         = SysBase->ThisTask;
+    struct Process* thisProc      = (struct Process*)thisTask;
 
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
-
-    myCP.cp_MirrorPort = NULL;
-    myCP.cp_PPCArgs = PPStruct;
-    myCP.cp_MirrorNode = NULL;
 
     if (thisTask->tc_Node.ln_Type != NT_PROCESS)
     {
@@ -182,9 +186,7 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
            {
                return (PPERR_ASYNCERR);
            }
-           myCP.cp_MirrorPort = myMirror->mt_MirrorPort;
-           myCP.cp_MirrorNode = myMirror;
-
+           thisMirrorNode = myMirror;
            break;
         }
 
@@ -192,6 +194,77 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 
     }
 
+    if (!(thisMirrorNode))
+    {
+        thisTask->tc_Flags &= ~TF_PPC;
+
+        thisMirrorNode = (struct MirrorTask*)AllocVec(sizeof(struct MirrorTask), (MEMF_PUBLIC | MEMF_CLEAR));
+
+        if(!(thisMirrorNode))
+        {
+            return (PPERR_MISCERR);
+        }
+
+        thisMirrorNode->mt_MirrorPort = CreateMsgPort();
+
+        if(!(thisMirrorNode->mt_MirrorPort))
+        {
+            return (PPERR_MISCERR);
+        }
+
+        thisTask->tc_Flags |= TF_PPC;
+
+        thisMirrorNode->mt_MirrorTask = thisTask;
+
+        Disable();
+
+        AddHead((struct List*)&myList, (struct Node*)thisMirrorNode);
+
+        Enable();
+
+        stackMem = (ULONG)AllocVec32((((ULONG)(thisTask->tc_SPUpper) - (ULONG)(thisTask->tc_SPLower)) | 0x80000) + 2048,
+                              MEMF_PUBLIC | MEMF_PPC | MEMF_REVERSE);
+
+        if(!(stackMem))
+        {
+           return (PPERR_MISCERR);
+        }
+
+        newPPCTask = (struct TaskPPC*)stackMem;
+
+        for (int n=0; n<512; n++)
+        {
+            *((ULONG*)(stackMem)) = 0;
+            stackMem +=4;
+        }
+
+        newPPCTask->tp_TaskPools.lh_Head     = (struct Node*)&newPPCTask->tp_TaskPools.lh_TailPred;
+        newPPCTask->tp_TaskPools.lh_TailPred = (struct Node*)&newPPCTask->tp_TaskPools.lh_Tail;
+
+        if (comLineInt = (struct CommandLineInterface*)((ULONG)(thisProc->pr_CLI <<2)))
+        {
+            if (!(cmndName = (STRPTR)((ULONG)(comLineInt->cli_CommandName <<2))))
+            {
+                cmndName = (STRPTR)thisTask->tc_Node.ln_Name;
+                cmndSize = 255;
+            }
+            else
+            {
+                cmndSize = *((UBYTE*)(cmndName));
+                cmndName += 1;
+            }
+
+        }
+        else
+        {
+            cmndName = (STRPTR)thisTask->tc_Node.ln_Name;
+            cmndSize = 255;
+        }
+    // add name to process struct and fall-through
+
+    }
+
+    // build the message and send. Then fall-through to WaitForPPC
     return 0;
 }
 

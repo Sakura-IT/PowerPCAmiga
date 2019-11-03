@@ -42,14 +42,8 @@ ULONG               mf_Arg[3];
 struct MirrorTask {
 struct MinNode      mt_Node;
 struct Task*        mt_MirrorTask;
-struct MsgPortPPC*  mt_MirrorPort;
+struct MsgPort*     mt_MirrorPort;
 ULONG               mt_Flags;
-};
-
-struct CurrentProc {
-struct PPCArgs*     cp_PPCArgs;
-struct MirrorTask*  cp_MirrorNode;
-struct MsgPortPPC*  cp_MirrorPort;
 };
 
 struct PPCZeroPage {
