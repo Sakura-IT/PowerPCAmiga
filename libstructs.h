@@ -120,7 +120,7 @@ ULONG               bt_dbat3l;
 struct PrivatePPCBase {
 struct PPCBase              pp_PowerPCBase;
 struct MinList              pp_MirrorList;
-ULONG                       pp_Reserved[2];
+ULONG                       pp_DeviceID;
 UBYTE                       pp_DebugLevel;
 UBYTE                       pp_EnAlignExc;
 UBYTE                       pp_EnDAccessExc;
@@ -211,7 +211,8 @@ ULONG                       kf_MIOFH;
 ULONG                       kf_MIOPT;
 ULONG                       kf_MIIFT;
 ULONG                       kf_MIIPH;
-ULONG                       kf_CacheGap[4];
+ULONG                       kf_Previous;
+ULONG                       kf_CacheGap[3];
 ULONG                       kf_MIOFT;
 ULONG                       kf_MIOPH;
 ULONG                       kf_MIIFH;

@@ -582,6 +582,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     PowerPCBase->PPC_DosLib = (APTR)DOSBase;
     PowerPCBase->PPC_SegList= (APTR)seglist;
 
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+
+    myBase->pp_DeviceID                = ppcdevice->pd_DeviceID;
+    myBase->pp_MirrorList.mlh_Head     = (struct MinNode*)&myBase->pp_MirrorList.mlh_TailPred;
+    myBase->pp_MirrorList.mlh_TailPred = (struct MinNode*)&myBase->pp_MirrorList.mlh_Tail;
+
     myZeroPage->zp_SysBase      = SysBase;
     myZeroPage->zp_PPCMemHeader = myPPCMemHeader;
     myZeroPage->zp_DOSBase      = DOSBase;

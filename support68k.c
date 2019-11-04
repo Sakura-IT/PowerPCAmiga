@@ -26,6 +26,7 @@
 
 #include "constants.h"
 #include "Internals68k.h"
+#include "libstructs.h"
 
 FUNC68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
@@ -85,22 +86,65 @@ FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 
 //make the next ones each for every bridge type or use ifs?
 
-ULONG CreateMsgFrame(void)
+ULONG CreateMsgFrame(struct PPCBase* PowerPCBase)
 {
-    return 0;
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+
+    ULONG msgFrame = NULL;
+
+    Disable();
+
+    switch (myBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+
+        case DEVICE_MPC8343E:
+        {
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+            while (1)
+            {                
+                msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
+                myFIFO->kf_MIIFT = (myFIFO->kf_MIIFT + 4) & 0xffff3fff;
+                if (msgFrame != myFIFO->kf_Previous)
+                {
+                    myFIFO->kf_Previous = msgFrame;
+                    break;
+                }                
+            }
+            break;
+        }
+
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    Enable();
+
+    return msgFrame;
 }
 
-void SendMsgFrame(ULONG msgFrame)
+void SendMsgFrame(struct PPCBase* PowerPCBase, ULONG msgFrame)
 {
     return;
 }
 
-void FreeMsgFrame(ULONG msgFrame)
+void FreeMsgFrame(struct PPCBase* PowerPCBase, ULONG msgFrame)
 {
     return;
 }
 
-ULONG GetMsgFrame(void)
+ULONG GetMsgFrame(struct PPCBase* PowerPCBase)
 {
     return 0;
 }
