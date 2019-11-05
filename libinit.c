@@ -585,6 +585,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
 
     myBase->pp_DeviceID                = ppcdevice->pd_DeviceID;
+    myBase->pp_BridgeConfig            = ppcdevice->pd_ABaseAddress0; //K1/M1 FIXME
     myBase->pp_MirrorList.mlh_Head     = (struct MinNode*)&myBase->pp_MirrorList.mlh_TailPred;
     myBase->pp_MirrorList.mlh_TailPred = (struct MinNode*)&myBase->pp_MirrorList.mlh_Tail;
 

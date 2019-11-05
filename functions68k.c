@@ -275,7 +275,7 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 
     }
 
-    ULONG myFrame = CreateMsgFrame(PowerPCBase);
+    struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
     // build the message and send. Then fall-through to WaitForPPC
     return 0;
 }

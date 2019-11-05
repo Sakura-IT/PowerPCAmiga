@@ -39,10 +39,10 @@ void   PrintError (struct InternalConsts* myConsts, UBYTE* errortext);
 void   PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
 void   MasterControl(void);
 
-ULONG  CreateMsgFrame(struct PPCBase* PowerPCBase);
-void   SendMsgFrame  (struct PPCBase* PowerPCBase, ULONG msgFrame);
-void   FreeMsgFrame  (struct PPCBase* PowerPCBase, ULONG msgFrame);
-ULONG  GetMsgFrame   (struct PPCBase* PowerPCBase);
+struct MsgFrame*  CreateMsgFrame(struct PPCBase* PowerPCBase);
+void              SendMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+void              FreeMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+struct MsgFrame*  GetMsgFrame   (struct PPCBase* PowerPCBase);
 
 struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
 struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);

@@ -86,7 +86,7 @@ FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 
 //make the next ones each for every bridge type or use ifs?
 
-ULONG CreateMsgFrame(struct PPCBase* PowerPCBase)
+struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
 {
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
     struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
@@ -109,9 +109,9 @@ ULONG CreateMsgFrame(struct PPCBase* PowerPCBase)
             {                
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
                 myFIFO->kf_MIIFT = (myFIFO->kf_MIIFT + 4) & 0xffff3fff;
-                if (msgFrame != myFIFO->kf_Previous)
+                if (msgFrame != myFIFO->kf_CreatePrevious)
                 {
-                    myFIFO->kf_Previous = msgFrame;
+                    myFIFO->kf_CreatePrevious = msgFrame;
                     break;
                 }                
             }
@@ -131,22 +131,138 @@ ULONG CreateMsgFrame(struct PPCBase* PowerPCBase)
 
     Enable();
 
-    return msgFrame;
+    return (struct MsgFrame*)msgFrame;
 }
 
-void SendMsgFrame(struct PPCBase* PowerPCBase, ULONG msgFrame)
+void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+
+    Disable();
+
+    switch (myBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+
+        case DEVICE_MPC8343E:
+        {
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+
+            *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
+            myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
+            writememLong(myBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
+        }
+
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    Enable();
+
     return;
 }
 
-void FreeMsgFrame(struct PPCBase* PowerPCBase, ULONG msgFrame)
+void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 {
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+
+    Disable();
+
+    msgFrame->mf_Identifier = 0x46524545;        //FREE
+
+    switch (myBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+
+        case DEVICE_MPC8343E:
+        {
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+
+            *((ULONG*)(myFIFO->kf_MIOFH)) = (ULONG)msgFrame;
+            myFIFO->kf_MIOFH = (myFIFO->kf_MIOFH + 4) & 0xffff3fff;
+        }
+
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    Enable();
+
     return;
 }
 
-ULONG GetMsgFrame(struct PPCBase* PowerPCBase)
+struct MsgFrame* GetMsgFrame(struct PPCBase* PowerPCBase)
 {
-    return 0;
+    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
+    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+
+    ULONG msgFrame = -1;
+
+    Disable();
+
+    switch (myBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+
+        case DEVICE_MPC8343E:
+        {
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+
+            if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
+            {
+                break;
+            }
+            while (1)
+            {
+                msgFrame = *((ULONG*)(myFIFO->kf_MIOPT));
+                myFIFO->kf_MIOPT = (myFIFO->kf_MIOPT + 4) & 0xffff3fff;
+                if (msgFrame != myFIFO->kf_GetPrevious)
+                {
+                    myFIFO->kf_GetPrevious = msgFrame;
+                    break;
+                }
+            }
+        }
+
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    Enable();
+
+    return (struct MsgFrame*)msgFrame;
 }
 
 

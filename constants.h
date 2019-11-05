@@ -172,6 +172,8 @@
 #define IMMR_PCILAWBAR1         0x68
 #define IMMR_PCILAWAR1          0x6C
 
+#define IMMR_IMR0               0x8050
+
 #define IMMR_PITAR0             0x8568
 #define IMMR_PIBAR0             0x8570
 #define IMMR_PIWAR0             0x8578
