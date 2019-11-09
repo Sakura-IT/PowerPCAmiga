@@ -26,6 +26,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
+#include <exec/ports.h>
 #include <powerpc/powerpc.h>
 #include <powerpc/tasksPPC.h>
 
@@ -156,8 +157,8 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 {
     struct MinList myList;
     struct MirrorTask* myMirror;
-    ULONG  stackMem;
-    ULONG  taskName;
+    ULONG  stackMem, taskName;
+    APTR   stackPP;
     UWORD  cmndSize;
     struct TaskPPC* newPPCTask;
     struct CommandLineInterface* comLineInt;
@@ -180,7 +181,7 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 
     while (myMirror->mt_Node.mln_Succ)
     {
-        if (thisTask == myMirror->mt_MirrorTask)
+        if (thisTask == myMirror->mt_Task)
         {
            if (myMirror->mt_Flags)
            {
@@ -205,16 +206,17 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
             return (PPERR_MISCERR);
         }
 
-        thisMirrorNode->mt_MirrorPort = CreateMsgPort();
+        thisMirrorNode->mt_Port = CreateMsgPort();
 
-        if(!(thisMirrorNode->mt_MirrorPort))
+        if(!(thisMirrorNode->mt_Port))
         {
             return (PPERR_MISCERR);
         }
 
         thisTask->tc_Flags |= TF_PPC;
 
-        thisMirrorNode->mt_MirrorTask = thisTask;
+        thisMirrorNode->mt_Task    = thisTask;
+        thisMirrorNode->mt_PPCTask = NULL;
 
         Disable();
 
@@ -271,13 +273,52 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
         pointer += 1;
     }
     ULONG appendix = (ULONG)&destName[pointer];
-    *((ULONG*)(appendix)) = 0x5F505043;             //_PPC
+    *((ULONG*)(appendix)) = ID_PPC;
 
     }
 
     struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
-    // build the message and send. Then fall-through to WaitForPPC
-    return 0;
+
+    myFrame->mf_Message.mn_Length       = 0xc0;
+    myFrame->mf_Identifier              = ID_TPPC;
+    myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+    myFrame->mf_Message.mn_ReplyPort    = thisMirrorNode->mt_Port;
+    myFrame->mf_MirrorPort              = thisMirrorNode->mt_Port;
+    myFrame->mf_PPCTask                 = thisMirrorNode->mt_PPCTask;
+    myFrame->mf_Signals                 = (thisTask->tc_SigRecvd & 0xfffff000) & ~(1 << (ULONG)thisMirrorNode->mt_Port->mp_SigBit);
+    myFrame->mf_Arg[0]                  = (ULONG)newPPCTask;
+    myFrame->mf_Arg[1]                  = thisTask->tc_SigAlloc;
+    myFrame->mf_Arg[2]                  = (ULONG)thisTask;
+
+    if ((PPStruct->PP_Stack) && (PPStruct->PP_StackSize))
+    {
+        if (PPStruct->PP_Flags == PPF_ASYNC)
+        {
+            return (PPERR_MISCERR);
+        }
+        if (!(stackPP = AllocVec32(PPStruct->PP_StackSize, MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE)))
+        {
+            return (PPERR_MISCERR);
+        }
+        CopyMem((const APTR)PPStruct->PP_Stack, stackPP, PPStruct->PP_StackSize);
+        PPStruct->PP_Stack = stackPP;
+    }
+    else
+    {
+        PPStruct->PP_Stack = NULL;
+    }
+
+    CopyMem((const APTR)PPStruct, (APTR)(&myFrame->mf_PPCArgs), sizeof(struct PPCArgs));
+
+    SendMsgFrame(PowerPCBase, myFrame);
+
+    if (PPStruct->PP_Flags == PPF_ASYNC)
+    {
+        thisMirrorNode->mt_Flags = PPStruct->PP_Flags;
+        return (PPERR_SUCCESS);
+    }
+
+    return myWaitForPPC(PowerPCBase, PPStruct);
 }
 
 /********************************************************************************************

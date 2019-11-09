@@ -25,6 +25,10 @@
 
 #define PPERR_MISCERR           3
 
+#define ID_PPC                  0x5F505043
+#define ID_TPPC                 0x54505043
+#define ID_FREE                 0x46524545
+
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
 #define SIZE_KFIFO              0x10000

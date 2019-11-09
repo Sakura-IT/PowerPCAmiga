@@ -32,17 +32,18 @@ struct MsgFrame {
 struct Message      mf_Message;
 ULONG               mf_Identifier;
 struct MsgPort*     mf_MirrorPort;
-struct MsgPortPPC*  mf_PPCPort;
+struct TaskPPC*     mf_PPCTask;
 struct PPCArgs      mf_PPCArgs;
-struct MsgPort*     mf_MCPort;          //Needed?
+//struct MsgPort*     mf_MCPort;          //Needed?
 ULONG               mf_Signals;
 ULONG               mf_Arg[3];
 };
 
 struct MirrorTask {
 struct MinNode      mt_Node;
-struct Task*        mt_MirrorTask;
-struct MsgPort*     mt_MirrorPort;
+struct TaskPPC*     mt_PPCTask;
+struct Task*        mt_Task;
+struct MsgPort*     mt_Port;
 ULONG               mt_Flags;
 };
 

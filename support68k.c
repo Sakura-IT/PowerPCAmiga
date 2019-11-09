@@ -131,6 +131,16 @@ struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
 
     Enable();
 
+    if (msgFrame)
+    {
+        ULONG clearFrame = msgFrame;
+        for (int i=0; i<48; i++)
+        {
+            *((ULONG*)(clearFrame)) = 0;
+            clearFrame += 4;
+        }
+    }
+
     return (struct MsgFrame*)msgFrame;
 }
 
@@ -180,7 +190,7 @@ void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 
     Disable();
 
-    msgFrame->mf_Identifier = 0x46524545;        //FREE
+    msgFrame->mf_Identifier = ID_FREE;
 
     switch (myBase->pp_DeviceID)
     {
