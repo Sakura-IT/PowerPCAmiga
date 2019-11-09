@@ -318,6 +318,8 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
         return (PPERR_SUCCESS);
     }
 
+    thisMirrorNode->mt_Flags = ((PPStruct->PP_Flags) | PPF_ASYNC);
+
     return myWaitForPPC(PowerPCBase, PPStruct);
 }
 
@@ -329,7 +331,86 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 
 LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
-    return 0;
+    struct MinList myList;
+    struct MirrorTask* myMirror;
+    struct ExecBase* SysBase            = PowerPCBase->PPC_SysLib;
+    struct PrivatePPCBase* myBase       = (struct PrivatePPCBase*)PowerPCBase;
+    struct MirrorTask* thisMirrorNode   = NULL;
+    struct Task* thisTask               = SysBase->ThisTask;
+
+    ULONG Signals;
+
+    if (!(PPStruct->PP_Flags))
+    {
+        return (PPERR_ASYNCERR);
+    }
+
+    myList = myBase->pp_MirrorList;
+    myMirror = (struct MirrorTask*)myList.mlh_Head;
+
+    while (myMirror->mt_Node.mln_Succ)
+    {
+        if (thisTask == myMirror->mt_Task)
+        {
+           thisMirrorNode = myMirror;
+           break;
+        }
+
+    myMirror = (struct MirrorTask*)myMirror->mt_Node.mln_Succ;
+
+    }
+
+    if (!(thisMirrorNode))
+    {
+        return (PPERR_ASYNCERR);
+    }
+
+    if ((thisMirrorNode->mt_Flags) & PPF_ASYNC)
+    {
+        ((thisMirrorNode->mt_Flags) ^= PPF_ASYNC);
+    }
+    else
+    {
+        return (PPERR_ASYNCERR);
+    }
+
+    ULONG andTemp = ~(0xfff + (1 << (ULONG)thisMirrorNode->mt_Port->mp_SigBit));
+
+    while (1)
+    {
+        while (1)
+        {
+            Signals = Wait((ULONG)thisTask->tc_SigAlloc);
+            if (Signals & (1 << (ULONG)thisMirrorNode->mt_Port->mp_SigBit))
+            {
+                break;
+            }
+            if (Signals & andTemp)
+            {
+                struct MsgFrame* crossFrame = CreateMsgFrame(PowerPCBase);
+                crossFrame->mf_Identifier   = ID_LLPP;
+                crossFrame->mf_Arg[0]       = (Signals & andTemp);
+                crossFrame->mf_Arg[1]       = (ULONG)thisTask;
+                SendMsgFrame(PowerPCBase, crossFrame);
+            }
+        }
+        thisTask->tc_SigRecvd |= (Signals & andTemp);
+        struct MsgFrame* myFrame = (struct MsgFrame*)GetMsg(thisMirrorNode->mt_Port);
+        if (myFrame)
+        {
+            if (myFrame->mf_Identifier == ID_FPPC)
+            {
+                break;
+            }
+            else if (myFrame->mf_Identifier == ID_T68K)
+            {
+                break; //run68k stuff
+            }
+        }
+    }
+
+    //ID_FPPC stuff
+    return (PPERR_SUCCESS);
 }
 
 /********************************************************************************************

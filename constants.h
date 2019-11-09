@@ -28,6 +28,9 @@
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
 #define ID_FREE                 0x46524545
+#define ID_LLPP                 0x4C4C5050
+#define ID_FPPC                 0x46505043
+#define ID_T68K                 0x5436384B
 
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
