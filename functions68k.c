@@ -405,13 +405,17 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
             }
             else if (myFrame->mf_Identifier == ID_T68K)
             {
-                Run68KCode(&myFrame->mf_PPCArgs);
+                thisTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+                thisMirrorNode->mt_PPCTask = myFrame->mf_PPCTask;
+
+                Run68KCode(SysBase, &myFrame->mf_PPCArgs);
             }
         }
     }
 
     thisTask->tc_SigRecvd |= myFrame->mf_Arg[2];
     thisMirrorNode->mt_PPCTask = myFrame->mf_PPCTask;
+
     if (PPStruct->PP_Stack)
     {
         FreeVec32(PPStruct->PP_Stack);

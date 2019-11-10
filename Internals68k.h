@@ -38,7 +38,7 @@ void   getENVs      (struct InternalConsts* myConsts);
 void   PrintError   (struct InternalConsts* myConsts, UBYTE* errortext);
 void   PrintCrtErr  (struct InternalConsts* myConsts, UBYTE* crterrtext);
 void   MasterControl(void);
-void   Run68KCode   (__reg("a0") struct PPCArgs* PPStruct);
+void   Run68KCode   (__reg("a6") struct ExecBase* SysBase, __reg("a0") struct PPCArgs* PPStruct);
 
 struct MsgFrame*  CreateMsgFrame(struct PPCBase* PowerPCBase);
 void              SendMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);
