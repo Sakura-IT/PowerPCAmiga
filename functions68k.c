@@ -333,6 +333,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
 {
     struct MinList myList;
     struct MirrorTask* myMirror;
+    struct MsgFrame* myFrame;
     struct ExecBase* SysBase            = PowerPCBase->PPC_SysLib;
     struct PrivatePPCBase* myBase       = (struct PrivatePPCBase*)PowerPCBase;
     struct MirrorTask* thisMirrorNode   = NULL;
@@ -395,7 +396,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
             }
         }
         thisTask->tc_SigRecvd |= (Signals & andTemp);
-        struct MsgFrame* myFrame = (struct MsgFrame*)GetMsg(thisMirrorNode->mt_Port);
+        myFrame = (struct MsgFrame*)GetMsg(thisMirrorNode->mt_Port);
         if (myFrame)
         {
             if (myFrame->mf_Identifier == ID_FPPC)
@@ -404,12 +405,21 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
             }
             else if (myFrame->mf_Identifier == ID_T68K)
             {
-                break; //run68k stuff
+                Run68KCode(&myFrame->mf_PPCArgs);
             }
         }
     }
 
-    //ID_FPPC stuff
+    thisTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+    thisMirrorNode->mt_PPCTask = myFrame->mf_PPCTask;
+    if (PPStruct->PP_Stack)
+    {
+        FreeVec32(PPStruct->PP_Stack);
+    }
+    CopyMem((const APTR)(&myFrame->mf_PPCArgs), (APTR)PPStruct, sizeof(struct PPCArgs));
+
+    FreeMsgFrame(PowerPCBase, myFrame);
+
     return (PPERR_SUCCESS);
 }
 
@@ -425,13 +435,13 @@ LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
     LONG status;
     UWORD cpuType;
 
-	pa.PP_Code = PowerPCBase;
-	pa.PP_Offset = _LVOSetHardware;
-	pa.PP_Flags = 0;
-	pa.PP_Stack = 0;
+	pa.PP_Code      = PowerPCBase;
+	pa.PP_Offset    = _LVOSetHardware;
+	pa.PP_Flags     = 0;
+	pa.PP_Stack     = 0;
 	pa.PP_StackSize = 0;
-	pa.PP_Regs[0] = (ULONG) PowerPCBase;
-    pa.PP_Regs[1] = HW_CPUTYPE;
+	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
+    pa.PP_Regs[1]   = HW_CPUTYPE;
 
 	//pa.PP_Regs[12] = (ULONG) &LinkerDB;
 
@@ -483,13 +493,13 @@ LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
     LONG status;
     ULONG result = 0;
 
-	pa.PP_Code = PowerPCBase;
-	pa.PP_Offset = _LVOSetHardware;
-	pa.PP_Flags = 0;
-	pa.PP_Stack = 0;
+	pa.PP_Code      = PowerPCBase;
+	pa.PP_Offset    = _LVOSetHardware;
+	pa.PP_Flags     = 0;
+	pa.PP_Stack     = 0;
 	pa.PP_StackSize = 0;
-	pa.PP_Regs[0] = (ULONG) PowerPCBase;
-    pa.PP_Regs[1] = HW_PPCSTATE;
+	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
+    pa.PP_Regs[1]   = HW_PPCSTATE;
 
 	if (!(status = RunPPC(&pa)))
     {
@@ -510,13 +520,13 @@ LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBa
 {
     struct PPCArgs pa;
 
-	pa.PP_Code = PowerPCBase;
-	pa.PP_Offset = _LVOCreateTaskPPC;
-	pa.PP_Flags = 0;
-	pa.PP_Stack = 0;
+	pa.PP_Code      = PowerPCBase;
+	pa.PP_Offset    = _LVOCreateTaskPPC;
+	pa.PP_Flags     = 0;
+	pa.PP_Stack     = 0;
 	pa.PP_StackSize = 0;
-	pa.PP_Regs[0] = (ULONG) PowerPCBase;
-    pa.PP_Regs[1] = (ULONG) TagItems;
+	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
+    pa.PP_Regs[1]   = (ULONG) TagItems;
 
 	RunPPC(&pa);
 
@@ -702,14 +712,14 @@ LIBFUNC68K void myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg(
         return;
     }
 
-	pa.PP_Code = PowerPCBase;
-	pa.PP_Offset = _LVOSetHardware;
-	pa.PP_Flags = 0;
-	pa.PP_Stack = 0;
+	pa.PP_Code      = PowerPCBase;
+	pa.PP_Offset    = _LVOSetHardware;
+	pa.PP_Flags     = 0;
+	pa.PP_Stack     = 0;
 	pa.PP_StackSize = 0;
-	pa.PP_Regs[0] = (ULONG) PowerPCBase;
-    pa.PP_Regs[1] = HW_SETDEBUGMODE;
-    pa.PP_Regs[8] = debuglevel;
+	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
+    pa.PP_Regs[1]   = HW_SETDEBUGMODE;
+    pa.PP_Regs[8]   = debuglevel;
 
 	RunPPC(&pa);
 

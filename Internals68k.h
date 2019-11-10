@@ -34,10 +34,11 @@ BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
 void   writememLong(ULONG Base, ULONG offset, ULONG value);
 ULONG  readmemLong (ULONG Base, ULONG offset);
 
-void   getENVs    (struct InternalConsts* myConsts);
-void   PrintError (struct InternalConsts* myConsts, UBYTE* errortext);
-void   PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext);
+void   getENVs      (struct InternalConsts* myConsts);
+void   PrintError   (struct InternalConsts* myConsts, UBYTE* errortext);
+void   PrintCrtErr  (struct InternalConsts* myConsts, UBYTE* crterrtext);
 void   MasterControl(void);
+void   Run68KCode   (__reg("a0") struct PPCArgs* PPStruct);
 
 struct MsgFrame*  CreateMsgFrame(struct PPCBase* PowerPCBase);
 void              SendMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);

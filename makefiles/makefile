@@ -12,6 +12,7 @@ CC = vbcc:bin/vc
 LD = vbcc:bin/vc
 CCPPC = vbcc:bin/vc +warpos -c99 -Iinclude_h: -O2
 ASPPC = vbcc:bin/vasmppc_std -many -mppc32 -mavec -Fhunk
+AS68K = vbcc:bin/vasmm68k_mot -Iinclude_i: -m68020up -Fhunk
 
 # target 'all' (default target)
 
@@ -34,6 +35,9 @@ $(OBJDIR)functionsppc.o : functionsppc.c
 $(OBJDIR)supportppc.o : supportppc.c
 	$(CCPPC) -c -o $(OBJDIR)supportppc.o supportppc.c
 
+$(OBJDIR)functions68kasm.o : functions68k.s
+	$(AS68K) -o $(OBJDIR)functions68kasm.o functions68k.s
+
 $(OBJDIR)support68k.o : support68k.c
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)support68k.o support68k.c
 
@@ -43,7 +47,7 @@ $(OBJDIR)functions68k.o : functions68k.c
 $(OBJDIR)libinit.o : libinit.c
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)libinit.o libinit.c
 
-OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)setupppcasm.o $(OBJDIR)setupppc.o $(OBJDIR)kernelasm.o $(OBJDIR)kernel.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppc.o
+OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68kasm.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)setupppcasm.o $(OBJDIR)setupppc.o $(OBJDIR)kernelasm.o $(OBJDIR)kernel.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppc.o
 
 $(EXE) : $(OBJS)
 	$(LD) $(shell vbccprefs) -o $(EXE) $(OBJS)
