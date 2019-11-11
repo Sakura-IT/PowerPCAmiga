@@ -386,7 +386,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
             {
                 break;
             }
-            if (Signals & andTemp)
+            else if (Signals & andTemp)
             {
                 struct MsgFrame* crossFrame = CreateMsgFrame(PowerPCBase);
                 crossFrame->mf_Identifier   = ID_LLPP;
@@ -409,6 +409,18 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
                 thisMirrorNode->mt_PPCTask = myFrame->mf_PPCTask;
 
                 Run68KCode(SysBase, &myFrame->mf_PPCArgs);
+
+                struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
+
+                CopyMem((const APTR) &myFrame, (APTR)&doneFrame, sizeof(struct MsgFrame));
+
+                doneFrame->mf_Identifier = ID_DONE;
+                doneFrame->mf_Arg[0]     = thisTask->tc_SigRecvd & andTemp;
+                doneFrame->mf_Arg[1]     = thisTask->tc_SigAlloc;
+                doneFrame->mf_Arg[2]     = (ULONG)thisTask;
+
+                SendMsgFrame(PowerPCBase, doneFrame);
+                FreeMsgFrame(PowerPCBase, myFrame);
             }
         }
     }

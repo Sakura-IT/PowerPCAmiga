@@ -62,10 +62,11 @@ _Run68KCode
 	    	fmove.d (a2)+,fp6
 	    	fmove.d (a2)+,fp7
 
-NoFPU1      move.l PP_STACKPTR(a0),d1
+NoFPU1      move.l a0,a5
+            tst.l PP_STACKPTR(a0)
 		    beq NoStckPtr
 
-		    move.l PP_STACKSIZE(a0),d2
+		    tst.l PP_STACKSIZE(a0)
 		    beq NoStckPtr
 
     		move.l a1,a2
@@ -75,15 +76,14 @@ NoFPU1      move.l PP_STACKPTR(a0),d1
 		    move.l #xBack,(a2)+
 		    move.l a7,(a2)+
 
-    		move.l PP_STACKPTR(a0),a2
-		    lea 24(a2),a2				;Offset needs to be 24 according to Run68K docs
-		    move.l PP_STACKSIZE(a0),d0
+    		move.l PP_STACKPTR(a0),a0
+		    lea 24(a0),a0				;Offset needs to be 24 according to Run68K docs
+		    move.l PP_STACKSIZE(a5),d0
 		    addq.l #3,d0
 		    and.l #$fffffffc,d0			;Make it 4 aligned
 		    move.l a7,a1
 		    sub.l d0,a1
 		    move.l a1,a7
-            move.l a0,a5
 		    jsr _LVOCopyMem(a6)
             jsr _LVOCacheClearU(a6)
 
@@ -92,7 +92,6 @@ NoFPU1      move.l PP_STACKPTR(a0),d1
 
 NoStckPtr	pea xBack(pc)
 StckPtr		move.l PP_CODE(a5),a0
-
             add.l PP_OFFSET(a5),a0
 		    move.l a0,-(a7)
 		    lea PP_REGS(a5),a6
