@@ -21,39 +21,51 @@
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <powerpc/powerpc.h>
-
 #include <proto/exec.h>
 
 #include "constants.h"
 #include "Internals68k.h"
 #include "libstructs.h"
 
-FUNC68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
+extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
+
+PATCH68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
-    return;
+    void (*RemTask_ptr)(__reg("a1") struct Task*, __reg("a6") struct ExecBase*) = OldRemTask;
+
+    return ((*RemTask_ptr)(myTask, SysBase));
 }
 
-FUNC68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
+PATCH68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
                   __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase)
 {
-    return NULL;
+    APTR (*AddTask_ptr)(__reg("a1") struct Task*, __reg("a2") APTR,
+    __reg("a3") APTR, __reg("a6") struct ExecBase*) = OldAddTask;
+
+    return ((*AddTask_ptr)(myTask, initialPC, finalPC, SysBase));
 }
 
-FUNC68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
+PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
                    __reg("a6") struct ExecBase* SysBase)
 {
-    return NULL;
+    APTR (*AllocMem_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a6") struct ExecBase*) = OldAllocMem;
+
+    return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
 }
 
-FUNC68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
+PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
 {
-    return NULL;
+    BPTR (*LoadSeg_ptr)(__reg("d1") STRPTR, __reg("a6") struct DosLibrary*) = OldLoadSeg;
+
+    return ((*LoadSeg_ptr)(name, DOSBase));
 }
 
-FUNC68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
+PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
                      __reg("a6") struct DosLibrary* DOSBase)
 {
-    return NULL;
+    BPTR (*NewLoadSeg_ptr)(__reg("d1") STRPTR, __reg("d2") struct TagItem*, __reg("a6") struct DosLibrary*) = OldNewLoadSeg;
+
+    return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
 }
 
 

@@ -25,9 +25,25 @@ static const APTR WarpVectors[5];
 
 #define _LVOSetHardware         -540
 #define _LVOCreateTaskPPC       -336
+#define _LVOLoadSeg             -150
+#define _LVONewLoadSeg          -768
+#define _LVOAllocMem            -198
+#define _LVOAddTask             -282
+#define _LVORemTask             -288
 
 #define LIBFUNC68K __entry
 #define FUNC68K __entry
+#define PATCH68K __saveds
+
+PATCH68K BPTR   patchLoadSeg   (__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase);
+PATCH68K BPTR   patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
+                       __reg("a6") struct DosLibrary* DOSBase);
+PATCH68K APTR   patchAllocMem  (__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
+                       __reg("a6") struct ExecBase* SysBase);
+PATCH68K APTR   patchAddTask   (__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
+                       __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase);
+PATCH68K void   patchRemTask   (__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase);
+
 
 BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
 

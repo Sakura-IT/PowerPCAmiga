@@ -45,6 +45,8 @@
 #include "Internalsppc.h"
 #include "Internals68k.h"
 
+APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
+
 /********************************************************************************************
 *
 *	Standard dummy entry of a device/library
@@ -626,6 +628,16 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     myProc->pr_Task.tc_UserData = (APTR)myConsts;
     Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
+
+    Disable();
+
+    OldLoadSeg    = SetFunction((struct Library*)DOSBase, _LVOLoadSeg,    (ULONG (*)())patchLoadSeg);
+    OldNewLoadSeg = SetFunction((struct Library*)DOSBase, _LVONewLoadSeg, (ULONG (*)())patchNewLoadSeg);
+    OldAddTask    = SetFunction((struct Library*)SysBase, _LVOAddTask,    (ULONG (*)())patchAddTask);
+    OldRemTask    = SetFunction((struct Library*)SysBase, _LVORemTask,    (ULONG (*)())patchRemTask);
+    OldAllocMem   = SetFunction((struct Library*)SysBase, _LVOAllocMem,   (ULONG (*)())patchAllocMem);
+
+    Enable();
 
     PrintError(myConsts, "Test completed!");
 
