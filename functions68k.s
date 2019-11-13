@@ -91,7 +91,7 @@ xBack       move.l a6,-(a7)
             movem.l d0-a5,-(a6)
             move.l a6,a0
 		    move.l (a7)+,a6
-		    move.l a6,PP_REGS+60(a0)
+		    move.l a6,PP_REGS+56(a0)
 
             move.l TempSysB(pc),a6
             btst #AFB_FPU40,AttnFlags+1(a6)
@@ -100,6 +100,9 @@ xBack       move.l a6,-(a7)
             move.l (a7)+,a3
 		    lea PP_FREGS+64(a3),a3
             fmovem.x fp0-fp7,-(a3)
+            move.l a7,a1
+		    lea 16(a1),a1
+		    unlk a1
 
 NoFPU2      move.l TempSysB(pc),a6
 		    btst #AFB_FPU40,AttnFlags+1(a6)
@@ -107,11 +110,7 @@ NoFPU2      move.l TempSysB(pc),a6
 		
             fmovem.x (a7)+,fp0-fp7
 
-NoFPU3      move.l a7,a1
-		    lea 16(a1),a1
-		    unlk a1
-
-            movem.l (a7)+,d0-a6
+NoFPU3      movem.l (a7)+,d0-a6
             rts
 
 ;********************************************************************************************
