@@ -20,6 +20,8 @@
 
 #include <exec/exec.h>
 #include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <utility/tagitem.h>
 #include <powerpc/powerpc.h>
 #include <proto/exec.h>
 
@@ -28,12 +30,38 @@
 #include "libstructs.h"
 
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
+extern struct ExecBase* mySysBase;
+APTR   RemSysTask;
+
+void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
+{
+    return;
+}
+
+PATCH68K void SysExitCode(void)
+{
+    struct Task* myTask;
+    void (*RemSysTask_ptr)() = RemSysTask;
+
+    struct ExecBase* SysBase = mySysBase;
+    myTask = SysBase->ThisTask;
+
+    commonRemTask(myTask, SysBase);
+
+    RemSysTask_ptr();
+
+    return;
+}
 
 PATCH68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
     void (*RemTask_ptr)(__reg("a1") struct Task*, __reg("a6") struct ExecBase*) = OldRemTask;
 
-    return ((*RemTask_ptr)(myTask, SysBase));
+    commonRemTask (myTask, SysBase);
+
+    RemTask_ptr(myTask, SysBase);
+
+    return;
 }
 
 PATCH68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
@@ -67,6 +95,7 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
 
     return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
 }
+
 
 
 FUNC68K void MasterControl(void)

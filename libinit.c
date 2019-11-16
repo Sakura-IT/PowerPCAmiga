@@ -46,6 +46,7 @@
 #include "Internals68k.h"
 
 APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
+struct ExecBase* mySysBase;
 
 /********************************************************************************************
 *
@@ -221,6 +222,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct InternalConsts *myConsts = &consts;
 
     SysBase = __sys;
+    mySysBase = __sys;
     myConsts->ic_SysBase = __sys;
     myConsts->ic_SegList = seglist;
 
