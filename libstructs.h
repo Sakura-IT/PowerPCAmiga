@@ -222,3 +222,19 @@ ULONG                       kf_MIIFH;
 ULONG                       kf_MIIPT;
 };
 
+struct iframe {
+ULONG                       if_regAltivec[32*8];
+DOUBLE                      if_regFPU[32];
+ULONG                       if_regGeneral[32];
+ULONG                       if_regFPSCR;
+ULONG                       if_regCTR;
+ULONG                       if_regXER;
+ULONG                       if_regCR;
+ULONG                       if_regLR;
+ULONG                       if_regDSISR;
+ULONG                       if_regDAR;
+ULONG                       if_regSRR1;
+ULONG                       if_regSRR0;
+ULONG                       if_ExceptionVector;
+};
+

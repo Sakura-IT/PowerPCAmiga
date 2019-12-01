@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#define PPC_VECLEN              3   //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
 #define NUM_OF_PPC_FUNCS        95
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)

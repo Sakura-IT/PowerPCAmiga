@@ -21,8 +21,7 @@
 #include <exec/exec.h>
 #include <powerpc/tasksPPC.h>
 #include <powerpc/powerpc.h>
-
-#define PPCFUNCTION __section ("functions","acrx") __entry
+#include "Internalsppc.h"
 
 PPCFUNCTION void InsertOnPri(struct PPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask)
 {

@@ -18,79 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#define PPCEXCEPTION __section ("kernel","acrx") __entry __interrupt
 
-PPCEXCEPTION void ExcFPUnav(void)
+#include "libstructs.h"
+#include "Internalsppc.h"
+
+PPCEXCEPTION void Exception_Entry(int vector, struct iframe *iframe)
 {
     return;
 }
 
-PPCEXCEPTION void ExcAlignment(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcInsStor(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcDatStor(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcTrace(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcBreakPoint(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcDec(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcPrIvate(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcMachCheck(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcSysCall(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcPerfMon(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcSysMan(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcTherMan(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcVMXUnav(void)
-{
-    return;
-}
-
-PPCEXCEPTION void ExcExternal(void)
-{
-    return;
-}

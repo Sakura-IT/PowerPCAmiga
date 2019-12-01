@@ -294,16 +294,11 @@ void mmuSetup(struct InitData* initData)
 void installExceptions(void)
 {
     UWORD excVector;
-    ULONG memExc = 0x100;
     ULONG ExcDataTable;
-
-    for (int i=0; i<0x20; i++)
-    {
-        *((ULONG*)(memExc))   = 0x48000000;
-        memExc += 0x100;
-    }
+    ULONG ExcCode;
 
     ExcDataTable = GetExcTable();
+    ExcCode      = GetVecEntry();
 
     for (int i=0; i<0x20; i++)
     {
@@ -312,8 +307,27 @@ void installExceptions(void)
         {
             break;
         }
-        *((UWORD*)(excVector)) = 0x4800;
-        *((UWORD*)(excVector+2)) = ((UWORD)i*4) + OFFSET_KERNEL - excVector;
+        switch (excVector)
+        {
+            case 0x1000:
+            case 0x1100:
+            case 0x1200:
+            {
+                *((UWORD*)(excVector)) = 0x4800;
+                *((UWORD*)(excVector+2)) = ((excVector>>6)& 0xf) + OFFSET_KERNEL - excVector;
+                break;
+            }
+            default:
+            {
+                int j;
+                for (j=0; j<PPC_VECLEN; j++)
+                {
+                    *((ULONG*)(excVector+(j*4))) = *((ULONG*)(ExcCode+(j*4)));
+                }
+                *((UWORD*)(excVector-2+(j*4))) = 17 + OFFSET_KERNEL - excVector - (PPC_VECLEN<<2);
+                break;
+            }
+        }
     }
     return;
 }

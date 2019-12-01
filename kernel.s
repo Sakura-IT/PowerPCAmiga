@@ -20,32 +20,228 @@
 
 .include    constantsppc.i
 
-.global     _ExcFPUnav, _ExcAlignment, _ExcInsStor,	 _ExcDatStor, _ExcTrace
-.global     _ExcBreakPoint,	_ExcDec, _ExcPrIvate, _ExcMachCheck, _ExcSysCall
-.global     _ExcPerfMon, _ExcSysMan, _ExcTherMan, _ExcVMXUnav, _ExcExternal
+.global     _Exception_Entry
 
 .section "kernel","acrx"
 
-.ExceptionTable:
+#********************************************************************************************
 
-	    	b	_ExcMachCheck	           #00 - 0x0200 + 0x3000
-	    	b	_ExcDatStor		       	   #04   0x0300
-	    	b	_ExcInsStor		       	   #08   0x0400
-            b   _ExcExternal               #0c   0x0500
-	    	b	_ExcAlignment	       	   #10   0x0600
-	    	b	_ExcPrIvate			       #14   0x0700
-            b	_ExcFPUnav		       	   #18   0x0800
-	    	b	_ExcDec			    	   #1c   0x0900
-	    	b	_ExcSysCall		       	   #20   0x0c00
-	    	b	_ExcTrace		       	   #24   0x0d00
-	    	b	_ExcPerfMon		       	   #28   0x0f00
-	    	b	_ExcVMXUnav	       		   #2c   0x0f20
-	    	b	ExcITLBMiss     		   #30   0x1000
-	    	b	ExcDLoadTLBMiss	 		   #34   0x1100
-	    	b	ExcDStoreTLBMiss 		   #38   0x1200
-	    	b	_ExcBreakPoint	       	   #3c   0x1300
-	    	b	_ExcSysMan	       		   #40   0x1400
-	    	b	_ExcTherMan	       		   #44   0x1700
+_ExcCommon:
+
+        b	ExcITLBMiss
+	    b	ExcDLoadTLBMiss
+	    b	ExcDStoreTLBMiss
+
+        mtsprg2 r0                      #LR; sprg3 = r0
+		
+        mfmsr   r0
+		ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
+		mtmsr	r0				        #Reenable MMU
+		isync					        #Also reenable FPU
+		sync
+
+        mtsprg0 r3
+
+		stwu	r1,-2048(r1)
+
+        la      r3,1528(r1)
+        stfdu   f0,8(r3)
+        stfdu   f1,8(r3)
+        stfdu   f2,8(r3)
+        stfdu   f3,8(r3)
+        stfdu   f4,8(r3)
+        stfdu   f5,8(r3)
+        stfdu   f6,8(r3)
+        stfdu   f7,8(r3)
+        stfdu   f8,8(r3)
+        stfdu   f9,8(r3)
+        stfdu   f10,8(r3)
+        stfdu   f11,8(r3)
+        stfdu   f12,8(r3)
+        stfdu   f13,8(r3)
+        stfdu   f14,8(r3)
+        stfdu   f15,8(r3)
+        stfdu   f16,8(r3)
+        stfdu   f17,8(r3)
+        stfdu   f18,8(r3)
+        stfdu   f19,8(r3)
+        stfdu   f20,8(r3)
+        stfdu   f21,8(r3)
+        stfdu   f22,8(r3)
+        stfdu   f23,8(r3)
+        stfdu   f24,8(r3)
+        stfdu   f25,8(r3)
+        stfdu   f26,8(r3)
+        stfdu   f27,8(r3)
+        stfdu   f28,8(r3)
+        stfdu   f29,8(r3)
+        stfdu   f30,8(r3)
+        stfdu   f31,8(r3)
+
+        mfsprg3 r0
+        stwu    r0,4(r3)
+        lwz     r0,0(r1)
+        stwu    r0,4(r3)    #r1
+        stwu    r2,4(r3)
+        mfsprg0 r0
+        stwu    r0,4(r3)    #r3
+        stwu    r4,4(r3)
+        stwu    r5,4(r3)
+        stwu    r6,4(r3)
+        stwu    r7,4(r3)
+        stwu    r8,4(r3)
+        stwu    r9,4(r3)
+        stwu    r10,4(r3)
+        stwu    r11,4(r3)
+        stwu    r12,4(r3)
+        stwu    r13,4(r3)
+        stwu    r14,4(r3)
+        stwu    r15,4(r3)
+        stwu    r16,4(r3)
+        stwu    r17,4(r3)
+        stwu    r18,4(r3)
+        stwu    r19,4(r3)
+        stwu    r20,4(r3)
+        stwu    r21,4(r3)
+        stwu    r22,4(r3)
+        stwu    r23,4(r3)
+        stwu    r24,4(r3)
+        stwu    r25,4(r3)
+        stwu    r26,4(r3)
+        stwu    r27,4(r3)
+        stwu    r28,4(r3)
+        stwu    r29,4(r3)
+        stwu    r30,4(r3)
+        stwu    r31,4(r3)
+
+        mffs    f0
+        stfsu   f0,4(r3)
+        mfctr   r0
+        stwu    r0,4(r3)
+        mfxer   r0
+        stwu    r0,4(r3)
+        mfcr    r0
+        stwu    r0,4(r3)
+        mfsprg2 r0
+        stwu    r0,4(r3)    #LR
+        mfdsisr r0
+        stwu    r0,4(r3)
+        mfdar   r0
+        stwu    r0,4(r3)
+        mfsrr1  r0
+        stwu    r0,4(r3)
+        mfsrr0  r0
+        stwu    r0,4(r3)
+
+        mflr    r4
+        subi    r4,r4,PPC_VECLEN*4
+        stwu    r4,4(r3)
+        mflr    r3
+
+        la      r4,1024(r1)
+        mtsprg0 r4
+
+        bl _Exception_Entry
+
+        mfsprg0 r31
+        addi    r31,r31,512
+
+        lfdu    f1,8(r31)
+        lfdu    f2,8(r31)
+        lfdu    f3,8(r31)
+        lfdu    f4,8(r31)
+        lfdu    f5,8(r31)
+        lfdu    f6,8(r31)
+        lfdu    f7,8(r31)
+        lfdu    f8,8(r31)
+        lfdu    f9,8(r31)
+        lfdu    f10,8(r31)
+        lfdu    f11,8(r31)
+        lfdu    f12,8(r31)
+        lfdu    f13,8(r31)
+        lfdu    f14,8(r31)
+        lfdu    f15,8(r31)
+        lfdu    f16,8(r31)
+        lfdu    f17,8(r31)
+        lfdu    f18,8(r31)
+        lfdu    f19,8(r31)
+        lfdu    f20,8(r31)
+        lfdu    f21,8(r31)
+        lfdu    f22,8(r31)
+        lfdu    f23,8(r31)
+        lfdu    f24,8(r31)
+        lfdu    f25,8(r31)
+        lfdu    f26,8(r31)
+        lfdu    f27,8(r31)
+        lfdu    f28,8(r31)
+        lfdu    f29,8(r31)
+        lfdu    f30,8(r31)
+        lfdu    f31,8(r31)
+
+        lwzu    r0,4(r31)
+        lwzu    r1,4(r31)
+        lwzu    r2,4(r31)
+        lwzu    r3,4(r31)
+        mtsprg1 r3
+        lwzu    r4,4(r31)
+        lwzu    r5,4(r31)
+        lwzu    r6,4(r31)
+        lwzu    r7,4(r31)
+        lwzu    r8,4(r31)
+        lwzu    r9,4(r31)
+        lwzu    r10,4(r31)
+        lwzu    r11,4(r31)
+        lwzu    r12,4(r31)
+        lwzu    r13,4(r31)
+        lwzu    r14,4(r31)
+        lwzu    r15,4(r31)
+        lwzu    r16,4(r31)
+        lwzu    r17,4(r31)
+        lwzu    r18,4(r31)
+        lwzu    r19,4(r31)
+        lwzu    r20,4(r31)
+        lwzu    r21,4(r31)
+        lwzu    r22,4(r31)
+        lwzu    r23,4(r31)
+        lwzu    r24,4(r31)
+        lwzu    r25,4(r31)
+        lwzu    r26,4(r31)
+        lwzu    r27,4(r31)
+        lwzu    r28,4(r31)
+        lwzu    r29,4(r31)
+        lwzu    r30,4(r31)
+        mtsprg2 r30
+        lwzu    r30,4(r31)
+
+        mtsprg1 r30
+        mfsprg0 r3
+        mfsprg2 r30
+
+        lfsu    f0,4(r31)
+        mtfsf   0xff,f0
+        lfd     f0,512(r3)
+
+        lwzu    r3,4(r31)
+        mtctr   r3
+        lwzu    r3,4(r31)
+        mtxer   r3
+        lwzu    r3,4(r31)
+        mtcr    r3
+        lwzu    r3,4(r31)
+        mtlr    r3
+        lwzu    r3,4(r31)
+        mtdsisr r3
+        lwzu    r3,4(r31)
+        mtdar   r3
+        lwzu    r3,4(r31)
+        mtsrr1  r3
+        lwzu    r3,4(r31)
+        mtsrr0  r3
+
+        mfsprg0 r3
+        mfsprg1 r31
+
+        rfi
 
 #********************************************************************************************
 
@@ -104,7 +300,7 @@ isi1:
 		xoris	r0,r0,PSL_TGPR@h  		#flip the msr<tgpr> bit
 		mtcrf	0x80,r3      			#restore CR0
 		mtmsr	r0      				#flip back to the native gprs
-		b	_ExcInsStor        	    	#go to instr. access interrupt
+		ba	    0x400          	    	#go to instr. access interrupt
 
 #********************************************************************************************
 
@@ -228,7 +424,9 @@ dsi2:
 		isync
 		sync
 		sync
-		b	_ExcDatStor			    	#branch to DSI interrupt
+		ba      0x300	  		    	#branch to DSI interrupt
 
 #********************************************************************************************
+
+
 

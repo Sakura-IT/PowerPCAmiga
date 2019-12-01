@@ -18,13 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+
 void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
+#define PPCEXCEPTION __section ("kernel","acrx") __entry
+
+#include <exec/types.h>
 
 void        Reset  (void);
 ULONG       ReadPVR(void);
 ULONG   GetExcTable(void);
+ULONG   GetVecEntry(void);
 
 ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
 ULONG getPVR(void)                        = "\tmfpvr\tr3\n";
