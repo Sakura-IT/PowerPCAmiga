@@ -46,7 +46,7 @@
 #include "Internals68k.h"
 
 APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
-struct ExecBase* mySysBase;
+struct PPCBase* myPPCBase;
 
 /********************************************************************************************
 *
@@ -222,7 +222,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct InternalConsts *myConsts = &consts;
 
     SysBase = __sys;
-    mySysBase = __sys;
+
     myConsts->ic_SysBase = __sys;
     myConsts->ic_SegList = seglist;
 
@@ -583,8 +583,11 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         return NULL;
     }
 
-    PowerPCBase->PPC_DosLib = (APTR)DOSBase;
-    PowerPCBase->PPC_SegList= (APTR)seglist;
+    PowerPCBase->PPC_DosLib  = (APTR)DOSBase;
+    PowerPCBase->PPC_SegList = (APTR)seglist;
+    PowerPCBase->PPC_Flags   = (UBYTE)((myConsts->ic_env3 >> 22) | (myConsts->ic_env3 >> 15) | (myConsts->ic_env3 >> 8));
+
+    myPPCBase = PowerPCBase;
 
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
 
@@ -869,11 +872,11 @@ void getENVs(struct InternalConsts* myConsts)
     myConsts->ic_env1 |= doENV(myConsts,"sonnet/DisL2Cache");
 
     myConsts->ic_env2 |= (doENV(myConsts,"sonnet/DisL2Flush") <<24);
-    myConsts->ic_env2 |= (doENV(myConsts,"sonnet/EnPageSeup") << 16);
+    myConsts->ic_env2 |= (doENV(myConsts,"sonnet/EnPageSetup") << 16);
     myConsts->ic_env2 |= (doENV(myConsts,"sonnet/EnDAccessExc") << 8);
-    myConsts->ic_env2 |= doENV(myConsts,"sonnet/DisHunkPatch");
+    myConsts->ic_env2 |= doENV(myConsts,"sonnet/SetCMemDiv");
 
-    myConsts->ic_env3 |= (doENV(myConsts,"sonnet/SetCMemDiv") <<24);
+    myConsts->ic_env3 |= (doENV(myConsts,"sonnet/DisHunkPatch") <<24);
     myConsts->ic_env3 |= (doENV(myConsts,"sonnet/SetCPUComm") << 16);
     myConsts->ic_env3 |= (doENV(myConsts,"sonnet/EnStackPatch") << 8);
 
