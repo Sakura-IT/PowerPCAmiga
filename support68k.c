@@ -25,6 +25,7 @@
 #include <powerpc/powerpc.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <dos/doshunks.h>
 
 #include "constants.h"
 #include "Internals68k.h"
@@ -101,9 +102,25 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
 LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("a0") APTR buffer, __reg("d0") LONG length, __reg("a6") struct DosLibrary* DOSBase)
 {
     LONG result;
+    struct PPCBase* PowerPCBase = myPPCBase;
+    ULONG* myBuffer = (ULONG*)buffer;
 
-    result = Read(readhandle, buffer, length); //TODO
+    result = Read(readhandle, buffer, length);
 
+    if (!(PowerPCBase->PPC_Flags & 0x4))
+    {
+        if ((myBuffer[0] == HUNK_HEADER) && (myBuffer[1] == NULL) && (myBuffer[3] == NULL) && (myBuffer[2] - myBuffer[4] - 1 == NULL))
+        {
+            if (((myBuffer[5] == 0x71E) && (myBuffer[6] == 0x710)) || ((myBuffer[5] == 0x84E) && (myBuffer[6] == 0xEE)))
+            {
+                return result;
+            }
+            else if (!(myBuffer[5] & (1<<HUNKB_CHIP)))
+            {
+                myBuffer[5] |= (1<<HUNKB_FAST);
+            }
+        }
+    }
     return result;
 }
 
@@ -134,11 +151,18 @@ void FreeFunc(__reg("a1") APTR memory, __reg("d0") ULONG size, __reg("a6") struc
     return;
 }
 
-LONG* FuncTable[3] = {(APTR)ReadFunc, (APTR)AllocFunc, (APTR)FreeFunc};
-LONG* Stack = NULL;
 
 BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fail
 {
+    struct FuncTable
+    {
+        APTR ReadFunc;
+        APTR AllocFunc;
+        APTR FreeFunc;
+        ULONG Stack;
+    };
+
+    struct FuncTable myFuncTable;
     struct ExecBase* SysBase = myPPCBase->PPC_SysLib;
     BPTR myLock, mySeglist;
     struct FileInfoBlock* myFIB;
@@ -165,7 +189,11 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
                 else
                 {
                     SysBase->ThisTask->tc_Flags |= TF_PPC;
-                    mySeglist = InternalLoadSeg(myLock, NULL, (LONG*)FuncTable, Stack);
+                    myFuncTable.ReadFunc  = (APTR)&ReadFunc;
+                    myFuncTable.AllocFunc = (APTR)&AllocFunc;
+                    myFuncTable.FreeFunc  = (APTR)&FreeFunc;
+                    myFuncTable.Stack     = 0;
+                    mySeglist = InternalLoadSeg(myLock, NULL, (LONG*)&myFuncTable, (LONG*)&myFuncTable.Stack);
                     Close(myLock);
                     if (mySeglist < 0)
                     {
