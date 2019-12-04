@@ -34,6 +34,14 @@
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
 extern struct PPCBase* myPPCBase;
 APTR   RemSysTask;
+UBYTE powerlib[] = "powerpc.library\0";
+UBYTE ampname[]  = "AmigaAMP\0";
+
+/********************************************************************************************
+*
+*	Task patch functions. To remove PPC tasks and free memory when the 68K part is ended
+*
+*********************************************************************************************/
 
 void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
@@ -75,6 +83,12 @@ PATCH68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR ini
     return ((*AddTask_ptr)(myTask, initialPC, finalPC, SysBase));
 }
 
+/********************************************************************************************
+*
+*	Allocate memory patch to load PPC (related) code to PPC memory
+*
+*********************************************************************************************/
+
 PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attributes,
                    __reg("a6") struct ExecBase* SysBase)
 {
@@ -82,6 +96,12 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
 
     return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
 }
+
+/********************************************************************************************
+*
+*	Executable loading patches to load PPC (related) code to PPC memory
+*
+*********************************************************************************************/
 
 PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
 {
@@ -212,7 +232,51 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
                         {
                             return mySeglist;
                         }
-                        //search for stuff and then mark or not  TODO
+                        while (mySeglist)
+                        {
+                            UBYTE* mySegData = (UBYTE*)(*((ULONG*)((mySeglist << 2) + 4)));
+                            LONG mySegSize  = (*((ULONG*)(mySeglist - 4)));
+                            mySeglist = (*((ULONG*)(mySeglist)));
+                            for (int i=mySegSize; i >= 0; i--)
+                            {
+                                ULONG* myLongData = (ULONG*)mySegData;
+                                if (myLongData[0] == 0x52414345)            // "RACE"
+                                {
+                                    SetProtection(name, myProt | 0x10000);
+                                    return mySeglist;
+                                }
+                                for (int i=0; i<20; i++)
+                                {
+                                    if ((mySegData[i] == powerlib[i]) && (powerlib[i+1] == 0))
+                                    {
+                                        SetProtection(name, myProt | 0x10000);
+                                        return mySeglist;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                for (int i=0; i<20; i++)
+                                {
+                                    if ((mySegData[i] == ampname[i]) && (ampname[+1] == 0))
+                                    {
+                                        SetProtection(name, myProt | 0x10000);
+                                        return mySeglist;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                mySegData += 1;
+                            }
+
+                        }
+                        UnLoadSeg(mySeglist);
+                        SysBase->ThisTask->tc_Flags &= ~TF_PPC;
+                        SetProtection(name, myProt | 0x20000);
                     }
                 }
             }
@@ -222,7 +286,11 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
     return -1;
 }
 
-
+/********************************************************************************************
+*
+*	Process that handles messages from the PPC.
+*
+*********************************************************************************************/
 
 
 FUNC68K void MasterControl(void)
@@ -242,10 +310,22 @@ FUNC68K void MasterControl(void)
     return;
 }
 
+/********************************************************************************************
+*
+*	Interrupt that gets called by the PPC card.
+*
+*********************************************************************************************/
+
 FUNC68K ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
     return 0;
 }
+
+/********************************************************************************************
+*
+*	VBLANK Interrupt that supports unreliable (for now) messaging from K1/M1
+*
+*********************************************************************************************/
 
 FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
@@ -253,6 +333,12 @@ FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 }
 
 //make the next ones each for every bridge type or use ifs?
+
+/********************************************************************************************
+*
+*	Functions that creates a message for the PPC
+*
+*********************************************************************************************/
 
 struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
 {
@@ -312,6 +398,12 @@ struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
     return (struct MsgFrame*)msgFrame;
 }
 
+/********************************************************************************************
+*
+*	Function that sends a message to the PPC and subsequently interrupts the PPC
+*
+*********************************************************************************************/
+
 void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
@@ -350,6 +442,12 @@ void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
     return;
 }
+
+/********************************************************************************************
+*
+*	Function that frees a message send to the 68K processor by the PPC
+*
+*********************************************************************************************/
 
 void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 {
@@ -390,6 +488,12 @@ void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 
     return;
 }
+
+/********************************************************************************************
+*
+*	Function that receives a message from the FIFO which was send to the 68K by the PPC
+*
+*********************************************************************************************/
 
 struct MsgFrame* GetMsgFrame(struct PPCBase* PowerPCBase)
 {
