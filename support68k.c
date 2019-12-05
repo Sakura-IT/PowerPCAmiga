@@ -103,31 +103,15 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
 *
 *********************************************************************************************/
 
-PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
-{
-    BPTR (*LoadSeg_ptr)(__reg("d1") STRPTR, __reg("a6") struct DosLibrary*) = OldLoadSeg;
-
-    return ((*LoadSeg_ptr)(name, DOSBase));
-}
-
-PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
-                     __reg("a6") struct DosLibrary* DOSBase)
-{
-    BPTR (*NewLoadSeg_ptr)(__reg("d1") STRPTR, __reg("d2") struct TagItem*, __reg("a6") struct DosLibrary*) = OldNewLoadSeg;
-
-    return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
-}
-
-
 LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("a0") APTR buffer, __reg("d0") LONG length, __reg("a6") struct DosLibrary* DOSBase)
 {
     LONG result;
-    struct PPCBase* PowerPCBase = myPPCBase;
+
     ULONG* myBuffer = (ULONG*)buffer;
 
     result = Read(readhandle, buffer, length);
 
-    if (!(PowerPCBase->PPC_Flags & 0x4))
+    if (!(myPPCBase->PPC_Flags & 0x4))
     {
         if ((myBuffer[0] == HUNK_HEADER) && (myBuffer[1] == NULL) && (myBuffer[3] == NULL) && (myBuffer[2] - myBuffer[4] - 1 == NULL))
         {
@@ -147,8 +131,8 @@ LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("a0") APTR buffer, __reg("d0") 
 APTR AllocFunc(__reg("d0") ULONG size, __reg("d1") ULONG flags, __reg("a6") struct ExecBase* SysBase)
 {
     APTR memBlock;
-    struct PPCBase* PowerPCBase = myPPCBase;
-    if (!(PowerPCBase->PPC_Flags & 0x4))
+
+    if (!(myPPCBase->PPC_Flags & 0x4))
     {
         if ((flags == MEMF_PUBLIC | MEMF_FAST) || (flags == MEMF_PUBLIC | MEMF_CHIP))
         {
@@ -172,7 +156,7 @@ void FreeFunc(__reg("a1") APTR memory, __reg("d0") ULONG size, __reg("a6") struc
 }
 
 
-BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fail
+BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
 {
     struct FuncTable
     {
@@ -183,7 +167,8 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
     };
 
     struct FuncTable myFuncTable;
-    struct ExecBase* SysBase = myPPCBase->PPC_SysLib;
+    struct ExecBase* SysBase   = myPPCBase->PPC_SysLib;
+    struct DosLibrary* DOSBase = myPPCBase->PPC_DosLib;
     BPTR myLock, mySeglist;
     struct FileInfoBlock* myFIB;
     LONG myProt;
@@ -247,23 +232,28 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
                                 }
                                 for (int i=0; i<20; i++)
                                 {
-                                    if ((mySegData[i] == powerlib[i]) && (powerlib[i+1] == 0))
+                                    if (mySegData[i] == powerlib[i])
                                     {
-                                        SetProtection(name, myProt | 0x10000);
-                                        return mySeglist;
+                                        if (powerlib[i+1] == 0)
+                                        {
+                                            SetProtection(name, myProt | 0x10000);
+                                            return mySeglist;
+                                        }
                                     }
                                     else
                                     {
                                         break;
                                     }
                                 }
-
                                 for (int i=0; i<20; i++)
                                 {
-                                    if ((mySegData[i] == ampname[i]) && (ampname[+1] == 0))
+                                    if (mySegData[i] == ampname[i])
                                     {
-                                        SetProtection(name, myProt | 0x10000);
-                                        return mySeglist;
+                                        if (ampname[+1] == 0)
+                                        {
+                                            SetProtection(name, myProt | 0x10000);
+                                            return mySeglist;
+                                        }
                                     }
                                     else
                                     {
@@ -272,7 +262,6 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
                                 }
                                 mySegData += 1;
                             }
-
                         }
                         UnLoadSeg(mySeglist);
                         SysBase->ThisTask->tc_Flags &= ~TF_PPC;
@@ -282,8 +271,48 @@ BPTR myLoader(struct DosLibrary* DOSBase, STRPTR name) // -1 = try normal 0 = fa
             }
         }
     }
-
     return -1;
+}
+
+PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
+{
+    BPTR (*LoadSeg_ptr)(__reg("d1") STRPTR, __reg("a6") struct DosLibrary*) = OldLoadSeg;
+#if 0                                           //Patch disabled for now
+    BPTR mySegList;
+
+    mySegList = myLoader(name);
+
+    if (mySegList == -1)
+    {
+        return ((*LoadSeg_ptr)(name, DOSBase));
+    }
+    return mySegList;
+#else
+    return ((*LoadSeg_ptr)(name, DOSBase));
+#endif
+}
+
+PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
+                     __reg("a6") struct DosLibrary* DOSBase)
+{
+    BPTR (*NewLoadSeg_ptr)(__reg("d1") STRPTR, __reg("d2") struct TagItem*, __reg("a6") struct DosLibrary*) = OldNewLoadSeg;
+#if 0                                           //Patch disabled for now
+    BPTR mySegList;
+    if (tags)
+    {
+        return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
+    }
+
+    mySegList = myLoader(file);
+
+    if (mySegList == -1)
+    {
+        return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
+    }
+    return mySegList;    
+#else
+    return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
+#endif
 }
 
 /********************************************************************************************
