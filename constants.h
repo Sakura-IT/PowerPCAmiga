@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#define PPC_VECLEN              3   //Number of instructions of VecEntry (setupppc.s)
+#define PPC_VECLEN              3       //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
 #define NUM_OF_PPC_FUNCS        95
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
@@ -39,15 +39,15 @@
 #define SIZE_KFIFO              0x10000
 #define FIFO_OFFSET             0x380000
 
-#define HW_CPUTYPE		        11	//Private
-#define HW_SETDEBUGMODE		    12	//Private
-#define HW_PPCSTATE		        13	//Private
+#define HW_CPUTYPE              11      //Private
+#define HW_SETDEBUGMODE         12      //Private
+#define HW_PPCSTATE             13      //Private
 
-#define ID_MPC834X  			0x8083
+#define ID_MPC834X              0x8083
 
 #define MEMF_PPC                0x2000
 #define MEM_GAP                 0x480000
-#define TF_PPC			        1<<2
+#define TF_PPC                  1<<2
 #define VENDOR_ELBOX            0x89e
 #define MEDIATOR_MKII           33
 #define MEDIATOR_1200TX         60
@@ -92,9 +92,9 @@
 #define	   PSL_SPV	  0x02000000  /* B... (e500) SPE enable */
 #define	   PSL_UCLE	  0x00400000  /* B... user-mode cache lock enable */
 #define	   PSL_POW	  0x00040000  /* ..6. power management */
-#define	   PSL_WE	  PSL_POW	  /* B4.. wait state enable */
+#define	   PSL_WE	  PSL_POW     /* B4.. wait state enable */
 #define	   PSL_TGPR	  0x00020000  /* ..6. temp. gpr remapping (mpc603e) */
-#define	   PSL_CE	  PSL_TGPR	  /* B4.. critical interrupt enable */
+#define	   PSL_CE	  PSL_TGPR    /* B4.. critical interrupt enable */
 #define	   PSL_ILE	  0x00010000  /* ..6. interrupt endian mode (1 == le) */
 #define	   PSL_EE	  0x00008000  /* B468 external interrupt enable */
 #define	   PSL_PR	  0x00004000  /* B468 privilege mode (1 == user) */
@@ -102,18 +102,18 @@
 #define	   PSL_ME	  0x00001000  /* B468 machine check enable */
 #define	   PSL_FE0	  0x00000800  /* B.6. floating point mode 0 */
 #define	   PSL_SE	  0x00000400  /* ..6. single-step trace enable */
-#define	   PSL_DWE	  PSL_SE	  /* .4.. debug wait enable */
-#define	   PSL_UBLE	  PSL_SE	  /* B... user BTB lock enable */
+#define	   PSL_DWE	  PSL_SE      /* .4.. debug wait enable */
+#define	   PSL_UBLE	  PSL_SE      /* B... user BTB lock enable */
 #define	   PSL_BE	  0x00000200  /* ..6. branch trace enable */
-#define	   PSL_DE	  PSL_BE	  /* B4.. debug interrupt enable */
+#define	   PSL_DE	  PSL_BE      /* B4.. debug interrupt enable */
 #define	   PSL_FE1	  0x00000100  /* B.6. floating point mode 1 */
 #define	   PSL_IP	  0x00000040  /* ..6. interrupt prefix */
 #define	   PSL_IR	  0x00000020  /* .468 instruction address relocation */
-#define	   PSL_IS	  PSL_IR	  /* B... instruction address space */
+#define	   PSL_IS	  PSL_IR      /* B... instruction address space */
 #define	   PSL_DR	  0x00000010  /* .468 data address relocation */
-#define	   PSL_DS	  PSL_DR	  /* B... data address space */
+#define	   PSL_DS	  PSL_DR      /* B... data address space */
 #define	   PSL_PM	  0x00000008  /* ..6. Performance monitor */
-#define	   PSL_PMM	  PSL_PM	  /* B... Performance monitor */
+#define	   PSL_PMM	  PSL_PM      /* B... Performance monitor */
 #define	   PSL_RI	  0x00000002  /* ..6. recoverable interrupt */
 #define	   PSL_LE	  0x00000001  /* ..6. endian mode (1 == le) */
 
@@ -121,34 +121,34 @@
 // represent all the different block lengths
 // The BL field	is part of the Upper Bat Register
 
-#define BAT_BL_128K      		0x00000000
-#define BAT_BL_256K	      		0x00000004
-#define BAT_BL_512K		      	0x0000000C
-#define BAT_BL_1M		      	0x0000001C
-#define BAT_BL_2M		      	0x0000003C
-#define BAT_BL_4M		      	0x0000007C
-#define BAT_BL_8M		      	0x000000FC
-#define BAT_BL_16M		      	0x000001FC
-#define BAT_BL_32M		      	0x000003FC
-#define BAT_BL_64M		      	0x000007FC
-#define BAT_BL_128M		      	0x00000FFC
-#define BAT_BL_256M		      	0x00001FFC
+#define BAT_BL_128K             0x00000000
+#define BAT_BL_256K             0x00000004
+#define BAT_BL_512K             0x0000000C
+#define BAT_BL_1M               0x0000001C
+#define BAT_BL_2M               0x0000003C
+#define BAT_BL_4M               0x0000007C
+#define BAT_BL_8M               0x000000FC
+#define BAT_BL_16M              0x000001FC
+#define BAT_BL_32M              0x000003FC
+#define BAT_BL_64M              0x000007FC
+#define BAT_BL_128M             0x00000FFC
+#define BAT_BL_256M             0x00001FFC
 
 // supervisor/user valid mode definitions  - Upper BAT
 #define BAT_VALID_SUPERVISOR    0x00000002
-#define BAT_VALID_USER		    0x00000001
-#define BAT_INVALID		        0x00000000
+#define BAT_VALID_USER          0x00000001
+#define BAT_INVALID             0x00000000
 
 // WIMG bit settings  - Lower BAT
-#define BAT_WRITE_THROUGH	    0x00000040
-#define BAT_CACHE_INHIBITED	    0x00000020
-#define BAT_COHERENT	        0x00000010
-#define BAT_GUARDED		        0x00000008
+#define BAT_WRITE_THROUGH       0x00000040
+#define BAT_CACHE_INHIBITED     0x00000020
+#define BAT_COHERENT            0x00000010
+#define BAT_GUARDED             0x00000008
 
 // General PTE bits
-#define PTE_REFERENCED		    0x00000100
-#define PTE_CHANGED		        0x00000080
-#define PTE_HASHID		        0x00000040
+#define PTE_REFERENCED          0x00000100
+#define PTE_CHANGED             0x00000080
+#define PTE_HASHID              0x00000040
 #define PTE_VALID               0x80000000
 
 // PageTable Access bits
@@ -156,16 +156,16 @@
 #define PP_SUPERVISOR_RW        0
 
 // WIMG bit settings  - Lower PTE
-#define PTE_WRITE_THROUGH  		0x00000008
-#define PTE_CACHE_INHIBITED  	0x00000004
-#define PTE_COHERENT      		0x00000002
-#define PTE_GUARDED		      	0x00000001
-#define PTE_COPYBACK	      	0x00000000
+#define PTE_WRITE_THROUGH       0x00000008
+#define PTE_CACHE_INHIBITED     0x00000004
+#define PTE_COHERENT            0x00000002
+#define PTE_GUARDED             0x00000001
+#define PTE_COPYBACK            0x00000000
 
 // Protection bits - Lower BAT
-#define BAT_NO_ACCESS      		0x00000000
-#define BAT_READ_ONLY	      	0x00000001
-#define BAT_READ_WRITE		  	0x00000002
+#define BAT_NO_ACCESS           0x00000000
+#define BAT_READ_ONLY           0x00000001
+#define BAT_READ_WRITE          0x00000002
 
 // IMMR offsets
 #define IMMR_ADDR_DEFAULT       0xFF400000

@@ -30,11 +30,11 @@
 .set PPC_VECLEN,                3
 
 .set HID0,                      1008
-.set HID0_NHR,			        0x00010000
+.set HID0_NHR,	                0x00010000
 
 .set PSL_FP,	                0x00002000        #/* B.6. floating point enable */
-.set PSL_IP,	                0x00000040	      #/* ..6. interrupt prefix */
-.set PSL_TGPR,               	0x00020000	      #/* ..6. temp. gpr remapping (mpc603e) */
+.set PSL_IP,	                0x00000040        #/* ..6. interrupt prefix */
+.set PSL_TGPR,               	0x00020000        #/* ..6. temp. gpr remapping (mpc603e) */
 .set PSL_IR,	                0x00000020        #/* .468 instruction address relocation */
 .set PSL_DR,                    0x00000010        #/* .468 data address relocation */
 
@@ -51,8 +51,8 @@
 .set PTE_CHANGED,               0x00000080
 .set PTE_HASHID,                0x00000040
 
-.set DSISR_NOTFOUND,    		0x40000000
-.set DSISR_PROTECT,	        	0x08000000
+.set DSISR_NOTFOUND,            0x40000000
+.set DSISR_PROTECT,             0x08000000
 
 .set SRR1_KEY,	                0x00080000
 
