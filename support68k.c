@@ -94,6 +94,21 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
 {
     APTR (*AllocMem_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a6") struct ExecBase*) = OldAllocMem;
 
+    //AmigaAMP
+    USHORT testAttr = (USHORT)attributes;
+
+    if (!(testAttr) || (testAttr & MEMF_FAST))
+    {
+        testAttr = 0; //dummy
+    }
+    else 
+    {
+        if (!(testAttr & MEMF_PUBLIC) || (testAttr & MEMF_CHIP))
+        {
+            return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
+        }
+    }
+
     return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
 }
 
@@ -217,11 +232,12 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                         {
                             return mySeglist;
                         }
-                        while (mySeglist)
+                        BPTR testSeglist = mySeglist;
+                        while (testSeglist)
                         {
-                            UBYTE* mySegData = (UBYTE*)(*((ULONG*)((mySeglist << 2) + 4)));
-                            LONG mySegSize  = (*((ULONG*)(mySeglist - 4)));
-                            mySeglist = (*((ULONG*)(mySeglist)));
+                            UBYTE* mySegData = (UBYTE*)(*((ULONG*)((testSeglist << 2) + 4)));
+                            LONG mySegSize  = (*((ULONG*)(testSeglist - 4)));
+                            testSeglist = (*((ULONG*)(testSeglist)));
                             for (int i=mySegSize; i >= 0; i--)
                             {
                                 ULONG* myLongData = (ULONG*)mySegData;

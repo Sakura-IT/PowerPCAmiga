@@ -28,21 +28,21 @@
 
 _ExcCommon:
 
-        b	ExcITLBMiss
-	    b	ExcDLoadTLBMiss
-	    b	ExcDStoreTLBMiss
+        b       ExcITLBMiss
+        b       ExcDLoadTLBMiss
+        b       ExcDStoreTLBMiss
 
         mtsprg2 r0                      #LR; sprg3 = r0
 		
         mfmsr   r0
-		ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
-		mtmsr	r0				        #Reenable MMU
-		isync					        #Also reenable FPU
-		sync
+        ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
+        mtmsr	r0				        #Reenable MMU
+        isync					        #Also reenable FPU
+        sync
 
         mtsprg0 r3
 
-		stwu	r1,-2048(r1)
+        stwu	r1,-2048(r1)
 
         la      r3,1528(r1)
         stfdu   f0,8(r3)
@@ -247,7 +247,7 @@ _ExcCommon:
 
 ExcITLBMiss:
 		mfspr	r2,HASH1				#get first pointer
-		li	    r1,8					#load 8 for counter
+		li      r1,8					#load 8 for counter
 		mfctr	r0	    				#save counter
 		mfspr	r3,ICMP					#get first compare value
 		addi	r2,r2,-8				#pre dec the pointer
@@ -259,19 +259,19 @@ im1:
 		bdnzf	eq,im1					#dec count br if cmp ne and if count not zero
 		bne	instrSecHash     			#if not found set up second hash or exit
 
-		lwz	    r1,4(r2)				#load tlb entry lower-word
-		andi.	r3,r1,PTE_GUARDED<<3	#check G bit
+		lwz     r1,4(r2)				#load tlb entry lower-word
+		andi.	r3,r1,PTE_GUARDED<<3    #check G bit
 		bne	doISIp					    #if guarded, take an ISI
 
-		mtctr	r0 					    #restore counter
+		mtctr	r0					    #restore counter
 		mfspr	r0,IMISS 				#get the miss address for the tlbl
 		mfsrr1	r3     					#get the saved cr0 bits
 		mtcrf	0x80,r3   				#restore CR0
 		mtspr	RPA,r1    				#set the pte
-		ori	    r1,r1,PTE_REFERENCED	#set reference bit
+		ori     r1,r1,PTE_REFERENCED			#set reference bit
 		srwi	r1,r1,8    				#get byte 7 of pte
 		tlbli	r0    					#load the itlb
-		stb	    r1,6(r2)     		    #update page table
+		stb     r1,6(r2)     		    #update page table
 		rfi     					    #return to executing program
 
 instrSecHash:
@@ -279,8 +279,8 @@ instrSecHash:
 		bne	doISI        				#if so, go to ISI interrupt
 
 		mfspr	r2,HASH2     			#get the second pointer
-		ori	    r3,r3,PTE_HASHID      	#change the compare value
-		li	    r1,8    				#load 8 for counter
+		ori     r3,r3,PTE_HASHID      	#change the compare value
+		li      r1,8    				#load 8 for counter
 		addi	r2,r2,-8   				#pre dec for update on load
 		b 	im0    					    #try second hash
 
@@ -300,13 +300,13 @@ isi1:
 		xoris	r0,r0,PSL_TGPR@h  		#flip the msr<tgpr> bit
 		mtcrf	0x80,r3      			#restore CR0
 		mtmsr	r0      				#flip back to the native gprs
-		ba	    0x400          	    	#go to instr. access interrupt
+		ba      0x400          	    	#go to instr. access interrupt
 
 #********************************************************************************************
 
 ExcDLoadTLBMiss:
 		mfspr	r2,HASH1				#get first pointer
-		li	    r1,8   					#load 8 for counter
+		li      r1,8   					#load 8 for counter
 		mfctr	r0   					#save counter
 		mfspr	r3,DCMP   				#get first compare value
 		addi	r2,r2,-8  				#pre dec the pointer
@@ -318,16 +318,16 @@ dm1:
 		bdnzf	eq,dm1 					#dec count br if cmp ne and if count not zero
 		bne	dataSecHash 				#if not found set up second hash or exit
 
-		lwz	    r1,4(r2) 				#load tlb entry lower-word
+		lwz     r1,4(r2) 				#load tlb entry lower-word
 		mtctr	r0   					#restore counter
 		mfspr	r0,DMISS  				#get the miss address for the tlbld
 		mfsrr1	r3   					#get the saved cr0 bits
 		mtcrf	0x80,r3 				#restore CR0
 		mtspr	RPA,r1  				#set the pte
-		ori	    r1,r1,PTE_REFERENCED   	#set reference bit
+		ori     r1,r1,PTE_REFERENCED   	#set reference bit
 		srwi	r1,r1,8  				#get byte 7 of pte
 		tlbld	r0    					#load the dtlb
-		stb	    r1,6(r2) 				#update page table
+		stb     r1,6(r2) 				#update page table
 		rfi          					#return to executing program
 
 dataSecHash:
@@ -335,8 +335,8 @@ dataSecHash:
 		bne	doDSI       				#if so, go to DSI interrupt
 
 		mfspr	r2,HASH2   				#get the second pointer
-		ori	    r3,r3,PTE_HASHID     	#change the compare value
-		li	    r1,8   					#load 8 for counter
+		ori     r3,r3,PTE_HASHID     	#change the compare value
+		li      r1,8   					#load 8 for counter
 		addi	r2,r2,-8  				#pre dec for update on load
 		b	dm0  	    				#try second hash
 
@@ -344,7 +344,7 @@ dataSecHash:
 
 ExcDStoreTLBMiss:
 		mfspr	r2,HASH1				#get first pointer
-		li	    r1,8 					#load 8 for counter
+		li      r1,8 					#load 8 for counter
 		mfctr	r0   					#save counter
 		mfspr	r3,DCMP 				#get first compare value
 		addi	r2,r2,-8				#pre dec the pointer
@@ -354,11 +354,11 @@ ceq1:
 		lwzu	r1,8(r2)				#get next pte
 		cmpw	r1,r3    				#see if found pte
 		bdnzf	eq,ceq1 				#dec count br if cmp ne and if count not zero
-		bne	cEq0SecHash 				#if not found set up second hash or exit
+		bne	    cEq0SecHash				#if not found set up second hash or exit
 
-		lwz	    r1,4(r2)   				#load tlb entry lower-word
+		lwz     r1,4(r2)   				#load tlb entry lower-word
 		andi.	r3,r1,PTE_CHANGED   	#check the C-bit
-		beq	cEq0ChkProt 				#if (C==0) go check protection modes
+		beq	    cEq0ChkProt 			#if (C==0) go check protection modes
 ceq2:
 		mtctr	r0       				#restore counter
 		mfspr	r0,DMISS 				#get the miss address for the tlbld
@@ -373,36 +373,36 @@ cEq0SecHash:
 		bne	doDSI    			    	#if so, go to DSI interrupt
 
 		mfspr	r2,HASH2 				#get the second pointer
-		ori	    r3,r3,PTE_HASHID      	#change the compare value
-		li	    r1,8					#load 8 for counter
+		ori     r3,r3,PTE_HASHID      	#change the compare value
+		li      r1,8					#load 8 for counter
 		addi	r2,r2,-8				#pre dec for update on load
-		b	ceq0  				    	#try second hash
+		b	    ceq0  			    	#try second hash
 
 cEq0ChkProt:
 		rlwinm.	r3,r1,30,0,1 			#test PP
-    	bge-    chk0    			    #if (PP == 00 or PP == 01) goto chk0:
+		bge-    chk0    			    #if (PP == 00 or PP == 01) goto chk0:
 
 		andi.	r3,r1,1 				#test PP[0]
 		beq+	chk2   					#return if PP[0] == 0
-		b	doDSIp 					    #else DSIp
+		b	    doDSIp 				    #else DSIp
 
 chk0:
   		mfsrr1	r3      				#get old msr
 		andis.	r3,r3,SRR1_KEY@h 		#test the KEY bit (SRR1-bit 12)
-		beq	chk2      			    	#if (KEY==0) goto chk2:
-		b	doDSIp   			    	#else DSIp
+		beq	    chk2   			    	#if (KEY==0) goto chk2:
+		b	    doDSIp   		    	#else DSIp
 chk2:
-   		ori	    r1,r1,(PTE_REFERENCED|PTE_CHANGED)	#set reference and change bit
-		sth	r1,6(r2)		    		#update page table
-		b	ceq2  				    	#and back we go
+   		ori     r1,r1,(PTE_REFERENCED|PTE_CHANGED)	#set reference and change bit
+		sth	    r1,6(r2)	    		#update page table
+		b	    ceq2  			    	#and back we go
 
 doDSI:
  		mfsrr1	r3         				#get srr1
 		rlwinm	r1,r3,9,6,6  			#get srr1<flag> to bit 6
 		addis	r1,r1,DSISR_NOTFOUND@h	#or in dsisr<1> = 1 to flag not found
-		b	dsi1
+		b	    dsi1
 doDSIp:
-    	mfsrr1	r3         				#get srr1
+		mfsrr1	r3         				#get srr1
 		rlwinm	r1,r3,9,6,6    			#get srr1<flag> to bit 6
 		addis	r1,r1,DSISR_PROTECT@h   #or in dsisr<4> = 1 to flag prot violation
 dsi1:
@@ -412,7 +412,7 @@ dsi1:
 		mtdsisr	r1         				#load the dsisr
 		mfspr	r1,DMISS     			#get miss address
 		rlwinm.	r2,r2,0,31,31 			#test LE bit
-		beq	dsi2     				    #if little endian then:
+		beq	    dsi2 				    #if little endian then:
 
 		xori	r1,r1,0x07   			#de-mung the data address
 dsi2:
@@ -427,6 +427,3 @@ dsi2:
 		ba      0x300	  		    	#branch to DSI interrupt
 
 #********************************************************************************************
-
-
-
