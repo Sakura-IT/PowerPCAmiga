@@ -94,18 +94,28 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
 {
     APTR (*AllocMem_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a6") struct ExecBase*) = OldAllocMem;
 
-    //AmigaAMP
+                    //AmigaAMP
+
     USHORT testAttr = (USHORT)attributes;
 
-    if (!(testAttr) || (testAttr & MEMF_FAST))
+    if (testAttr)
     {
-        testAttr = 0; //dummy
-    }
-    else 
-    {
-        if (!(testAttr & MEMF_PUBLIC) || (testAttr & MEMF_CHIP))
+        if ( (testAttr & MEMF_CHIP) || !(testAttr & MEMF_PUBLIC))
         {
             return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
+        }
+    }               //TB_WARN (A1200) not yet implemented
+
+    ULONG highTaskByte = (ULONG)(SysBase->ThisTask) & 0xf0000000;
+
+    if (highTaskByte)
+    {
+        highTaskByte &= 0xe0000000;
+        struct PrivatePPCBase *privBase = (struct PrivatePPCBase*) myPPCBase;
+        ULONG highBaseByte = (ULONG)(privBase->pp_PPCMemBase) & 0xe0000000;
+        if (!(highTaskByte ^= highBaseByte))
+        {
+            SysBase->ThisTask->tc_Flags |= TF_PPC;
         }
     }
 
