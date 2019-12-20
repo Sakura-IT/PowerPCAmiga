@@ -238,3 +238,11 @@ ULONG                       if_regSRR0;
 ULONG                       if_ExceptionVector;
 };
 
+struct poolHeader {
+struct MinNode              ph_Node;
+ULONG                       ph_requirements;
+ULONG                       ph_PuddleSize;
+ULONG                       ph_ThresholdSize;
+struct MinList              ph_PuddleList;
+struct MinList              ph_BlockList;
+};
