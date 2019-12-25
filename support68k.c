@@ -36,6 +36,8 @@ extern struct PPCBase* myPPCBase;
 APTR   RemSysTask;
 UBYTE powerlib[] = "powerpc.library\0";
 UBYTE ampname[]  = "AmigaAMP\0";
+UBYTE testlongs[] = "2005_68K_PPCsk_0sk_1\0\0\0\0";
+
 
 /********************************************************************************************
 *
@@ -106,7 +108,10 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
         }
     }               //TB_WARN (A1200) not yet implemented
 
-    ULONG highTaskByte = (ULONG)(SysBase->ThisTask) & 0xf0000000;
+    struct Task* myTask = SysBase->ThisTask;
+    char * myName = NULL;
+
+    ULONG highTaskByte = (ULONG)(myTask) & 0xf0000000;
 
     if (highTaskByte)
     {
@@ -115,10 +120,63 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
         ULONG highBaseByte = (ULONG)(privBase->pp_PPCMemBase) & 0xe0000000;
         if (!(highTaskByte ^= highBaseByte))
         {
-            SysBase->ThisTask->tc_Flags |= TF_PPC;
+            myTask->tc_Flags |= TF_PPC;
         }
     }
 
+    struct Process* myProcess = (struct Process*)myTask;
+
+    if ((myTask->tc_Node.ln_Type != NT_PROCESS) || ((myTask->tc_Node.ln_Type == NT_PROCESS) && ((myProcess->pr_CLI == NULL))))
+    {
+        myName = myTask->tc_Node.ln_Name;
+        while (myName[0] != 0)
+        {
+            myName ++;
+        }
+        myName -= 5;
+    }
+    else
+    {
+        struct CommandLineInterface* myCLI;
+
+        if (myCLI = (struct CommandLineInterface *)((ULONG)(myProcess->pr_CLI << 2)))
+        {
+            if (myName = (char *)(ULONG)(myCLI->cli_CommandName << 2))
+            {
+                BYTE offset = myName[0] - 4;
+                if (offset >= 0)
+                {
+                    myName += offset;
+                }
+            }
+        }
+    }
+
+    ULONG testValue;
+    ULONG longnum = 0;
+
+    if (myName)
+    {
+        while (testValue = *((ULONG*)testlongs + longnum))
+        {
+            if (testValue == *((ULONG*)myName))
+            {
+                attributes |= MEMF_PPC;
+                return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
+            }
+        longnum += 1;
+        }
+        if ((*((LONG*)myName) == 0x70656564) || ((*((ULONG*)myName) == 0x2e657865) && (*((ULONG*)myName - 1) == 0x70616365)))
+        {
+            return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
+        }
+
+    }
+
+    if (myTask->tc_Flags & TF_PPC)
+    {
+        attributes |= MEMF_PPC;
+    }
     return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
 }
 
