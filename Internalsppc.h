@@ -27,7 +27,6 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 #include <exec/types.h>
 
 void        Reset  (void);
-ULONG       ReadPVR(void);
 ULONG   GetExcTable(void);
 ULONG   GetVecEntry(void);
 
@@ -40,6 +39,7 @@ ULONG getSRIn(ULONG address)              = "\tmfsrin\tr3,r3\n";
 void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tsync\n";
 void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
+
 
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
         ="\tmtibatl\t0,r3\n\tmtibatu\t0,r4\n\tmtdbatl\t0,r5\n\tmtdbatu\t0,r6\n";
@@ -151,4 +151,8 @@ ULONG myRun68KLowLevel(struct PrivatePPCBase* PowerPCBase, ULONG Code, LONG Offs
 VOID printDebugEntry(struct PrivatePPCBase* PowerPCBase, ULONG function, ULONG r4, ULONG r5, ULONG r6, ULONG r7);
 VOID printDebugExit(struct PrivatePPCBase* PowerPCBase, ULONG function, ULONG result);
 APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags);
+VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock);
+LONG LockMutexPPC(ULONG mutex);
+VOID FreeMutexPPC(ULONG mutex);
+
 

@@ -34,9 +34,9 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
     return NULL;
 }
 
-PPCFUNCTION LONG FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
+PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 {
-    return 0;
+    return;
 }
 
 PPCFUNCTION VOID FlushDCache(struct PrivatePPCBase* PowerPCBase)

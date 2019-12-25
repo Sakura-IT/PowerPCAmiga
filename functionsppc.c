@@ -72,12 +72,37 @@ PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, ST
 
 PPCFUNCTION LONG myInitSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
+
+	LONG result = 0;
+    APTR reserved;
+
+	myNewListPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue);
+	SemaphorePPC->ssppc_SS.ss_Owner = 0;
+	SemaphorePPC->ssppc_SS.ss_NestCount = 0;
+	SemaphorePPC->ssppc_SS.ss_QueueCount = -1;
+
+	if (reserved = AllocVec68K(PowerPCBase, 32, MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC)) //sizeof?
+	{
+		SemaphorePPC->ssppc_reserved = reserved;
+		result = -1;
+	}
+
+	printDebugExit(PowerPCBase, function, (ULONG)result);
+
+	return result;
 }
 
 PPCFUNCTION VOID myFreeSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
+
+	if (SemaphorePPC)
+	{
+		FreeVec68K(PowerPCBase, SemaphorePPC->ssppc_reserved);
+	}
+
+	printDebugExit(PowerPCBase, function, 0);
 }
 
 PPCFUNCTION LONG myAddSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
@@ -116,12 +141,68 @@ PPCFUNCTION VOID myRemSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 
 PPCFUNCTION VOID myObtainSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
+
+	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+
+	SemaphorePPC->ssppc_SS.ss_QueueCount += 1;
+
+	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+	if ((SemaphorePPC->ssppc_SS.ss_QueueCount) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
+	{
+		struct SemWait myWait;
+		myWait.sw_Task = myTask;
+		myWait.sw_Semaphore = SemaphorePPC;
+		myTask->tp_Task.tc_SigRecvd |= SIGF_SINGLE;
+		myTask->tp_Task.tc_SigRecvd ^= SIGF_SINGLE;
+
+		myAddTailPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue, (struct Node*)&myWait);
+
+		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+		myWaitPPC(PowerPCBase, SIGF_SINGLE);
+	}
+	else
+	{
+		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+	}
+
+	SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+
+	printDebugExit(PowerPCBase, function, 0);
+
+	return;
 }
 
 PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
+	LONG result = 0;
+
+	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+
+	LONG testSem = SemaphorePPC->ssppc_SS.ss_QueueCount + 1;
+
+	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+	if ((testSem) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
+	{
+		result = ATTEMPT_FAILURE;
+	}
+	else
+	{
+		SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)myTask;
+		SemaphorePPC->ssppc_SS.ss_QueueCount += 1;
+		SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+		result = ATTEMPT_SUCCESS;
+	}
+
+	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+	printDebugExit(PowerPCBase, function, (ULONG)result);
+
+	return result;
 }
 
 PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
@@ -276,7 +357,37 @@ PPCFUNCTION struct TagItem* myNextTagItemPPC(struct PrivatePPCBase* PowerPCBase,
 
 PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum)
 {
-    return 0;
+    	printDebugEntry(PowerPCBase, function, (ULONG)signum, 0, 0, 0);
+
+	LONG resAlloc, testAlloc;
+
+	ULONG myAlloc = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigAlloc;
+
+	if (!((BYTE)signum == -1))
+	{
+		ULONG testAlloc = 1 << signum;
+		resAlloc = signum;
+		if (testAlloc & myAlloc)
+		{
+			resAlloc = -1;
+		}
+	}
+	else
+	{
+		resAlloc = 0x1f;
+        do
+        {
+			testAlloc = 1 << resAlloc;
+			if (!(testAlloc & myAlloc))
+			{
+				break;
+			}
+        resAlloc--;
+		} while(resAlloc > -1);
+	}
+
+	printDebugExit(PowerPCBase, function, 0);
+	return resAlloc;
 }
 
 PPCFUNCTION VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum)

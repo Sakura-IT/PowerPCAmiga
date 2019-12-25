@@ -129,7 +129,7 @@ UBYTE                       pp_EnDAccessExc;
 UBYTE                       pp_Pad;
 ULONG                       pp_TaskExitCode;
 ULONG                       pp_PPCMemBase;
-ULONG                       pp_Atomic;
+ULONG                       pp_Mutex;
 ULONG                       pp_TaskExcept;
 ULONG                       pp_PPCMemSize;
 ULONG                       pp_MCPort;
@@ -245,4 +245,10 @@ ULONG                       ph_PuddleSize;
 ULONG                       ph_ThresholdSize;
 struct MinList              ph_PuddleList;
 struct MinList              ph_BlockList;
+};
+
+struct SemWait {
+struct Node sw_Node;
+struct TaskPPC* sw_Task;
+struct SignalSemaphorePPC* sw_Semaphore;
 };

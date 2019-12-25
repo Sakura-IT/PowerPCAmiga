@@ -23,6 +23,9 @@ $(OBJDIR)setupppcasm.o : setupppc.s
 $(OBJDIR)kernelasm.o : kernel.s
 	$(ASPPC) -o $(OBJDIR)kernelasm.o kernel.s
 
+$(OBJDIR)supportppcasm.o : supportppc.s
+	$(ASPPC) -o $(OBJDIR)supportppcasm.o supportppc.s
+
 $(OBJDIR)setupppc.o : setupppc.c
 	$(CCPPC) -c -o $(OBJDIR)setupppc.o setupppc.c
 
@@ -47,7 +50,7 @@ $(OBJDIR)functions68k.o : functions68k.c
 $(OBJDIR)libinit.o : libinit.c
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)libinit.o libinit.c
 
-OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68kasm.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)setupppcasm.o $(OBJDIR)setupppc.o $(OBJDIR)kernelasm.o $(OBJDIR)kernel.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppc.o
+OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68kasm.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)setupppcasm.o $(OBJDIR)setupppc.o $(OBJDIR)kernelasm.o $(OBJDIR)kernel.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppcasm.o $(OBJDIR)supportppc.o
 
 $(EXE) : $(OBJS)
 	$(LD) $(shell vbccprefs) -o $(EXE) $(OBJS)
