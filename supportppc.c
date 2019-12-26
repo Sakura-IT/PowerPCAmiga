@@ -237,24 +237,86 @@ PPCFUNCTION VOID EndTaskPPC(VOID)
 
 /********************************************************************************************
 *
-*
+*        APTR = AllocatePPC(struct Library*, struct MemHeader*, ULONG byteSize)
 *
 *********************************************************************************************/
 
 PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
 {
-    return NULL;
+    if (!(byteSize))
+    {
+        return NULL;
+    }
+
+    byteSize = (byteSize + 31) & -32;
+
+    if (byteSize > memHeader->mh_Free)
+    {
+        return NULL;
+    }
+
+    struct MemChunk* memChunk;
+    struct MemChunk* currChunk;
+    struct MemChunk* newChunk;
+
+    if (!(memChunk = (struct MemChunk*)&memHeader->mh_First))
+    {
+        return NULL;
+    }
+
+    while (currChunk = memChunk->mc_Next)
+    {
+        if (currChunk->mc_Bytes == byteSize)
+        {
+            memChunk->mc_Next = currChunk->mc_Next;
+            break;
+        }
+        if (currChunk->mc_Bytes > byteSize)
+        {
+            newChunk = currChunk + byteSize;
+            newChunk->mc_Next = currChunk->mc_Next;
+            newChunk->mc_Bytes = currChunk->mc_Bytes - byteSize;
+            memChunk->mc_Next = newChunk;
+            break;
+        }
+
+        memChunk = currChunk;
+    }
+
+    if (!(currChunk))
+    {
+        return NULL;
+    }
+
+    memHeader->mh_Free -= byteSize;         //clear alloc?
+
+    return (APTR)currChunk;
 }
 
 /********************************************************************************************
 *
-*
+*        VOID deallocatePPC(struct Library*, struct MemHeader*, APTR, ULONG)
 *
 *********************************************************************************************/
 
 PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader,
                    APTR memoryBlock, ULONG byteSize)
 {
+    if (!(byteSize))
+    {
+        return;
+    }
+
+    memoryBlock = (APTR)(((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
+    ULONG freeSize = (ULONG)memoryBlock + byteSize + 31;
+
+    if (!(freeSize &= -32))
+    {
+        return;
+    }
+
+    //tbc
+
     return;
 }
 
