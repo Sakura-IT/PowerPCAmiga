@@ -36,9 +36,12 @@ ULONG getSDR1(void)                       = "\tmfsdr1\tr3\n";
 void  setSDR1(ULONG value)                = "\tmtsdr1\tr3\n";
 void  setSRIn(ULONG keyVal, ULONG segVal) = "\tmtsrin\tr3,r4\n";
 ULONG getSRIn(ULONG address)              = "\tmfsrin\tr3,r3\n";
-void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tsync\n";
+void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tisync\n\tsync\n";
+ULONG getMSR(void)                        = "\tmfmsr\tr3\n";
 void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
+void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
+ULONG getR0(void)                         = "\tmr\tr3,r0\n";
 
 
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
@@ -53,8 +56,8 @@ void setBAT3(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
 void mSync(void)                          = "\tsync\n\tisync\n";
 
 
-ULONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
-ULONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
+LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
+LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
 VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstring, APTR Values);
 APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags, ULONG align);
 LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock);
@@ -154,5 +157,5 @@ APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags);
 VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock);
 LONG LockMutexPPC(ULONG mutex);
 VOID FreeMutexPPC(ULONG mutex);
-
+VOID StartTaskPPC(void);
 

@@ -45,7 +45,7 @@
 
 #define ID_MPC834X              0x8083
 
-#define MEMF_PPC                0x2000
+#define MEMF_PPC                (1L<<13)
 #define MEM_GAP                 0x480000
 #define TF_PPC                  1<<2
 #define VENDOR_ELBOX            0x89e
