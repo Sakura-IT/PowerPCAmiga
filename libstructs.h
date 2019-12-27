@@ -130,7 +130,7 @@ UBYTE                       pp_Pad;
 ULONG                       pp_TaskExitCode;
 ULONG                       pp_PPCMemBase;
 ULONG                       pp_Mutex;
-ULONG                       pp_TaskExcept;
+struct TaskPPC*             pp_TaskExcept;
 ULONG                       pp_PPCMemSize;
 ULONG                       pp_MCPort;
 ULONG                       pp_L2Size;
@@ -251,4 +251,8 @@ struct SemWait {
 struct Node sw_Node;
 struct TaskPPC* sw_Task;
 struct SignalSemaphorePPC* sw_Semaphore;
+};
+
+struct TagItemPtr {
+struct TagItem* tip_TagItem;
 };

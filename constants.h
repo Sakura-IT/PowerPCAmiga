@@ -182,6 +182,7 @@
 #define IMMR_PCILAWAR1          0x6C
 
 #define IMMR_IMR0               0x8050
+#define IMMR_OMR0               0x8058
 
 #define IMMR_PITAR0             0x8568
 #define IMMR_PIBAR0             0x8570

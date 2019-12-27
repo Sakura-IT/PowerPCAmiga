@@ -19,12 +19,15 @@
 // SOFTWARE.
 
 
+#include <exec/types.h>
+
 void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
 #define PPCEXCEPTION __section ("kernel","acrx") __entry
 
-#include <exec/types.h>
+#define _LVOAllocVec32      -54
+#define _LVOFreeVec32       -60
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -38,11 +41,12 @@ void  setSRIn(ULONG keyVal, ULONG segVal) = "\tmtsrin\tr3,r4\n";
 ULONG getSRIn(ULONG address)              = "\tmfsrin\tr3,r3\n";
 void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tisync\n\tsync\n";
 ULONG getMSR(void)                        = "\tmfmsr\tr3\n";
+void  setDEC(LONG value)                  = "\tmtdec\tr3\n";
 void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
 void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
-
+void  HaltTask(void)                      = "\t.long\t0\n";
 
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
         ="\tmtibatl\t0,r3\n\tmtibatu\t0,r4\n\tmtdbatl\t0,r5\n\tmtdbatu\t0,r6\n";

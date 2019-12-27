@@ -21,9 +21,22 @@
 #include <exec/exec.h>
 #include <powerpc/tasksPPC.h>
 #include <powerpc/powerpc.h>
+#include <exec/memory.h>
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value)
+{
+	*((ULONG*)(Base + offset)) = value;
+	return;
+}
 
 /********************************************************************************************
 *
@@ -79,7 +92,18 @@ PPCFUNCTION VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* li
 
 PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags)
 {
-    return NULL;
+	APTR memBlock = NULL;
+
+	if (size == (ULONG)memBlock)
+	{
+		flags = (flags & ~MEMF_CHIP) | MEMF_PPC;
+		memBlock = (APTR)myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOAllocVec32, 0, 0, size, flags);
+		if (memBlock)
+		{
+			mySetCache(PowerPCBase, CACHE_DCACHEINV, memBlock, size);
+		}
+	}
+	return memBlock;
 }
 
 /********************************************************************************************
@@ -90,7 +114,9 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
 
 PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 {
-    return;
+	myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOFreeVec32, 0, (ULONG)memBlock, 0, 0);
+
+	return;
 }
 
 /********************************************************************************************
@@ -140,11 +166,43 @@ PPCFUNCTION VOID EnablePPC(VOID)
 *
 *********************************************************************************************/
 
-//unique for every bridge or use ifs?
-
-PPCFUNCTION ULONG CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 {
-    return 0;
+	ULONG msgFrame = 0;
+
+	ULONG key = mySuper(PowerPCBase);
+
+	DisablePPC();
+
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			msgFrame = *((ULONG*)(myFIFO->kf_MIOFT));
+			myFIFO->kf_MIOFT = (myFIFO->kf_MIOFT + 4) & 0xffff3fff;
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	EnablePPC();
+	myUser(PowerPCBase, key);
+
+	return (struct MsgFrame*)msgFrame;
 }
 
 /********************************************************************************************
@@ -153,9 +211,42 @@ PPCFUNCTION ULONG CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, ULONG msgFrame)
+PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-    return;
+	ULONG key = mySuper(PowerPCBase);
+
+	DisablePPC();
+
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
+			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
+			writememLongPPC(PowerPCBase->pp_BridgeConfig, IMMR_OMR0, (ULONG)msgFrame);
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	EnablePPC();
+	myUser(PowerPCBase, key);
+
+	return;
 }
 
 /********************************************************************************************
@@ -164,9 +255,43 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, ULONG msgFr
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, ULONG msgFrame)
+PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-    return;
+	ULONG key = mySuper(PowerPCBase);
+
+	DisablePPC();
+
+	msgFrame->mf_Identifier = ID_FREE;
+
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			*((ULONG*)(myFIFO->kf_MIIFH)) = (ULONG)msgFrame;
+			myFIFO->kf_MIIFH = (myFIFO->kf_MIIFH + 4) & 0xffff3fff;
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	EnablePPC();
+	myUser(PowerPCBase, key);
+
+	return;
 }
 
 /********************************************************************************************
@@ -177,9 +302,54 @@ PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, ULONG msgFr
 
 PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
 {
-    return 0;
-}
+    LONG result = 0;
+	ULONG offset = 0;
+	UBYTE s1,s2;
 
+	do
+	{
+		s1 = string1[offset];
+		s2 = string2[offset];
+
+		if (0x40 < s1 < 0x5b)
+		{
+			s1 |= 0x20;
+		}
+		else if (s1 > 0x5a)
+		{
+			if (0xc0 < s1 < 0xe0)
+			{
+				s1 |= 0x20;
+			}
+		}
+		if (0x40 < s2 < 0x5b)
+		{
+			s2 |= 0x20;
+		}
+		else if (s2 > 0x5a)
+		{
+			if (0xc0 < s2 < 0xe0)
+			{
+				s2 |= 0x20;
+			}
+		}
+		if (s1 != s2)
+		{
+			if (s1 < s2)
+			{
+				result = 1;
+			}
+			else
+			{
+				result = -1;
+			}
+			break;
+		}
+		offset ++;
+	} while (s1);
+
+	return result;
+}
 /********************************************************************************************
 *
 *
@@ -188,7 +358,13 @@ PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
 
 PPCFUNCTION ULONG GetLen(STRPTR string)
 {
-    return 0;
+	ULONG offset = 0;
+
+	while (string[offset])
+	{
+	 	offset++;
+	}
+	return offset;
 }
 
 /********************************************************************************************
@@ -199,7 +375,20 @@ PPCFUNCTION ULONG GetLen(STRPTR string)
 
 PPCFUNCTION STRPTR CopyStr(APTR source, APTR dest)
 {
-    return NULL;
+	ULONG offset = -1;
+
+    UBYTE* mySource = (UBYTE*)source;
+    UBYTE* myDest   = (UBYTE*)dest;
+
+	do
+	{
+		offset ++;
+		myDest[offset] = mySource[offset];
+	} while (mySource[offset]);
+
+    offset ++;
+
+    return &myDest[offset];
 }
 
 /********************************************************************************************
@@ -210,7 +399,15 @@ PPCFUNCTION STRPTR CopyStr(APTR source, APTR dest)
 
 PPCFUNCTION VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase)
 {
-    return;
+	ULONG key;
+
+	if (!(PowerPCBase->pp_ExceptionMode))
+	{
+		key = mySuper(PowerPCBase);
+		setDEC(10);
+		myUser(PowerPCBase, key);
+	}
+	return;
 }
 
 /********************************************************************************************
@@ -221,7 +418,32 @@ PPCFUNCTION VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal)
 {
-    return 0;
+	ULONG sigmask;
+
+	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+
+	sigmask = myTask->tp_Task.tc_SigExcept & (myTask->tp_Task.tc_SigRecvd | signal);
+
+	if (!(sigmask))
+	{
+		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		return signal;
+	}
+	myTask->tp_Task.tc_SigRecvd |= sigmask;
+	signal = signal & ~sigmask;
+	PowerPCBase->pp_TaskExcept = myTask;
+	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+	CauseDECInterrupt(PowerPCBase);
+
+    volatile ULONG test;
+
+	do
+	{
+		test = (ULONG)PowerPCBase->pp_TaskExcept;
+	} while (test);
+
+	return signal;
+
 }
 
 /********************************************************************************************
@@ -302,22 +524,82 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
 PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader,
                    APTR memoryBlock, ULONG byteSize)
 {
-    if (!(byteSize))
-    {
-        return;
-    }
+	if (!(byteSize))
+	{
+		return;
+	}
 
-    memoryBlock = (APTR)(((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
-    ULONG freeSize = (ULONG)memoryBlock + byteSize + 31;
+	ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
+	struct MemChunk* newChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
+	ULONG freeSize = testSize + byteSize + 31;
 
-    if (!(freeSize &= -32))
-    {
-        return;
-    }
+	if (!(freeSize &= -32))
+	{
+		return;
+	}
 
-    //tbc
+	struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
 
-    return;
+	ULONG flag = 0;
+
+	while (currChunk->mc_Next)
+	{
+		if (currChunk->mc_Next > newChunk)
+		{
+			if (currChunk == (struct MemChunk*)&memHeader->mh_First)
+			{
+				break;
+			}
+			if (newChunk > currChunk->mc_Bytes + currChunk)
+			{
+				break;
+			}
+			else if (newChunk < currChunk->mc_Bytes + currChunk)
+			{
+			    storeR0(0x454d454d);    //EMEM
+                HaltTask();
+			}
+			flag = 1;
+			break;
+		}
+		else if (currChunk->mc_Next == newChunk)
+		{
+			storeR0(0x454d454d);    //EMEM
+            HaltTask();
+		}
+	currChunk = currChunk->mc_Next;
+	}
+
+	if (flag)
+	{
+		currChunk->mc_Bytes += freeSize;
+		newChunk = currChunk;
+	}
+	else
+	{
+		newChunk->mc_Next = currChunk->mc_Next;
+		currChunk->mc_Next = newChunk;
+		newChunk->mc_Bytes = freeSize;
+	}
+
+	struct MemChunk* nextChunk = newChunk->mc_Next;
+	if (nextChunk)
+	{
+		if ((ULONG)nextChunk < (ULONG)(newChunk) + newChunk->mc_Bytes)
+		{
+			storeR0(0x454d454d);    //EMEM
+            HaltTask();
+		}
+		else if ((ULONG)nextChunk > (ULONG)(newChunk) + newChunk->mc_Bytes)
+		{
+			newChunk->mc_Next = nextChunk->mc_Next;
+			newChunk->mc_Bytes = nextChunk->mc_Bytes + newChunk->mc_Bytes;
+		}
+	}
+
+	memHeader->mh_Free += freeSize;
+
+	return;
 }
 
 /********************************************************************************************

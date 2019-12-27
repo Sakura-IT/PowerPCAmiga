@@ -538,6 +538,8 @@ void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
             *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
             myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
             writememLong(myBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
+
+            break;
         }
 
         case DEVICE_MPC107:
@@ -584,6 +586,8 @@ void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 
             *((ULONG*)(myFIFO->kf_MIOFH)) = (ULONG)msgFrame;
             myFIFO->kf_MIOFH = (myFIFO->kf_MIOFH + 4) & 0xffff3fff;
+
+            break;
         }
 
         case DEVICE_MPC107:

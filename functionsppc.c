@@ -84,7 +84,17 @@ PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, U
 
 PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)memblock, 0, 0, 0);
+
+	if (memblock)
+	{
+		ULONG* myMemblock = (ULONG*)memblock;
+		myFreePooledPPC(PowerPCBase, (APTR)myMemblock[-2], (APTR)myMemblock[-3], myMemblock[-1]);
+	}
+
+	printDebugExit(PowerPCBase, function, 0);
+	
+    return MEMERR_SUCCESS;
 }
 
 /********************************************************************************************
@@ -492,9 +502,21 @@ PPCFUNCTION struct Node* myFindNamePPC(struct PrivatePPCBase* PowerPCBase, struc
 *
 *********************************************************************************************/
 
-PPCFUNCTION struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase, ULONG value, struct TagItem* taglist)
+PPCFUNCTION struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase, ULONG tagvalue, struct TagItem* taglist)
 {
-    return NULL;
+	struct TagItem* myTag = NULL;
+
+    struct TagItemPtr tagPtr;
+    tagPtr.tip_TagItem = taglist;
+
+	while (myTag = myNextTagItemPPC(PowerPCBase, (struct TagItem**)&tagPtr))
+	{
+		if (myTag->ti_Tag == tagvalue)
+		{
+			break;
+		}
+	}
+	return myTag;
 }
 
 /********************************************************************************************
@@ -1204,7 +1226,34 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
 
 PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)poolheader, 0, 0, 0);
+
+	if (poolheader)
+	{
+		myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemMemory);
+		myRemovePPC(PowerPCBase, (struct Node*)poolheader);
+
+        struct poolHeader* myheader = (struct poolHeader*)poolheader;
+
+        struct List* puddleList = (struct List*)(&(myheader->ph_PuddleList));
+        struct List* blockList = (struct List*)(&(myheader->ph_BlockList));
+		struct Node* currNode;
+
+		while (currNode = myRemHeadPPC(PowerPCBase, puddleList))
+		{
+			FreeVec68K(PowerPCBase, currNode);
+		}
+		while (currNode = myRemHeadPPC(PowerPCBase, blockList))
+		{
+			FreeVec68K(PowerPCBase, currNode);
+		}
+
+		FreeVec68K(PowerPCBase, poolheader);
+
+		myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemMemory);
+	}
+	printDebugExit(PowerPCBase, function, 0);
+	return;
 }
 
 /********************************************************************************************
