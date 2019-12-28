@@ -46,6 +46,7 @@ void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
 void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
+ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
@@ -162,4 +163,5 @@ VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock);
 LONG LockMutexPPC(ULONG mutex);
 VOID FreeMutexPPC(ULONG mutex);
 VOID StartTaskPPC(void);
+ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal);
 

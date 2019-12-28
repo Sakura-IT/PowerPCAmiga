@@ -233,7 +233,7 @@ PPCFUNCTION VOID myObtainSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct
 {
 	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
 
-	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
 	SemaphorePPC->ssppc_SS.ss_QueueCount += 1;
 
@@ -276,7 +276,7 @@ PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
 	LONG result = 0;
 
-	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
 	LONG testSem = SemaphorePPC->ssppc_SS.ss_QueueCount + 1;
 
@@ -1125,7 +1125,27 @@ PPCFUNCTION VOID mySetScheduling(struct PrivatePPCBase* PowerPCBase, struct TagI
 
 PPCFUNCTION struct TaskPPC* myFindTaskByID(struct PrivatePPCBase* PowerPCBase, LONG id)
 {
-    return NULL;
+    printDebugEntry(PowerPCBase, function, (LONG)id, 0, 0, 0);
+
+    struct TaskPtr* myPtr = myLockTaskList(PowerPCBase);
+    struct TaskPPC* foundTask = NULL;
+
+    while (myPtr->tptr_Node.ln_Succ)
+    {
+        struct TaskPPC* myTask = (struct TaskPPC*)myPtr->tptr_Task;
+        if (id == myTask->tp_Id)
+        {
+            foundTask = myTask;
+            break;
+        }
+        myPtr = (struct TaskPtr*)myPtr->tptr_Node.ln_Succ;
+    }
+
+    myUnLockTaskList(PowerPCBase);
+
+    printDebugExit(PowerPCBase, function, (ULONG)foundTask);
+
+    return foundTask;
 }
 
 /********************************************************************************************
@@ -1136,7 +1156,32 @@ PPCFUNCTION struct TaskPPC* myFindTaskByID(struct PrivatePPCBase* PowerPCBase, L
 
 PPCFUNCTION LONG mySetNiceValue(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, LONG nice)
 {
-    return 0;
+    printDebugEntry(PowerPCBase, function, (ULONG)task, (ULONG)nice, 0, 0);
+
+    LONG oldNice;
+
+    if (oldNice = (LONG)task)
+    {
+        if (nice < -20)
+        {
+            nice = -20;
+        }
+        else if (nice > 20)
+        {
+            nice = 20;
+        }
+
+        myLockTaskList(PowerPCBase);
+
+        oldNice = task->tp_Nice;
+        task->tp_Nice = nice;
+
+        myUnLockTaskList(PowerPCBase);
+    }
+
+    printDebugExit(PowerPCBase, function, oldNice);
+
+    return oldNice;
 }
 
 /********************************************************************************************
@@ -1173,7 +1218,27 @@ PPCFUNCTION VOID myNewListPPC(struct PrivatePPCBase* PowerPCBase, struct List* l
 
 PPCFUNCTION ULONG mySetExceptPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG mask, ULONG flag)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, signals, mask, flag, 0);
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    ULONG OldSignals = myTask->tp_Task.tc_SigExcept;
+    ULONG newSignals = (signals & mask) | (OldSignals & ~mask);
+    myTask->tp_Task.tc_SigExcept = newSignals;
+    if (flag)
+    {
+       myTask->tp_Task.tc_ExceptData = (APTR)getR2();
+    }
+
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    CheckExcSignal(PowerPCBase, myTask, 0);
+
+    printDebugExit(PowerPCBase, function, OldSignals);
+
+    return OldSignals;
 }
 
 /********************************************************************************************
@@ -1228,6 +1293,16 @@ PPCFUNCTION VOID myVacatePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSe
 
 PPCFUNCTION VOID myCauseInterrupt(struct PrivatePPCBase* PowerPCBase)
 {
+    if (!(PowerPCBase->pp_ExceptionMode))
+    {
+        ULONG key = mySuper(PowerPCBase);
+
+        PowerPCBase->pp_ExternalInt = -1;
+
+		setDEC(10);
+		
+        myUser(PowerPCBase, key);
+    }
     return;
 }
 
@@ -1374,7 +1449,8 @@ PPCFUNCTION LONG myAddUniqueSemaphorePPC(struct PrivatePPCBase* PowerPCBase, str
 
 PPCFUNCTION BOOL myIsExceptionMode(struct PrivatePPCBase* PowerPCBase)
 {
-    return FALSE;
+    BOOL status = PowerPCBase->pp_ExceptionMode;
+    return status;
 }
 
 /********************************************************************************************

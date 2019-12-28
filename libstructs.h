@@ -129,7 +129,7 @@ UBYTE                       pp_EnDAccessExc;
 UBYTE                       pp_Pad;
 ULONG                       pp_TaskExitCode;
 ULONG                       pp_PPCMemBase;
-ULONG                       pp_Mutex;
+volatile ULONG              pp_Mutex;
 struct TaskPPC*             pp_TaskExcept;
 ULONG                       pp_PPCMemSize;
 ULONG                       pp_MCPort;
