@@ -85,7 +85,7 @@ struct Node* myRemTailPPC(struct PrivatePPCBase* PowerPCBase, struct List* list)
 VOID myEnqueuePPC(struct PrivatePPCBase* PowerPCBase, struct List* list, struct Node* node);
 struct Node* myFindNamePPC(struct PrivatePPCBase* PowerPCBase, struct List* list, STRPTR name);
 struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase, ULONG value, struct TagItem* taglist);
-ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG value, ULONG d0arg, struct TagItem* taglist);
+ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG tagvalue, ULONG tagdefault, struct TagItem* taglist);
 struct TagItem* myNextTagItemPPC(struct PrivatePPCBase* PowerPCBase, struct TagItem** tagitem);
 LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum);
 VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum);

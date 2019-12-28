@@ -504,19 +504,19 @@ PPCFUNCTION struct Node* myFindNamePPC(struct PrivatePPCBase* PowerPCBase, struc
 
 PPCFUNCTION struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase, ULONG tagvalue, struct TagItem* taglist)
 {
-	struct TagItem* myTag = NULL;
+	struct TagItem* myTagItem = NULL;
 
     struct TagItemPtr tagPtr;
     tagPtr.tip_TagItem = taglist;
 
-	while (myTag = myNextTagItemPPC(PowerPCBase, (struct TagItem**)&tagPtr))
+	while (myTagItem = myNextTagItemPPC(PowerPCBase, (struct TagItem**)&tagPtr))
 	{
-		if (myTag->ti_Tag == tagvalue)
+		if (myTagItem->ti_Tag == tagvalue)
 		{
 			break;
 		}
 	}
-	return myTag;
+	return myTagItem;
 }
 
 /********************************************************************************************
@@ -525,9 +525,20 @@ PPCFUNCTION struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase,
 *
 *********************************************************************************************/
 
-PPCFUNCTION ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG value, ULONG d0arg, struct TagItem* taglist)
+PPCFUNCTION ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG tagvalue, ULONG tagdefault, struct TagItem* taglist)
 {
-    return 0;
+    ULONG result;
+    struct TagItem* myTagItem;
+
+    if (myTagItem = myFindTagItemPPC(PowerPCBase, tagvalue, taglist))
+    {
+        result = myTagItem->ti_Data;
+    }
+    else
+    {
+        result = tagdefault;
+    }
+    return result;
 }
 
 /********************************************************************************************
@@ -538,7 +549,40 @@ PPCFUNCTION ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG valu
 
 PPCFUNCTION struct TagItem* myNextTagItemPPC(struct PrivatePPCBase* PowerPCBase, struct TagItem** tagitem)
 {
-    return NULL;
+	struct TagItemPtr* tagitemptr = (struct TagItemPtr*)tagitem;
+	struct TagItem* myTagItem;
+    LONG myTag;
+
+	if (myTagItem = tagitemptr->tip_TagItem)
+    {
+	    while (myTag = (LONG)myTagItem->ti_Tag)
+	    {
+            if ((myTag < 0) || (myTag > 3))
+            {
+                tagitemptr->tip_TagItem = myTagItem + 1;
+                return myTagItem;
+            }
+            else if (myTag == 2)
+            {
+                if (!(myTagItem = (struct TagItem*)myTagItem->ti_Data))
+                {
+                    break;
+                }
+            }
+            else if (myTag == 1)
+            {
+                myTagItem += 1;
+            }
+            else    //my Tag == 3
+            {
+                 ULONG skipValue = 1 + myTagItem->ti_Data;
+                 myTagItem += skipValue;
+            }
+        }
+        myTagItem = NULL;
+        tagitemptr->tip_TagItem = myTagItem;
+    }
+    return myTagItem;
 }
 
 /********************************************************************************************
