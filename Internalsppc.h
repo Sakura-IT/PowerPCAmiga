@@ -164,4 +164,8 @@ LONG LockMutexPPC(ULONG mutex);
 VOID FreeMutexPPC(ULONG mutex);
 VOID StartTaskPPC(void);
 ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal);
+VOID GetBATs(struct PrivatePPCBase* PowerPCBase);
+VOID StoreBATs(struct PrivatePPCBase* PowerPCBase);
+VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray);
+VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray);
 

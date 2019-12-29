@@ -256,3 +256,10 @@ struct SignalSemaphorePPC* sw_Semaphore;
 struct TagItemPtr {
 struct TagItem* tip_TagItem;
 };
+
+struct BATArray {
+ULONG                       ba_Ibatu;
+ULONG                       ba_Ibatl;
+ULONG                       ba_Dbatu;
+ULONG                       ba_Dbatl;
+};
