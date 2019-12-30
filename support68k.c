@@ -26,10 +26,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/doshunks.h>
+#include <hardware/custom.h>
+#include <hardware/intbits.h>
 
 #include "constants.h"
-#include "Internals68k.h"
 #include "libstructs.h"
+#include "Internals68k.h"
 
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
 extern struct PPCBase* myPPCBase;
@@ -408,19 +410,87 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
 
 FUNC68K void MasterControl(void)
 {
-    struct ExecBase* SysBase = myPPCBase->PPC_SysLib;
+    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+	struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
+	struct MsgFrame* myFrame;
+	struct PPCZeroPage* myZP = (struct PPCZeroPage*)PowerPCBase->pp_PPCMemBase;
+
     ULONG mySignal = 0;
 
-    while (!(mySignal & SIGBREAKF_CTRL_F))
-    {
-        mySignal = Wait(SIGBREAKF_CTRL_F);
-    }
+	while (!(mySignal & SIGBREAKF_CTRL_F))
+	{
+		mySignal = Wait(SIGBREAKF_CTRL_F);
+	}
 
-    struct Task* myTask = SysBase->ThisTask;
+	struct Task* myTask = SysBase->ThisTask;
 
-    struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
+	struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
 
-    return;
+	struct MsgPort* mcPort = CreateMsgPort();
+	PowerPCBase->pp_MasterControl = mcPort;
+
+	myZP->zp_Status = STATUS_INIT;
+
+	while (1)
+	{
+		WaitPort(mcPort);
+
+		while (myFrame = (struct MsgFrame*)GetMsg(mcPort))
+		{
+			myTask->tc_Flags |= TF_PPC;
+			if (myTask->tc_Node.ln_Type == NT_REPLYMSG)
+			{
+				if(myTask->tc_Node.ln_Name)
+				{
+					struct MsgFrame* newFrame = CreateMsgFrame(PowerPCBase);
+					newFrame->mf_Identifier = ID_XMSG;
+					newFrame->mf_Arg[0] = (ULONG)myFrame;
+					newFrame->mf_Message.mn_ReplyPort = (struct MsgPort*)myFrame->mf_Message.mn_Node.ln_Name;
+					myFrame->mf_Message.mn_ReplyPort = (struct MsgPort*)myFrame->mf_Message.mn_Node.ln_Name;
+					SendMsgFrame(PowerPCBase, newFrame);
+				}
+				else
+				{
+					break; //removeme
+                    //error;
+				}
+			}
+			else
+			{
+				switch (myFrame->mf_Identifier)
+				{
+					case ID_T68K:
+					{
+						break;
+					}
+					case ID_LL68:
+					{
+						break;
+					}
+					case ID_FREE:
+					{
+						break;
+					}
+					case ID_DBGS:
+					{
+						break;
+					}
+					case ID_DBGE:
+					{
+						break;
+					}
+					case ID_CRSH:
+					{
+						break;
+					}
+					default:
+					{
+						break; //error
+					}
+				}
+			}
+		}
+	}
 }
 
 /********************************************************************************************
@@ -429,9 +499,127 @@ FUNC68K void MasterControl(void)
 *
 *********************************************************************************************/
 
-FUNC68K ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)
+FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
-    return 0;
+	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
+	struct MsgFrame* myFrame;
+	ULONG flag = 0;
+
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+		case DEVICE_MPC8343E:
+		{
+			if(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I)
+			{
+				writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
+				flag = 1;
+			}
+		}
+		default:
+		{
+			break; //error
+		}
+	}
+	if (flag)
+	{
+		do
+		{
+            myFrame = GetMsgFrame(PowerPCBase);
+			switch(myFrame->mf_Identifier)
+			{
+				case ID_T68K:
+				case ID_END:
+				{
+					struct MsgPort* mirrorPort;
+                    if ((mirrorPort = myFrame->mf_MirrorPort) && (myFrame->mf_Identifier != ID_END))
+					{
+						struct Task* sigTask = mirrorPort->mp_SigTask;
+						sigTask->tc_SigAlloc = myFrame->mf_Arg[0];
+						PutMsg(mirrorPort, &myFrame->mf_Message);
+                    }
+					else
+					{
+						PutMsg(PowerPCBase->pp_MasterControl, &myFrame->mf_Message);
+					}
+					break;
+				}
+				case ID_FPPC:
+				{
+					struct MsgPort* replyPort = myFrame->mf_Message.mn_ReplyPort;
+					struct Task* sigTask = replyPort->mp_SigTask;
+					sigTask->tc_SigAlloc = myFrame->mf_Arg[0];
+					ReplyMsg(&myFrame->mf_Message);
+					break;
+				}
+				case ID_XMSG:
+				{
+					struct MsgPort* xPort = (struct MsgPort*)myFrame->mf_Arg[0];
+					struct Message* xMessage = (struct Message*)myFrame->mf_Arg[1];
+					xMessage->mn_Node.ln_Name = (APTR)xMessage->mn_ReplyPort;
+					xMessage->mn_ReplyPort = PowerPCBase->pp_MasterControl;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					PutMsg(xPort, xMessage);
+					break;
+				}
+				case ID_SIG:
+				{
+					Signal((struct Task*)myFrame->mf_Arg[0], myFrame->mf_Signals);
+					FreeMsgFrame(PowerPCBase, myFrame);
+					break;
+				}
+				case ID_RX68:
+				{
+					struct Message* xMessage = (struct Message*)myFrame->mf_Arg[0];
+					struct MsgPort* xPort = xMessage->mn_ReplyPort;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					PutMsg(xPort, xMessage);
+					break;
+				}
+				case ID_GETV:
+				{
+					myFrame->mf_Arg[1] = *((ULONG*)(myFrame->mf_Arg[0]));
+					myFrame->mf_Identifier = ID_DONE;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					break;
+				}
+				case ID_PUTW:
+				{
+					*((ULONG*)(myFrame->mf_Arg[0])) = myFrame->mf_Arg[1];
+					myFrame->mf_Identifier = ID_DONE;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					break;
+				}
+				case ID_PUTH:
+				{
+					*((ULONG*)(myFrame->mf_Arg[0])) = (USHORT)myFrame->mf_Arg[1];
+					myFrame->mf_Identifier = ID_DONE;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					break;
+				}
+				case ID_PUTB:
+				{
+					*((ULONG*)(myFrame->mf_Arg[0])) = (UBYTE)myFrame->mf_Arg[1];
+					myFrame->mf_Identifier = ID_DONE;
+					FreeMsgFrame(PowerPCBase, myFrame);
+					break;
+				}
+				default:
+				{
+					PutMsg(PowerPCBase->pp_MasterControl, (struct Message*)myFrame);
+				}
+			}
+		} while ((LONG)myFrame != -1);
+	}
+	return flag;
 }
 
 /********************************************************************************************
@@ -440,12 +628,25 @@ FUNC68K ULONG sonInt(__reg("a1") APTR data, __reg("a5") APTR code)
 *
 *********************************************************************************************/
 
-FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
+FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
-    return 0;
-}
+    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+    struct Custom* custom = (struct Custom*)CUSTOMBASE;
 
-//make the next ones each for every bridge type or use ifs?
+	ULONG configBase = PowerPCBase->pp_BridgeConfig;
+
+	if (!(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
+	{
+		struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+		if (myFIFO->kf_MIOPT != myFIFO->kf_MIOPH)
+		{
+			custom->intena = INTF_PORTS;
+			GortInt(data, code);
+			custom->intena = INTF_SETCLR|INTF_INTEN|INTF_PORTS;
+		}
+	}
+	return 0;
+}
 
 /********************************************************************************************
 *
@@ -453,16 +654,15 @@ FUNC68K ULONG zenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 *
 *********************************************************************************************/
 
-struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
+struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
-    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
-    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 
     ULONG msgFrame = NULL;
 
     Disable();
 
-    switch (myBase->pp_DeviceID)
+    switch (PowerPCBase->pp_DeviceID)
     {
         case DEVICE_HARRIER:
         {
@@ -471,7 +671,7 @@ struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
             while (1)
             {                
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
@@ -517,14 +717,13 @@ struct MsgFrame* CreateMsgFrame(struct PPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
+void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
-    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 
     Disable();
 
-    switch (myBase->pp_DeviceID)
+    switch (PowerPCBase->pp_DeviceID)
     {
         case DEVICE_HARRIER:
         {
@@ -533,11 +732,11 @@ void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
 
             *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
             myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
-            writememLong(myBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
+            writememLong(PowerPCBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
 
             break;
         }
@@ -564,16 +763,15 @@ void SendMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 *
 *********************************************************************************************/
 
-void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
+void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
-    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 
     Disable();
 
     msgFrame->mf_Identifier = ID_FREE;
 
-    switch (myBase->pp_DeviceID)
+    switch (PowerPCBase->pp_DeviceID)
     {
         case DEVICE_HARRIER:
         {
@@ -582,7 +780,7 @@ void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
 
             *((ULONG*)(myFIFO->kf_MIOFH)) = (ULONG)msgFrame;
             myFIFO->kf_MIOFH = (myFIFO->kf_MIOFH + 4) & 0xffff3fff;
@@ -612,16 +810,15 @@ void FreeMsgFrame(struct PPCBase* PowerPCBase, struct MsgFrame*  msgFrame)
 *
 *********************************************************************************************/
 
-struct MsgFrame* GetMsgFrame(struct PPCBase* PowerPCBase)
+struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
-    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
-    struct ExecBase* SysBase = PowerPCBase->PPC_SysLib;
+    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 
     ULONG msgFrame = -1;
 
     Disable();
 
-    switch (myBase->pp_DeviceID)
+    switch (PowerPCBase->pp_DeviceID)
     {
         case DEVICE_HARRIER:
         {
@@ -630,7 +827,7 @@ struct MsgFrame* GetMsgFrame(struct PPCBase* PowerPCBase)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(myBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
 
             if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
             {

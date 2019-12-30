@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#define CUSTOMBASE             0xdff000
+
 #define PPC_VECLEN              3       //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
 #define NUM_OF_PPC_FUNCS        95
@@ -30,9 +32,23 @@
 #define ID_TPPC                 0x54505043
 #define ID_FREE                 0x46524545
 #define ID_LLPP                 0x4C4C5050
+#define ID_LL68                 0x4C4C3638
 #define ID_FPPC                 0x46505043
 #define ID_T68K                 0x5436384B
 #define ID_DONE                 0x444F4E45
+#define ID_END                  0x454E4421
+#define ID_SIG                  0x53494721
+#define ID_XMSG                 0x584D5347
+#define ID_RX68                 0x52583638
+#define ID_GETV                 0x47455456
+#define ID_PUTB                 0x50555442
+#define ID_PUTH                 0x50555448
+#define ID_PUTW                 0x50555457
+#define ID_DBGS                 0x44424753
+#define ID_DBGE                 0x44424745
+#define ID_CRSH                 0x43525348
+
+#define STATUS_INIT             0x494E4954
 
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
@@ -181,6 +197,7 @@
 #define IMMR_PCILAWBAR1         0x68
 #define IMMR_PCILAWAR1          0x6C
 
+#define IMMR_OMISR              0x8030
 #define IMMR_IMR0               0x8050
 #define IMMR_OMR0               0x8058
 
@@ -201,6 +218,8 @@
 #define IMMR_POCMR3             0x8458
 #define IMMR_POCMR4             0x8470
 #define IMMR_POCMR5             0x8488
+
+#define IMMR_OMISR_OM0I         0x01000000
 
 #define PIWAR_EN                0x80000000
 #define PIWAR_PF                0x20000000

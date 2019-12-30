@@ -56,10 +56,12 @@ void   PrintCrtErr  (struct InternalConsts* myConsts, UBYTE* crterrtext);
 void   MasterControl(void);
 void   Run68KCode   (__reg("a6") struct ExecBase* SysBase, __reg("a0") struct PPCArgs* PPStruct);
 
-struct MsgFrame*  CreateMsgFrame(struct PPCBase* PowerPCBase);
-void              SendMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);
-void              FreeMsgFrame  (struct PPCBase* PowerPCBase, struct MsgFrame* msgFrame);
-struct MsgFrame*  GetMsgFrame   (struct PPCBase* PowerPCBase);
+ULONG  GortInt      (__reg("a1") APTR data, __reg("a5") APTR code);
+
+struct MsgFrame*  CreateMsgFrame(struct PrivatePPCBase* PowerPCBase);
+void              SendMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+void              FreeMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+struct MsgFrame*  GetMsgFrame   (struct PrivatePPCBase* PowerPCBase);
 
 struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
 struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, ULONG initPointer);
@@ -72,8 +74,8 @@ struct Library* myOpen         (__reg("a6") struct PPCBase* PowerPCBase);
 BPTR            myClose        (__reg("a6") struct PPCBase* PowerPCBase);
 BPTR            myExpunge      (__reg("a6") struct PPCBase* PowerPCBase);
 ULONG           myReserved     (void);
-LONG            myRunPPC       (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
-LONG            myWaitForPPC   (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
+LONG            myRunPPC       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
+LONG            myWaitForPPC   (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
 ULONG           myGetCPU       (__reg("a6") struct PPCBase* PowerPCBase);
 ULONG           myGetPPCState  (__reg("a6") struct PPCBase* PowerPCBase);
 struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems);

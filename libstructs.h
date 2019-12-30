@@ -34,7 +34,6 @@ ULONG               mf_Identifier;
 struct MsgPort*     mf_MirrorPort;
 struct TaskPPC*     mf_PPCTask;
 struct PPCArgs      mf_PPCArgs;
-//struct MsgPort*     mf_MCPort;          //Needed?
 ULONG               mf_Signals;
 ULONG               mf_Arg[3];
 };
@@ -123,6 +122,7 @@ struct PPCBase              pp_PowerPCBase;
 struct MinList              pp_MirrorList;
 ULONG                       pp_DeviceID;
 ULONG                       pp_BridgeConfig;
+struct MsgPort*             pp_MasterControl;
 UBYTE                       pp_DebugLevel;
 UBYTE                       pp_EnAlignExc;
 UBYTE                       pp_EnDAccessExc;

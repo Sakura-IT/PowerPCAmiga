@@ -153,7 +153,7 @@ LIBFUNC68K ULONG myReserved(void)
 *
 ********************************************************************************************/
 
-LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
+LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     struct MinList myList;
     struct MirrorTask* myMirror;
@@ -165,18 +165,16 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
     STRPTR cmndName;
 
     struct MirrorTask* thisMirrorNode   = NULL;
-    struct ExecBase* SysBase      = PowerPCBase->PPC_SysLib;
+    struct ExecBase* SysBase      = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct Task* thisTask         = SysBase->ThisTask;
     struct Process* thisProc      = (struct Process*)thisTask;
-
-    struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
 
     if (thisTask->tc_Node.ln_Type != NT_PROCESS)
     {
         return (PPERR_MISCERR);
     }
 
-    myList = myBase->pp_MirrorList;
+    myList = PowerPCBase->pp_MirrorList;
     myMirror = (struct MirrorTask*)myList.mlh_Head;
 
     while (myMirror->mt_Node.mln_Succ)
@@ -329,13 +327,12 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") st
 *
 ********************************************************************************************/
 
-LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
+LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     struct MinList myList;
     struct MirrorTask* myMirror;
     struct MsgFrame* myFrame;
-    struct ExecBase* SysBase            = PowerPCBase->PPC_SysLib;
-    struct PrivatePPCBase* myBase       = (struct PrivatePPCBase*)PowerPCBase;
+    struct ExecBase* SysBase            = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct MirrorTask* thisMirrorNode   = NULL;
     struct Task* thisTask               = SysBase->ThisTask;
 
@@ -346,7 +343,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
         return (PPERR_ASYNCERR);
     }
 
-    myList = myBase->pp_MirrorList;
+    myList = PowerPCBase->pp_MirrorList;
     myMirror = (struct MirrorTask*)myList.mlh_Head;
 
     while (myMirror->mt_Node.mln_Succ)
