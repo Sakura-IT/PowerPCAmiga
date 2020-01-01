@@ -248,8 +248,8 @@ struct MinList              ph_BlockList;
 };
 
 struct SemWait {
-struct Node sw_Node;
-struct TaskPPC* sw_Task;
+struct MinNode sw_Node;
+struct TaskPPC* sw_Task;    //Should be same offset as mn_ReplyPort in SemaphoreMessage
 struct SignalSemaphorePPC* sw_Semaphore;
 };
 

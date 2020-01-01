@@ -28,6 +28,8 @@
 
 #define PPERR_MISCERR           3
 
+#define ERR_ESEM                0x4553454D
+
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
 #define ID_FREE                 0x46524545
