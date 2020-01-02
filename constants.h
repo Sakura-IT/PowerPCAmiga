@@ -29,6 +29,10 @@
 #define PPERR_MISCERR           3
 
 #define ERR_ESEM                0x4553454D
+#define ERR_EFIF                0x45464946
+#define ERR_ESNC                0x45534E43
+#define ERR_EMEM                0x454D454D
+#define ERR_ETIM                0x4554494D
 
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
@@ -49,6 +53,7 @@
 #define ID_DBGS                 0x44424753
 #define ID_DBGE                 0x44424745
 #define ID_CRSH                 0x43525348
+#define ID_DNLL                 0x444E4C4C
 
 #define STATUS_INIT             0x494E4954
 

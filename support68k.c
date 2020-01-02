@@ -22,6 +22,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
+#include <dos/dostags.h>
 #include <powerpc/powerpc.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -39,7 +40,23 @@ APTR   RemSysTask;
 UBYTE powerlib[] = "powerpc.library\0";
 UBYTE ampname[]  = "AmigaAMP\0";
 UBYTE testlongs[] = "2005_68K_PPCsk_0sk_1\0\0\0\0";
+UBYTE CrashMessage[] =	 
+            "Task name: '%s'  Task address: %08lx\n"
+			"Exception: %s\n\n"
+			"SRR0: %08lx    SRR1:  %08lx     MSR:   %08lx    HID0: %08lx\n"
+			"PVR:  %08lx    DAR:   %08lx     DSISR: %08lx    SDR1: %08lx\n"
+			"DEC:  %08lx    TBU:   %08lx     TBL:   %08lx    XER:  %08lx\n"
+			"CR:   %08lx    FPSCR: %08lx     LR:    %08lx    CTR:  %08lx\n\n"
+			"R0-R3:   %08lx %08lx %08lx %08lx   IBAT0: %08lx %08lx\n"
+			"R4-R7:   %08lx %08lx %08lx %08lx   IBAT1: %08lx %08lx\n"
+			"R8-R11:  %08lx %08lx %08lx %08lx   IBAT2: %08lx %08lx\n"
+			"R12-R15: %08lx %08lx %08lx %08lx   IBAT3: %08lx %08lx\n"
+			"R16-R19: %08lx %08lx %08lx %08lx   DBAT0: %08lx %08lx\n"
+			"R20-R23: %08lx %08lx %08lx %08lx   DBAT1: %08lx %08lx\n"
+			"R24-R27: %08lx %08lx %08lx %08lx   DBAT2: %08lx %08lx\n"
+			"R28-R31: %08lx %08lx %08lx %08lx   DBAT3: %08lx %08lx\n\n\0";
 
+UBYTE msgPanic[] = "Kernel Panic!\0";
 
 /********************************************************************************************
 *
@@ -407,11 +424,31 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
 *
 *********************************************************************************************/
 
+FUNC68K void MirrorTask(void)
+{
+	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+	struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
+	struct MsgFrame* myFrame;
+
+	ULONG mySignal = 0;
+
+	while (!(mySignal & SIGBREAKF_CTRL_F))
+	{
+		mySignal = Wait(SIGBREAKF_CTRL_F);
+	}
+
+	struct Task* myTask = SysBase->ThisTask;
+
+	myFrame = (struct MsgFrame*)myTask->tc_UserData;
+
+	return;
+}
 
 FUNC68K void MasterControl(void)
 {
-    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
 	struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
+    struct DosLibrary* DOSBase = PowerPCBase->pp_PowerPCBase.PPC_DosLib;
 	struct MsgFrame* myFrame;
 	struct PPCZeroPage* myZP = (struct PPCZeroPage*)PowerPCBase->pp_PPCMemBase;
 
@@ -451,8 +488,7 @@ FUNC68K void MasterControl(void)
 				}
 				else
 				{
-					break; //removeme
-                    //error;
+					PrintError(myData, "MasterControl received illegal reply message");
 				}
 			}
 			else
@@ -461,31 +497,126 @@ FUNC68K void MasterControl(void)
 				{
 					case ID_T68K:
 					{
+						char *ppcName = myFrame->mf_PPCTask->tp_Task.tc_Node.ln_Name;
+						char Name68k[255];
+						char nameAppend[] = "_68K\0";
+
+						UBYTE offset = 0;
+						while (Name68k[offset] = ppcName[offset])
+						{
+							offset++;
+						}
+
+						CopyMem(&nameAppend, &Name68k[offset], 5);
+
+						struct Process* myProc;
+						myTask->tc_Flags &= ~TF_PPC;
+						myProc = CreateNewProcTags(
+						NP_Entry, (ULONG)&MirrorTask,
+						NP_Name, &Name68k,
+						NP_Priority, 0,
+						NP_StackSize, 0x20000,
+						TAG_DONE);
+						myTask->tc_Flags |= TF_PPC;
+
+						if(!(myProc))
+						{
+							PrintError(myData, "Could not start 68K mirror process");
+							break;
+						}
+						myProc->pr_Task.tc_UserData = (APTR)myFrame;
+						myTask->tc_SigAlloc = myFrame->mf_Arg[0];
+						Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
 						break;
 					}
 					case ID_LL68:
 					{
+						ULONG (*DoLL68K_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a0") ULONG,
+							 __reg("a1") ULONG, __reg("a6") ULONG) =
+							 (APTR)(myFrame->mf_PPCArgs.PP_Regs[0] + myFrame->mf_PPCArgs.PP_Regs[1]);
+						ULONG result = (*DoLL68K_ptr)(myFrame->mf_PPCArgs.PP_Regs[4], myFrame->mf_PPCArgs.PP_Regs[5],
+								myFrame->mf_PPCArgs.PP_Regs[2], myFrame->mf_PPCArgs.PP_Regs[3],
+								myFrame->mf_PPCArgs.PP_Regs[0]);
+						struct MsgFrame* newFrame = CreateMsgFrame(PowerPCBase);
+						newFrame->mf_PPCArgs.PP_Regs[6] = result;
+						newFrame->mf_Identifier = ID_DNLL; //originsl code had more
+
+                        SendMsgFrame(PowerPCBase, newFrame);
+                        FreeMsgFrame(PowerPCBase, myFrame);
+
 						break;
 					}
 					case ID_FREE:
 					{
+						void (*FreeMem_ptr)(__reg("d0") ULONG, __reg("a1") ULONG, __reg("a6") struct ExecBase*) =
+							 (APTR)(myFrame->mf_PPCArgs.PP_Regs[0] + myFrame->mf_PPCArgs.PP_Regs[1]);
+						(*FreeMem_ptr)(myFrame->mf_PPCArgs.PP_Regs[4], myFrame->mf_PPCArgs.PP_Regs[3], SysBase);
+						FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
 					case ID_DBGS:
 					{
+						mySPrintF68K((struct PPCBase*)PowerPCBase, "Process: %s Function: %s r4,r5,r6,r7 = "
+								       "%08lx,%08lx,%08lx,%08lx\n\0", (APTR)&myFrame->mf_PPCArgs);
+						FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
 					case ID_DBGE:
 					{
+						mySPrintF68K((struct PPCBase*)PowerPCBase, "Process: %s Function: %s r3 = %08lx\n\0",
+                                       (APTR)&myFrame->mf_PPCArgs);
+						FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
 					case ID_CRSH:
 					{
+						struct DosLibrary* DOSBase = PowerPCBase->pp_PowerPCBase.PPC_DosLib;
+						FreeMsgFrame(PowerPCBase, myFrame);
+						BPTR excWindow;
+						if (!(excWindow = Open("CON:0/20/680/250/PowerPC Exception/AUTO/CLOSE/WAIT/INACTIVE", MODE_NEWFILE)))
+						{
+							PrintError(myData, "PPC crashed but could not output crash window");
+							break;
+						}
+						if(!(*((ULONG*)PowerPCBase->pp_PPCMemBase + 0x100)))
+						{
+							*((ULONG*)PowerPCBase->pp_PPCMemBase + 0x100) = (ULONG)&msgPanic;
+						}
+						VFPrintf(excWindow, (STRPTR)&CrashMessage, (LONG*)PowerPCBase->pp_PPCMemBase + 0x100);
+						switch (*((ULONG*)PowerPCBase->pp_PPCMemBase + 0x14c))
+						{
+							case ERR_ESEM:
+							{
+								PrintError(myData, "PPC Semaphore in illegal state");
+								break;
+							}
+							case ERR_EFIF:
+							{
+								PrintError(myData, "PPC received an illegal command packet");
+								break;
+							}
+							case ERR_ESNC:
+							{
+								PrintError(myData, "Async Run68K function not supported");
+								break;
+							}
+							case ERR_EMEM:
+							{
+								PrintError(myData, "PPC CPU ran out of memory");
+								break;
+							}
+							case ERR_ETIM:
+							{
+								PrintError(myData, "PPC timed out while waiting on 68K");
+								break;
+							}
+						}
 						break;
 					}
 					default:
 					{
-						break; //error
+						PrintError(myData, "68K received an illegal command packet");
+						break;
 					}
 				}
 			}
