@@ -28,6 +28,7 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define _LVOAllocVec32      -54
 #define _LVOFreeVec32       -60
+#define _LVOSprintF68K      -66
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -168,4 +169,7 @@ VOID GetBATs(struct PrivatePPCBase* PowerPCBase);
 VOID StoreBATs(struct PrivatePPCBase* PowerPCBase);
 VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray);
 VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray);
+struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
+VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 

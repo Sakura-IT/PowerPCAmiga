@@ -62,7 +62,9 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
 
 PPCFUNCTION VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstring, APTR Values)
 {
-    return;
+    	myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, (LONG)_LVOSprintF68K,
+                        (ULONG)Formatstring, (ULONG)Values, 0, 0);
+	return;
 }
 
 /********************************************************************************************
@@ -127,7 +129,31 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 
 PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, STRPTR name)
 {
-    return NULL;
+    	printDebugEntry(PowerPCBase, function, (ULONG)name, 0, 0, 0);
+
+	if(!(name))
+	{
+		return PowerPCBase->pp_ThisPPCProc;
+	}
+
+	myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+
+	struct TaskPPC* fndTask;
+	struct TaskPtr* taskPtr = (struct TaskPtr*)myFindNamePPC(PowerPCBase,
+                              (struct List*)&PowerPCBase->pp_AllTasks, name);
+	if (taskPtr)
+	{
+		fndTask = taskPtr->tptr_Task;
+	}
+	else
+	{
+		fndTask = NULL;
+	}
+	myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+
+	printDebugExit(PowerPCBase, function, (ULONG)fndTask);
+
+	return fndTask;
 }
 
 /********************************************************************************************
@@ -362,7 +388,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                         myWait = (struct SemWait*)SemaphorePPC->ssppc_SS.ss_WaitQueue.mlh_Head;
                         struct SemWait* nxtWait;
 
-                        while (nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ)
+                        while (nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ)
                         {
                             if (!(myWait->sw_Task))
                             {
@@ -370,9 +396,9 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                                 {
                                     break;
                                 }
-                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
-                                predWait->mln_Succ = (struct MinNode*)nxtWait;
-                                nxtWait->sw_Node.mln_Pred = predWait;
+                                struct Node* predWait = myWait->sw_Node.ln_Pred;
+                                predWait->ln_Succ = (struct Node*)nxtWait;
+                                nxtWait->sw_Node.ln_Pred = predWait;
 
                                 SemaphorePPC->ssppc_SS.ss_NestCount += 2;
 						        mySemMsg = (struct SemaphoreMessage*)myWait;
@@ -382,9 +408,9 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                             }
                             else if (myWait->sw_Task == (struct TaskPPC*)SemaphorePPC->ssppc_SS.ss_Owner)
                             {
-                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
-                                predWait->mln_Succ = (struct MinNode*)nxtWait;
-                                nxtWait->sw_Node.mln_Pred = predWait;
+                                struct Node* predWait = myWait->sw_Node.ln_Pred;
+                                predWait->ln_Succ = (struct Node*)nxtWait;
+                                nxtWait->sw_Node.ln_Pred = predWait;
 
                                 SemaphorePPC->ssppc_SS.ss_NestCount += 1;
 						        mySignalPPC(PowerPCBase, myWait->sw_Task, SIGF_SINGLE);
@@ -397,7 +423,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 				}
 				else
 				{
-                    struct SemWait* nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
+                    struct SemWait* nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
                     do
                     {
                         SemaphorePPC->ssppc_SS.ss_NestCount += 1;
@@ -409,7 +435,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                         {
                             struct SemaphoreMessage* mySemMsg = (struct SemaphoreMessage*)myWait;
                             mySemMsg->ssm_Semaphore = (struct SignalSemaphore*)SemaphorePPC;
-                            mySemMsg->ssm_Message.mn_ReplyPort = 0;
+                            mySemMsg->ssm_Message.mn_ReplyPort = 0;  //wrong
 
                             myReplyMsgPPC(PowerPCBase, (struct Message*)mySemMsg);
                         }
@@ -422,17 +448,17 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                         {
                             if ((ULONG)myWait->sw_Task & SM_SHARED)
                             {
-                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
-                                predWait->mln_Succ = (struct MinNode*)nxtWait;
-                                nxtWait->sw_Node.mln_Pred = predWait;
+                                struct Node* predWait = myWait->sw_Node.ln_Pred;
+                                predWait->ln_Succ = (struct Node*)nxtWait;
+                                nxtWait->sw_Node.ln_Pred = predWait;
                                 myWait = nxtWait;
-                                nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
+                                nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
                                 break;
                             }
                             else
                             {
                                 myWait = nxtWait;
-                                nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
+                                nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
                             }
                         }
                     } while (1);
@@ -626,7 +652,25 @@ PPCFUNCTION VOID myEnqueuePPC(struct PrivatePPCBase* PowerPCBase, struct List* l
 
 PPCFUNCTION struct Node* myFindNamePPC(struct PrivatePPCBase* PowerPCBase, struct List* list, STRPTR name)
 {
-    return NULL;
+    struct Node* nxtNode;
+	struct Node* curNode;
+
+	curNode = list->lh_Head;
+	while (nxtNode = curNode->ln_Succ)
+	{
+		STRPTR nodeName = curNode->ln_Name;
+		ULONG offset = 0;
+
+		while (nodeName[offset] == name[offset])
+		{
+			if (!(nodeName[offset]))
+			{
+				return curNode;
+			}
+		}
+	curNode = nxtNode;
+	}
+	return NULL;
 }
 
 /********************************************************************************************
@@ -767,7 +811,14 @@ PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signu
 
 PPCFUNCTION VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum)
 {
-    return;
+    BYTE testSig = (BYTE)signum;
+	if (!(testSig == -1))
+	{
+		PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigAlloc &= ~(1<signum);
+		struct TaskLink* taskLink = &PowerPCBase->pp_ThisPPCProc->tp_Link;
+		taskLink->tl_Sig &= ~(1<signum);
+	}
+	return;
 }
 
 /********************************************************************************************
@@ -778,7 +829,21 @@ PPCFUNCTION VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum
 
 PPCFUNCTION ULONG mySetSignalPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG mask)
 {
-    return 0;
+    printDebugEntry(PowerPCBase, function, signals, mask, 0, 0);
+
+	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+	ULONG oldSig = myTask->tp_Task.tc_SigRecvd;
+	myTask->tp_Task.tc_SigRecvd = (signals &= mask) | (oldSig &= ~mask);
+
+	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+	CheckExcSignal(PowerPCBase, myTask, 0);
+
+	printDebugExit(PowerPCBase, function, oldSig);
+
+	return oldSig;
 }
 
 /********************************************************************************************
@@ -822,7 +887,17 @@ PPCFUNCTION LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 
 PPCFUNCTION VOID mySignal68K(struct PrivatePPCBase* PowerPCBase, struct Task* task, ULONG signals)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)task, signals, 0, 0);
+
+	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+
+	myFrame->mf_Identifier = ID_SIG;
+	myFrame->mf_Signals = signals;
+	myFrame->mf_Arg[0] = (ULONG)task;
+
+	SendMsgFramePPC(PowerPCBase, myFrame);
+
+	return;
 }
 
 /********************************************************************************************
