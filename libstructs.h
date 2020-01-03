@@ -117,12 +117,20 @@ ULONG               bt_dbat3u;
 ULONG               bt_dbat3l;
 };
 
+struct PrivateTask {
+struct TaskPPC              pt_Task;
+struct Message*             pt_StartMsg;
+struct Task*                pt_Mirror68K;
+struct MsgPort*             pt_MirrorPort;
+};
+
 struct PrivatePPCBase {
 struct PPCBase              pp_PowerPCBase;
 struct MinList              pp_MirrorList;
 ULONG                       pp_DeviceID;
 ULONG                       pp_BridgeConfig;
 struct MsgPort*             pp_MasterControl;
+struct UtilityBase*         pp_UtilityBase;
 UBYTE                       pp_DebugLevel;
 UBYTE                       pp_EnAlignExc;
 UBYTE                       pp_EnDAccessExc;
@@ -248,8 +256,8 @@ struct MinList              ph_BlockList;
 };
 
 struct SemWait {
-struct MinNode sw_Node;
-struct TaskPPC* sw_Task;    //Should be same offset as mn_ReplyPort in SemaphoreMessage
+struct Node sw_Node;
+struct TaskPPC* sw_Task;
 struct SignalSemaphorePPC* sw_Semaphore;
 };
 

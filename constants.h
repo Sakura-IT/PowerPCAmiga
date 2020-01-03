@@ -28,6 +28,9 @@
 
 #define PPERR_MISCERR           3
 
+#define NT_XMSG68K              102
+#define NT_XMSGPPC              103
+
 #define ERR_ESEM                0x4553454D
 #define ERR_EFIF                0x45464946
 #define ERR_ESNC                0x45534E43

@@ -39,7 +39,84 @@
 
 PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct)
 {
-    return 0;
+	if (PPStruct->PP_Offset)
+	{
+		if ((PPStruct->PP_Code) && (PPStruct->PP_Code == PowerPCBase->pp_UtilityBase) && (PPStruct->PP_Offset == _LVOStricmp))
+		{
+			PPStruct->PP_Regs[0] = (ULONG)StricmpPPC((STRPTR)PPStruct->PP_Regs[8], (STRPTR)PPStruct->PP_Regs[9]);
+			return PPERR_SUCCESS;
+		}
+	}
+
+	printDebugEntry(PowerPCBase, function, (ULONG)PPStruct->PP_Code, (ULONG)PPStruct->PP_Offset, 0, 0);
+
+	if (!(PPStruct->PP_Code))
+	{
+		return PPERR_MISCERR;
+	}
+	if (PPStruct->PP_Flags)
+	{
+		storeR0(ERR_ESNC);
+		HaltTask();
+	}
+
+	PowerPCBase->pp_NumRun68k += 1;
+	dFlush((ULONG)&PowerPCBase->pp_NumRun68k);
+
+	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+
+    myCopyMemPPC(PowerPCBase, (APTR)PPStruct, (APTR)&myFrame->mf_PPCArgs, sizeof(struct PPCArgs));
+
+	struct PrivateTask* privTask = (struct PrivateTask*)PowerPCBase->pp_ThisPPCProc;
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+	myFrame->mf_Identifier = ID_T68K;
+	myFrame->mf_PPCTask = (struct TaskPPC*)myTask;
+	myFrame->mf_MirrorPort = privTask->pt_MirrorPort;
+	myFrame->mf_Arg[0] = (ULONG)myTask->tp_Task.tc_Node.ln_Name;
+	myFrame->mf_Arg[1] = myTask->tp_Task.tc_SigAlloc;
+	myFrame->mf_Arg[2] = 0;
+
+	while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+	myFrame->mf_Signals = myTask->tp_Task.tc_SigRecvd & ~0xfff;
+	myTask->tp_Task.tc_SigRecvd &= 0xfff;
+
+	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+	if (PPStruct->PP_Stack)
+	{
+		if(PPStruct->PP_StackSize)
+		{
+			mySetCache(PowerPCBase, CACHE_DCACHEFLUSH, PPStruct->PP_Stack, PPStruct->PP_StackSize);
+		}
+		else
+		{
+			myFrame->mf_PPCArgs.PP_Stack = NULL;
+		}
+	}
+
+	myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+	myFrame->mf_Message.mn_Length = sizeof(struct MsgFrame);
+
+	if (PowerPCBase->pp_PowerPCBase.PPC_SysLib == PPStruct->PP_Code)
+	{
+		if((PPStruct->PP_Offset == _LVOAllocMem) || (PPStruct->PP_Offset == _LVOAllocVec))
+		{
+			if(!(PPStruct->PP_Regs[1] & MEMF_CHIP))
+			{
+				myFrame->mf_PPCArgs.PP_Regs[1] |= MEMF_PPC;
+			}
+		}
+	}
+
+	SendMsgFramePPC(PowerPCBase, myFrame);
+
+	myWaitFor68K(PowerPCBase, PPStruct);
+
+	printDebugExit(PowerPCBase, function, PPStruct->PP_Regs[0]);
+
+	return PPERR_SUCCESS;
 }
 
 /********************************************************************************************
@@ -865,7 +942,36 @@ PPCFUNCTION VOID mySignalPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC*
 
 PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, signals, 0, 0, 0);
+
+	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+	while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+	myTask->tp_Task.tc_SigWait = signals;
+	ULONG maskSig;
+
+	while(!(maskSig = myTask->tp_Task.tc_SigRecvd & signals))
+	{
+		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		myTask->tp_Task.tc_State = TS_CHANGING;
+
+		CauseDECInterrupt(PowerPCBase);
+
+		while(myTask->tp_Task.tc_State != TS_RUN);
+
+		while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+		signals = myTask->tp_Task.tc_SigWait;
+	}
+
+	myTask->tp_Task.tc_SigRecvd ^= maskSig;
+
+	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+	printDebugExit(PowerPCBase, function, maskSig);
+
+	return maskSig;
 }
 
 /********************************************************************************************
@@ -876,7 +982,44 @@ PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 
 PPCFUNCTION LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, LONG pri)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)task, (ULONG)pri, 0, 0);
+
+	while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+	LONG oldPri = task->tp_Task.tc_Node.ln_Pri;
+	task->tp_Task.tc_Node.ln_Pri = (BYTE)pri;
+
+	if (PowerPCBase->pp_ThisPPCProc != task)
+	{
+		if((task->tp_Task.tc_State != TS_REMOVED) && (task->tp_Task.tc_State != TS_WAIT))
+		{
+			myRemovePPC(PowerPCBase, (struct Node*)task);
+			task->tp_Task.tc_State = TS_READY;
+			InsertOnPri(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyTasks, task);
+			if(task == (struct TaskPPC*)PowerPCBase->pp_ReadyTasks.mlh_Head)
+			{
+				FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+				CauseDECInterrupt(PowerPCBase);
+			}
+			else
+			{
+				FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+			}
+		}
+		else
+		{
+			FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		}
+	}
+	else
+	{
+		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		CauseDECInterrupt(PowerPCBase);
+	}
+
+	printDebugExit(PowerPCBase, function, oldPri);
+
+	return oldPri;
 }
 
 /********************************************************************************************
@@ -1078,7 +1221,36 @@ PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* t
 
 PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(struct PrivatePPCBase* PowerPCBase)
 {
-    return NULL;
+	printDebugEntry(PowerPCBase, function, 0, 0, 0, 0);
+
+	struct MsgPortPPC* myPort;
+	LONG signal, result;
+
+	if (myPort = AllocVec68K(PowerPCBase, sizeof(struct MsgPortPPC), MEMF_PUBLIC | MEMF_CLEAR | MEMF_PPC))
+	{
+		if ((signal = myAllocSignalPPC(PowerPCBase, -1) != -1))
+		{
+			if (result = myInitSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&myPort->mp_Semaphore))
+			{
+				myNewListPPC(PowerPCBase, (struct List*)&myPort->mp_IntMsg);
+				myNewListPPC(PowerPCBase, (struct List*)&myPort->mp_Port.mp_MsgList);
+				myPort->mp_Port.mp_SigBit = signal;
+				myPort->mp_Port.mp_SigTask = PowerPCBase->pp_ThisPPCProc;
+				myPort->mp_Port.mp_Flags = PA_SIGNAL;
+				myPort->mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
+			}
+			else
+			{
+				myFreeSignalPPC(PowerPCBase, signal);
+			}
+		}
+		else
+		{
+			FreeVec68K(PowerPCBase, myPort);
+		}
+	}
+	printDebugExit(PowerPCBase, function, (ULONG)myPort);
+	return myPort;
 }
 
 /********************************************************************************************
@@ -1089,7 +1261,15 @@ PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(struct PrivatePPCBase* PowerPC
 
 PPCFUNCTION VOID myDeleteMsgPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+	if(port)
+	{
+		myFreeSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+		myFreeSignalPPC(PowerPCBase, port->mp_Port.mp_SigBit);
+		FreeVec68K(PowerPCBase, port);
+	}
+	return;
 }
 
 /********************************************************************************************
@@ -1100,7 +1280,19 @@ PPCFUNCTION VOID myDeleteMsgPortPPC(struct PrivatePPCBase* PowerPCBase, struct M
 
 PPCFUNCTION VOID myAddPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+	myNewListPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList);
+
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	myEnqueuePPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Ports, (struct Node*)port);
+
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	printDebugExit(PowerPCBase, function, 0);
+
+	return;
 }
 
 /********************************************************************************************
@@ -1111,7 +1303,17 @@ PPCFUNCTION VOID myAddPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 
 PPCFUNCTION VOID myRemPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	myRemovePPC(PowerPCBase, (struct Node*)port);
+
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	printDebugExit(PowerPCBase, function, 0);
+
+	return;
 }
 
 /********************************************************************************************
@@ -1120,9 +1322,19 @@ PPCFUNCTION VOID myRemPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 *
 *********************************************************************************************/
 
-PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase, STRPTR port)
+PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase, STRPTR name)
 {
-    return NULL;
+	printDebugEntry(PowerPCBase, function, (ULONG)name, 0, 0, 0);
+
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	struct MsgPortPPC* myPort = (struct MsgPortPPC*)myFindNamePPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Ports, name);
+
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	printDebugExit(PowerPCBase, function, (ULONG)myPort);
+
+	return myPort;
 }
 
 /********************************************************************************************
@@ -1199,7 +1411,21 @@ PPCFUNCTION VOID myCopyMemPPC(struct PrivatePPCBase* PowerPCBase, APTR source, A
 
 PPCFUNCTION struct Message* myAllocXMsgPPC(struct PrivatePPCBase* PowerPCBase, ULONG length, struct MsgPortPPC* port)
 {
-    return NULL;
+	printDebugEntry(PowerPCBase, function, length, (ULONG)port, 0, 0);
+
+	length = (length + sizeof(struct Message) + 31) & -32;
+
+	struct Message* myXMessage;
+
+	if (myXMessage = myAllocVecPPC(PowerPCBase, length, MEMF_PUBLIC | MEMF_CLEAR | MEMF_PPC, 32L))
+	{
+		myXMessage->mn_ReplyPort = (struct MsgPort*)port;
+		myXMessage->mn_Length = length;
+	}
+
+	printDebugExit(PowerPCBase, function, (ULONG)myXMessage);
+
+	return myXMessage;
 }
 
 /********************************************************************************************
@@ -1223,7 +1449,22 @@ PPCFUNCTION VOID myFreeXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Messag
 
 PPCFUNCTION VOID myPutXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort* port, struct Message* message)
 {
-    return;
+	printDebugEntry(PowerPCBase, function, (ULONG)port, (ULONG)message, 0, 0);
+
+	message->mn_Node.ln_Type = NT_XMSGPPC;
+
+	mySetCache(PowerPCBase, CACHE_DCACHEFLUSH, message, message->mn_Length);
+
+	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+
+	myFrame->mf_Identifier = ID_XMSG;
+	myFrame->mf_Arg[0] = (ULONG)port;
+	myFrame->mf_Arg[1] = (ULONG)message;
+	myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+
+	SendMsgFramePPC(PowerPCBase, myFrame);
+
+	return;
 }
 
 /********************************************************************************************
@@ -1278,7 +1519,12 @@ PPCFUNCTION LONG myCmpTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
 
 PPCFUNCTION struct MsgPortPPC* mySetReplyPortPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message, struct MsgPortPPC* port)
 {
-    return NULL;
+	printDebugEntry(PowerPCBase, function, (ULONG)message, (ULONG)port, 0, 0);
+
+	struct MsgPortPPC* oldPort = (struct MsgPortPPC*)message->mn_ReplyPort;
+	message->mn_ReplyPort = (struct MsgPort*)port;
+
+	return oldPort;
 }
 
 /********************************************************************************************
@@ -1635,7 +1881,24 @@ PPCFUNCTION LONG myPutPublicMsgPPC(struct PrivatePPCBase* PowerPCBase, STRPTR po
 
 PPCFUNCTION LONG myAddUniquePortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+	struct MsgPortPPC* myPort;
+	LONG result;
+
+	if (myPort = myFindPortPPC(PowerPCBase, port->mp_Port.mp_Node.ln_Name))
+	{
+		result = UNIPORT_NOTUNIQUE;
+	}
+	else
+	{
+		result = UNIPORT_SUCCESS;
+		myAddPortPPC(PowerPCBase, port);
+	}
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+	return result;
 }
 
 /********************************************************************************************
@@ -1646,7 +1909,24 @@ PPCFUNCTION LONG myAddUniquePortPPC(struct PrivatePPCBase* PowerPCBase, struct M
 
 PPCFUNCTION LONG myAddUniqueSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return 0;
+	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
+
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
+
+	struct SignalSemaphorePPC* mySem;
+	LONG result;
+
+	if (mySem = myFindSemaphorePPC(PowerPCBase, SemaphorePPC->ssppc_SS.ss_Link.ln_Name))
+	{
+		result = UNISEM_NOTUNIQUE;
+	}
+	else
+	{
+		result = UNISEM_SUCCESS;
+		myAddSemaphorePPC(PowerPCBase, SemaphorePPC);
+	}
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
+	return result;
 }
 
 /********************************************************************************************
@@ -1714,5 +1994,25 @@ PPCFUNCTION BOOL myChangeStack(struct PrivatePPCBase* PowerPCBase, ULONG NewStac
 PPCFUNCTION ULONG myRun68KLowLevel(struct PrivatePPCBase* PowerPCBase, ULONG Code, LONG Offset, ULONG a0,
                                  ULONG a1, ULONG d0, ULONG d1)
 {
-    return 0;
+	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+
+	myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+	myFrame->mf_Message.mn_Length = sizeof(struct MsgFrame);
+	myFrame->mf_Identifier = ID_LL68;
+	myFrame->mf_PPCTask = PowerPCBase->pp_ThisPPCProc;
+	myFrame->mf_PPCArgs.PP_Regs[0] = Code;
+	myFrame->mf_PPCArgs.PP_Regs[1] = Offset;
+	myFrame->mf_PPCArgs.PP_Regs[2] = a0;
+	myFrame->mf_PPCArgs.PP_Regs[3] = a1;
+	myFrame->mf_PPCArgs.PP_Regs[4] = d0;
+	myFrame->mf_PPCArgs.PP_Regs[5] = d1;
+	myFrame->mf_Arg[0] = 0;
+	myFrame->mf_Arg[1] = 0;
+	myFrame->mf_Arg[2] = 0;
+
+	SendMsgFramePPC(PowerPCBase, myFrame);
+
+	ULONG result = myWaitFor68K(PowerPCBase, (struct PPCArgs*)&myFrame->mf_PPCArgs);
+
+	return result;
 }

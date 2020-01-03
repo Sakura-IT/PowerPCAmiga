@@ -29,6 +29,9 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 #define _LVOAllocVec32      -54
 #define _LVOFreeVec32       -60
 #define _LVOSprintF68K      -66
+#define _LVOAllocVec        -684
+#define _LVOAllocMem        -198
+#define _LVOStricmp         -162
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -49,6 +52,7 @@ void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
 ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
+void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
 
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
         ="\tmtibatl\t0,r3\n\tmtibatu\t0,r4\n\tmtdbatl\t0,r5\n\tmtdbatu\t0,r6\n";
@@ -172,4 +176,7 @@ VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray);
 struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
 VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+LONG StricmpPPC(STRPTR string1, STRPTR string2);
+VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
+VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
 
