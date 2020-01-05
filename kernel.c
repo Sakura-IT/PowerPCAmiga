@@ -18,12 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
+#include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
 
 PPCEXCEPTION void Exception_Entry(int vector, struct iframe *iframe)
 {
+    switch (vector)
+    {
+        case VEC_EXTERNAL:
+        case VEC_DECREMENTER:
+        {
+            break;
+        }
+        case VEC_DATASTORAGE:
+        {
+            break;
+        }
+        case VEC_PROGRAM:
+        {
+            break;
+        }
+        case VEC_ALIGNMENT:
+        {
+            break;
+        }
+        case VEC_ALTIVECUNAV:
+        {
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
     return;
 }
 

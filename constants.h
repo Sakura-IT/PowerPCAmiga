@@ -37,6 +37,28 @@
 #define ERR_EMEM                0x454D454D
 #define ERR_ETIM                0x4554494D
 
+#define VEC_SYSTEMRESET         0x0100
+#define VEC_MACHINECHECK        0x0200
+#define VEC_DATASTORAGE         0x0300
+#define VEC_INSTSTORAGE         0x0400
+#define VEC_EXTERNAL            0x0500
+#define VEC_ALIGNMENT           0x0600
+#define VEC_PROGRAM             0x0700
+#define VEC_FPUNAVAILABLE       0x0800
+#define VEC_DECREMENTER         0x0900
+#define VEC_SYSTEMCALL          0x0C00
+#define VEC_TRACE               0x0D00
+#define VEC_FPASSIST            0x0E00
+#define VEC_PERFMONITOR         0x0F00
+#define VEC_ALTIVECUNAV         0x0F20
+#define VEC_ITLBMISS            0x1000
+#define VEC_DLOADTLBMISS        0x1100
+#define VEC_DSTORETLBMISS       0x1200
+#define VEC_IBREAKPOINT         0x1300
+#define VEC_SYSMANAGEMENT       0x1400
+#define VEC_ALTIVECASSIST       0x1600
+#define VEC_THERMAL             0x1700
+
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
 #define ID_FREE                 0x46524545

@@ -135,8 +135,8 @@ _ExcCommon:
 
         mflr    r4
         subi    r4,r4,PPC_VECLEN*4
-        stwu    r4,4(r3)
-        mflr    r3
+        stw     r4,4(r3)
+        mr      r3,r4
 
         la      r4,1024(r1)
         mtsprg0 r4
