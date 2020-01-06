@@ -378,7 +378,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
     {
         while (1)
         {
-            Signals = Wait((ULONG)thisTask->tc_SigAlloc);
+            Signals = Wait((ULONG)thisTask->tc_SigAlloc & 0xfffff000);
             if (Signals & (1 << (ULONG)thisMirrorNode->mt_Port->mp_SigBit))
             {
                 break;
@@ -418,6 +418,11 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
 
                 SendMsgFrame(PowerPCBase, doneFrame);
                 FreeMsgFrame(PowerPCBase, myFrame);
+            }
+            else
+            {
+                FreeMsgFrame(PowerPCBase, myFrame);
+                PrintError(SysBase, "68K mirror task received illegal command packet");
             }
         }
     }

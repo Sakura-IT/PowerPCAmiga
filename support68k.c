@@ -429,6 +429,19 @@ FUNC68K void MirrorTask(void)
 	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
 	struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 	struct MsgFrame* myFrame;
+    struct MsgPort* mirrorPort;
+
+    struct Task* myTask = SysBase->ThisTask;
+
+    myTask->tc_Flags &= ~TF_PPC;
+
+    if (!(mirrorPort = CreateMsgPort()))
+    {
+        PrintError(SysBase, "General memory allocation error");
+        return;
+    }
+
+    myTask->tc_Flags |= TF_PPC;
 
 	ULONG mySignal = 0;
 
@@ -437,13 +450,61 @@ FUNC68K void MirrorTask(void)
 		mySignal = Wait(SIGBREAKF_CTRL_F);
 	}
 
-	struct Task* myTask = SysBase->ThisTask;
 
 	myFrame = (struct MsgFrame*)myTask->tc_UserData;
 
-    //tbc
+    ULONG andTemp = ~(0xfff + (1 << (ULONG)mirrorPort->mp_SigBit));
 
-	return;
+    while (1)
+    {
+        while (myFrame)
+        {
+            if (myFrame->mf_Identifier == ID_END)
+            {
+                FreeMsgFrame(PowerPCBase, myFrame);
+                return;
+            }
+            else if (myFrame->mf_Identifier == ID_T68K)
+            {
+                myTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+                myFrame->mf_MirrorPort = mirrorPort;
+
+                Run68KCode(SysBase, &myFrame->mf_PPCArgs);
+
+                struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
+
+                CopyMem((const APTR) &myFrame, (APTR)&doneFrame, sizeof(struct MsgFrame));
+
+                doneFrame->mf_Identifier = ID_DONE;
+                doneFrame->mf_Arg[0]     = myTask->tc_SigRecvd & andTemp;
+                doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
+                doneFrame->mf_Arg[2]     = (ULONG)myTask;
+
+                SendMsgFrame(PowerPCBase, doneFrame);
+                FreeMsgFrame(PowerPCBase, myFrame);
+            }
+            else
+            {
+                FreeMsgFrame(PowerPCBase, myFrame);
+                PrintError(SysBase, "68K mirror task received illegal command packet");
+            }
+            myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
+        }
+        mySignal = Wait((ULONG)myTask->tc_SigAlloc & 0xfffff000);
+
+        if (mySignal & (1 << (ULONG)mirrorPort->mp_SigBit))
+        {
+            myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
+        }
+        else if (mySignal & andTemp)
+        {
+            struct MsgFrame* crossFrame = CreateMsgFrame(PowerPCBase);
+            crossFrame->mf_Identifier   = ID_LLPP;
+            crossFrame->mf_Arg[0]       = (mySignal & andTemp);
+            crossFrame->mf_Arg[1]       = (ULONG)myTask;
+            SendMsgFrame(PowerPCBase, crossFrame);
+        }
+    }
 }
 
 FUNC68K void MasterControl(void)
@@ -452,7 +513,16 @@ FUNC68K void MasterControl(void)
 	struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct DosLibrary* DOSBase = PowerPCBase->pp_PowerPCBase.PPC_DosLib;
 	struct MsgFrame* myFrame;
+    struct MsgPort* mcPort;
 	struct PPCZeroPage* myZP = (struct PPCZeroPage*)PowerPCBase->pp_PPCMemBase;
+
+	if (!(mcPort = CreateMsgPort()))
+    {
+        PrintError(SysBase, "General memory allocation error");
+        return;
+    }
+
+	PowerPCBase->pp_MasterControl = mcPort;
 
     ULONG mySignal = 0;
 
@@ -463,10 +533,7 @@ FUNC68K void MasterControl(void)
 
 	struct Task* myTask = SysBase->ThisTask;
 
-	struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
-
-	struct MsgPort* mcPort = CreateMsgPort();
-	PowerPCBase->pp_MasterControl = mcPort;
+	//struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
 
 	myZP->zp_Status = STATUS_INIT;
 
@@ -490,7 +557,7 @@ FUNC68K void MasterControl(void)
 				}
 				else
 				{
-					PrintError(myData, "MasterControl received illegal reply message");
+					PrintError(SysBase, "MasterControl received illegal reply message");
 				}
 			}
 			else
@@ -523,7 +590,7 @@ FUNC68K void MasterControl(void)
 
 						if(!(myProc))
 						{
-							PrintError(myData, "Could not start 68K mirror process");
+							PrintError(SysBase, "Could not start 68K mirror process");
 							break;
 						}
 						myProc->pr_Task.tc_UserData = (APTR)myFrame;
@@ -577,7 +644,7 @@ FUNC68K void MasterControl(void)
 						BPTR excWindow;
 						if (!(excWindow = Open("CON:0/20/680/250/PowerPC Exception/AUTO/CLOSE/WAIT/INACTIVE", MODE_NEWFILE)))
 						{
-							PrintError(myData, "PPC crashed but could not output crash window");
+							PrintError(SysBase, "PPC crashed but could not output crash window");
 							break;
 						}
 						if(!(*((ULONG*)PowerPCBase->pp_PPCMemBase + 0x100)))
@@ -589,27 +656,27 @@ FUNC68K void MasterControl(void)
 						{
 							case ERR_ESEM:
 							{
-								PrintError(myData, "PPC Semaphore in illegal state");
+								PrintError(SysBase, "PPC Semaphore in illegal state");
 								break;
 							}
 							case ERR_EFIF:
 							{
-								PrintError(myData, "PPC received an illegal command packet");
+								PrintError(SysBase, "PPC received an illegal command packet");
 								break;
 							}
 							case ERR_ESNC:
 							{
-								PrintError(myData, "Async Run68K function not supported");
+								PrintError(SysBase, "Async Run68K function not supported");
 								break;
 							}
 							case ERR_EMEM:
 							{
-								PrintError(myData, "PPC CPU ran out of memory");
+								PrintError(SysBase, "PPC CPU ran out of memory");
 								break;
 							}
 							case ERR_ETIM:
 							{
-								PrintError(myData, "PPC timed out while waiting on 68K");
+								PrintError(SysBase, "PPC timed out while waiting on 68K");
 								break;
 							}
 						}
@@ -617,7 +684,7 @@ FUNC68K void MasterControl(void)
 					}
 					default:
 					{
-						PrintError(myData, "68K received an illegal command packet");
+						PrintError(SysBase, "68K received an illegal command packet");
 						break;
 					}
 				}

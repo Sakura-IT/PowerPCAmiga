@@ -51,8 +51,8 @@ void   writememLong(ULONG Base, ULONG offset, ULONG value);
 ULONG  readmemLong (ULONG Base, ULONG offset);
 
 void   getENVs      (struct InternalConsts* myConsts);
-void   PrintError   (struct InternalConsts* myConsts, UBYTE* errortext);
 void   PrintCrtErr  (struct InternalConsts* myConsts, UBYTE* crterrtext);
+void   PrintError   (struct ExecBase* SysBase, UBYTE* errortext);
 void   MasterControl(void);
 void   Run68KCode   (__reg("a6") struct ExecBase* SysBase, __reg("a0") struct PPCArgs* PPStruct);
 

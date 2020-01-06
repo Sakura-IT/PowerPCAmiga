@@ -645,7 +645,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
-    PrintError(myConsts, "Test completed!");
+    PrintError(SysBase, "Test completed!");
 
     CleanUp(myConsts);
 
@@ -1098,12 +1098,12 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
 
 void PrintCrtErr(struct InternalConsts* myConsts, UBYTE* crterrtext)
 {
-    PrintError(myConsts, crterrtext);
+    PrintError(myConsts->ic_SysBase, crterrtext);
     CleanUp(myConsts);
     return;
 }
 
-void PrintError(struct InternalConsts* myConsts, UBYTE* errortext)
+void PrintError(struct ExecBase* SysBase, UBYTE* errortext)
 {
     struct IntuitionBase* IntuitionBase;
     struct EasyStruct MyReq =
@@ -1114,8 +1114,6 @@ void PrintError(struct InternalConsts* myConsts, UBYTE* errortext)
         errortext,
         (UBYTE*)"Continue",
         };
-
-    struct ExecBase* SysBase = myConsts->ic_SysBase;
 
     if (!(IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library",33L)))
     {
