@@ -167,7 +167,6 @@ APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags);
 VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock);
 LONG LockMutexPPC(ULONG mutex);
 VOID FreeMutexPPC(ULONG mutex);
-VOID StartTaskPPC(void);
 ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal);
 VOID GetBATs(struct PrivatePPCBase* PowerPCBase);
 VOID StoreBATs(struct PrivatePPCBase* PowerPCBase);
