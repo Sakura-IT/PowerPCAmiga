@@ -28,6 +28,7 @@
 .endm
 
 .set PPC_VECLEN,                3
+.set PowerPCBase,               16                #Align this number with the zp struct in libstructs.h
 
 .set HID0,                      1008
 .set HID0_NHR,	                0x00010000

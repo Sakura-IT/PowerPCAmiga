@@ -50,7 +50,7 @@
         mflr	r3
 		subi    r3,r3,4         #Points to initialization data
 		subi    r1,r3,256       #Initial stack
-        andi.   r1,r1,0xfff0   #Align it
+        andi.   r1,r1,0xfff0    #Align it
 		b   _setupPPC
 
 #*********************************************************

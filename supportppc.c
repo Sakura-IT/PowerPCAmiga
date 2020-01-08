@@ -211,6 +211,17 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 *
 *********************************************************************************************/
 
+PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
+{
+    return NULL;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
 	ULONG key = mySuper(PowerPCBase);
@@ -665,6 +676,28 @@ PPCFUNCTION VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray)
 *********************************************************************************************/
 
 PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
+{
+    return;
+}
+
+/********************************************************************************************
+*
+*    Function to set up the system processes.
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID SystemStart(void)
+{
+    return;
+}
+
+/********************************************************************************************
+*
+*    Entry point for dispatching tasks. Jumped to from kernel using rfi.
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID DispatchPPC(void)
 {
     return;
 }

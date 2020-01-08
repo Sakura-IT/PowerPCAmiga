@@ -50,13 +50,10 @@ struct PPCZeroPage {
 ULONG               zp_PPCMemBase;
 struct ExecBase*    zp_SysBase;
 struct MemHeader*   zp_PPCMemHeader;
-struct DosLibrary*  zp_DOSBase;
-struct MsgPort*     zp_MCPort;
 volatile ULONG      zp_Status;
-struct PPCBase*     zp_PowerPCBase;
+struct PPCBase*     zp_PowerPCBase;         //Also used in kernel.s as 16(r0)!
 ULONG               zp_PageTableSize;
-struct UtilityBase* zp_UtilityBase;
-ULONG               zp_CacheGap[7];
+ULONG               zp_CacheGap[2];
 ULONG               zp_MemSize;
 };
 

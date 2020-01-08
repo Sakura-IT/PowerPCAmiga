@@ -22,7 +22,7 @@
 
 #define PPC_VECLEN              3       //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
-#define NUM_OF_PPC_FUNCS        95
+#define NUM_OF_PPC_FUNCS        101
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
 
@@ -36,6 +36,7 @@
 #define ERR_ESNC                0x45534E43
 #define ERR_EMEM                0x454D454D
 #define ERR_ETIM                0x4554494D
+#define ERR_DEAD                0xDEADDEAD
 
 #define VEC_SYSTEMRESET         0x0100
 #define VEC_MACHINECHECK        0x0200

@@ -599,9 +599,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     myZeroPage->zp_SysBase      = SysBase;
     myZeroPage->zp_PPCMemHeader = myPPCMemHeader;
-    myZeroPage->zp_DOSBase      = DOSBase;
     myZeroPage->zp_PowerPCBase  = PowerPCBase;
-    myZeroPage->zp_UtilityBase  = UtilityBase;
     myZeroPage->zp_PPCMemBase   = (ULONG)myZeroPage;
 
     struct Library* WarpBase = MakeLibrary(&WarpVectors[0], &WarpInitData[0], 0 ,124, 0);
@@ -689,7 +687,7 @@ static const APTR WarpVectors[] =
 
 static const APTR LibVectors[] =
 {
-    (APTR)myOpen,
+    (APTR)myOpen,                 //Table of 68k functions
     (APTR)myClose,
     (APTR)myExpunge,
     (APTR)myReserved,
@@ -708,7 +706,7 @@ static const APTR LibVectors[] =
 	(APTR)myCreatePPCTask,
 	(APTR)myCausePPCInterrupt,
 
-    (APTR)myReserved,
+    (APTR)myReserved,            //Table of reserved 68k functions
     (APTR)myReserved,
     (APTR)myReserved,
     (APTR)myReserved,
@@ -741,7 +739,7 @@ static const APTR LibVectors[] =
     (APTR)myReserved,
 
 
-    (APTR)myRun68K,
+    (APTR)myRun68K,              //Table of PPC functions
 	(APTR)myWaitFor68K,
 	(APTR)mySPrintF,
 	(APTR)myRun68KLowLevel,
@@ -836,6 +834,14 @@ static const APTR LibVectors[] =
 	(APTR)myAddUniquePortPPC,
 	(APTR)myAddUniqueSemaphorePPC,
 	(APTR)myIsExceptionMode,
+
+    (APTR)CreateMsgFramePPC,     //Table of private PPC functions
+    (APTR)GetMsgFramePPC,
+    (APTR)SendMsgFramePPC,
+    (APTR)FreeMsgFramePPC,
+    (APTR)SystemStart,
+    (APTR)DispatchPPC,
+
     (APTR) -1
 };
 

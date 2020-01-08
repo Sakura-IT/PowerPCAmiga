@@ -123,7 +123,7 @@ _ExcCommon:
         mfcr    r0
         stwu    r0,4(r3)
         mfsprg2 r0
-        stwu    r0,4(r3)    #LR
+        stwu    r0,4(r3)            #LR
         mfdsisr r0
         stwu    r0,4(r3)
         mfdar   r0
@@ -136,10 +136,10 @@ _ExcCommon:
         mflr    r4
         subi    r4,r4,PPC_VECLEN*4
         stw     r4,4(r3)
-        mr      r3,r4
+        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
 
-        la      r4,1024(r1)
-        mtsprg0 r4
+        la      r5,1024(r1)
+        mtsprg0 r5
 
         bl _Exception_Entry
 

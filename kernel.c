@@ -1,4 +1,4 @@
- // Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2019 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,28 @@
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
+#include <proto/powerpc.h>
+#include <powerpc/powerpc.h>
 
-PPCEXCEPTION void Exception_Entry(int vector, struct iframe *iframe)
+/********************************************************************************************
+*
+*	Entry point after kernel.s. This directs to the correct exception code.
+*
+*********************************************************************************************/
+
+PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, int vector, struct iframe* iframe)
 {
     switch (vector)
     {
         case VEC_EXTERNAL:
+        {
+            PreparePPC(PowerPCBase, iframe);
+            SwitchPPC(PowerPCBase, iframe);
+            break;
+        }
         case VEC_DECREMENTER:
         {
+            SwitchPPC(PowerPCBase, iframe);
             break;
         }
         case VEC_DATASTORAGE:
@@ -55,3 +69,24 @@ PPCEXCEPTION void Exception_Entry(int vector, struct iframe *iframe)
     return;
 }
 
+/********************************************************************************************
+*
+*	This function picks up messages from the 68K and prepares them for the SwitchPPC function
+*
+*********************************************************************************************/
+
+PPCKERNEL void PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+{
+    return;
+}
+
+/********************************************************************************************
+*
+*	This function dispatches new PPC tasks, switches between tasks and redirect signals.
+*
+*********************************************************************************************/
+
+PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+{
+    return;
+}

@@ -24,7 +24,7 @@
 void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
-#define PPCEXCEPTION __section ("kernel","acrx") __entry
+#define PPCKERNEL __section ("kernel","acrx") __entry
 
 #define _LVOAllocVec32      -54
 #define _LVOFreeVec32       -60
@@ -174,9 +174,14 @@ VOID StoreBATs(struct PrivatePPCBase* PowerPCBase);
 VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray);
 VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray);
 struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
+struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
 VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 LONG StricmpPPC(STRPTR string1, STRPTR string2);
 VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
+VOID PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+VOID SystemStart(void);
+VOID DispatchPPC(void);
 

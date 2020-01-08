@@ -149,10 +149,11 @@ void mmuSetup(struct InitData* initData)
     {
         startEffAddr = IMMR_ADDR_DEFAULT;
     }
-//    else
-//    {
-//        error
-//    }
+    else
+    {
+        initData->id_Status = 0x45727234;
+        return;
+    }
     endEffAddr   = startEffAddr + 0x100000;
     physAddr     = startEffAddr;
     WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
