@@ -44,39 +44,7 @@ _ExcCommon:
 
         stwu	r1,-2048(r1)
 
-        la      r3,1528(r1)
-        stfdu   f0,8(r3)
-        stfdu   f1,8(r3)
-        stfdu   f2,8(r3)
-        stfdu   f3,8(r3)
-        stfdu   f4,8(r3)
-        stfdu   f5,8(r3)
-        stfdu   f6,8(r3)
-        stfdu   f7,8(r3)
-        stfdu   f8,8(r3)
-        stfdu   f9,8(r3)
-        stfdu   f10,8(r3)
-        stfdu   f11,8(r3)
-        stfdu   f12,8(r3)
-        stfdu   f13,8(r3)
-        stfdu   f14,8(r3)
-        stfdu   f15,8(r3)
-        stfdu   f16,8(r3)
-        stfdu   f17,8(r3)
-        stfdu   f18,8(r3)
-        stfdu   f19,8(r3)
-        stfdu   f20,8(r3)
-        stfdu   f21,8(r3)
-        stfdu   f22,8(r3)
-        stfdu   f23,8(r3)
-        stfdu   f24,8(r3)
-        stfdu   f25,8(r3)
-        stfdu   f26,8(r3)
-        stfdu   f27,8(r3)
-        stfdu   f28,8(r3)
-        stfdu   f29,8(r3)
-        stfdu   f30,8(r3)
-        stfdu   f31,8(r3)
+        la      r3,804(r1)              #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
 
         mfsprg3 r0
         stwu    r0,4(r3)
@@ -114,31 +82,69 @@ _ExcCommon:
         stwu    r30,4(r3)
         stwu    r31,4(r3)
 
-        mffs    f0
-        stfsu   f0,4(r3)
-        mfctr   r0
-        stwu    r0,4(r3)
-        mfxer   r0
-        stwu    r0,4(r3)
-        mfcr    r0
-        stwu    r0,4(r3)
-        mfsprg2 r0
-        stwu    r0,4(r3)            #LR
-        mfdsisr r0
-        stwu    r0,4(r3)
-        mfdar   r0
-        stwu    r0,4(r3)
-        mfsrr1  r0
-        stwu    r0,4(r3)
-        mfsrr0  r0
-        stwu    r0,4(r3)
+        stfdu   f0,8(r3)
+        stfdu   f1,8(r3)
+        stfdu   f2,8(r3)
+        stfdu   f3,8(r3)
+        stfdu   f4,8(r3)
+        stfdu   f5,8(r3)
+        stfdu   f6,8(r3)
+        stfdu   f7,8(r3)
+        stfdu   f8,8(r3)
+        stfdu   f9,8(r3)
+        stfdu   f10,8(r3)
+        stfdu   f11,8(r3)
+        stfdu   f12,8(r3)
+        stfdu   f13,8(r3)
+        stfdu   f14,8(r3)
+        stfdu   f15,8(r3)
+        stfdu   f16,8(r3)
+        stfdu   f17,8(r3)
+        stfdu   f18,8(r3)
+        stfdu   f19,8(r3)
+        stfdu   f20,8(r3)
+        stfdu   f21,8(r3)
+        stfdu   f22,8(r3)
+        stfdu   f23,8(r3)
+        stfdu   f24,8(r3)
+        stfdu   f25,8(r3)
+        stfdu   f26,8(r3)
+        stfdu   f27,8(r3)
+        stfdu   f28,8(r3)
+        stfdu   f29,8(r3)
+        stfdu   f30,8(r3)
+        stfdu   f31,8(r3)
 
         mflr    r4
         subi    r4,r4,PPC_VECLEN*4
-        stw     r4,4(r3)
-        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
+        stw     r4,8(r3)
 
-        la      r5,1024(r1)
+        la      r3,764(r1)
+
+        rlwinm  r0,r4,28,28,31
+        stwu    r0,4(r3)                     #ec_ExcID; does not work for Altivec exception
+        mfsrr0  r0
+        stwu    r0,4(r3)
+        mfsrr1  r0
+        stwu    r0,4(r3)
+        mfdar   r0
+        stwu    r0,4(r3)
+        mfdsisr r0
+        stwu    r0,4(r3)
+        mfcr    r0
+        stwu    r0,4(r3)
+        mfctr   r0
+        stwu    r0,4(r3)
+        mfsprg2 r0
+        stwu    r0,4(r3)                     #LR
+        mfxer   r0
+        stwu    r0,4(r3)
+        mffs    f0
+        stfsu   f0,4(r3)
+
+        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
+        lwz     r4,768(r1)
+        la      r5,256(r1)
         mtsprg0 r5
 
         bl _Exception_Entry
@@ -146,6 +152,61 @@ _ExcCommon:
         mfsprg0 r31
         addi    r31,r31,512
 
+        lwzu    r3,4(r31)
+        mtsrr0  r3
+        lwzu    r3,4(r31)
+        mtsrr1  r3
+        lwzu    r3,4(r31)
+        mtdar   r3
+        lwzu    r3,4(r31)
+        mtdsisr r3
+        lwzu    r3,4(r31)
+        mtcr    r3
+        lwzu    r3,4(r31)
+        mtctr   r3
+        lwzu    r3,4(r31)
+        mtlr    r3
+        lwzu    r3,4(r31)
+        mtxer   r3
+        lfsu    f0,4(r31)
+        mtfsf   0xff,f0
+
+        lwzu    r0,4(r31)
+        lwzu    r1,4(r31)
+        lwzu    r2,4(r31)
+        lwzu    r3,4(r31)
+        lwzu    r4,4(r31)
+        lwzu    r5,4(r31)
+        lwzu    r6,4(r31)
+        lwzu    r7,4(r31)
+        lwzu    r8,4(r31)
+        lwzu    r9,4(r31)
+        lwzu    r10,4(r31)
+        lwzu    r11,4(r31)
+        lwzu    r12,4(r31)
+        lwzu    r13,4(r31)
+        lwzu    r14,4(r31)
+        lwzu    r15,4(r31)
+        lwzu    r16,4(r31)
+        lwzu    r17,4(r31)
+        lwzu    r18,4(r31)
+        lwzu    r19,4(r31)
+        lwzu    r20,4(r31)
+        lwzu    r21,4(r31)
+        lwzu    r22,4(r31)
+        lwzu    r23,4(r31)
+        lwzu    r24,4(r31)
+        lwzu    r25,4(r31)
+        lwzu    r26,4(r31)
+        lwzu    r27,4(r31)
+        lwzu    r28,4(r31)
+        lwzu    r29,4(r31)
+        lwzu    r30,4(r31)
+
+        mtsprg2 r30
+        lwzu    r30,4(r31)
+
+        lfdu    f0,8(r31)
         lfdu    f1,8(r31)
         lfdu    f2,8(r31)
         lfdu    f3,8(r31)
@@ -178,68 +239,8 @@ _ExcCommon:
         lfdu    f30,8(r31)
         lfdu    f31,8(r31)
 
-        lwzu    r0,4(r31)
-        lwzu    r1,4(r31)
-        lwzu    r2,4(r31)
-        lwzu    r3,4(r31)
-        mtsprg1 r3
-        lwzu    r4,4(r31)
-        lwzu    r5,4(r31)
-        lwzu    r6,4(r31)
-        lwzu    r7,4(r31)
-        lwzu    r8,4(r31)
-        lwzu    r9,4(r31)
-        lwzu    r10,4(r31)
-        lwzu    r11,4(r31)
-        lwzu    r12,4(r31)
-        lwzu    r13,4(r31)
-        lwzu    r14,4(r31)
-        lwzu    r15,4(r31)
-        lwzu    r16,4(r31)
-        lwzu    r17,4(r31)
-        lwzu    r18,4(r31)
-        lwzu    r19,4(r31)
-        lwzu    r20,4(r31)
-        lwzu    r21,4(r31)
-        lwzu    r22,4(r31)
-        lwzu    r23,4(r31)
-        lwzu    r24,4(r31)
-        lwzu    r25,4(r31)
-        lwzu    r26,4(r31)
-        lwzu    r27,4(r31)
-        lwzu    r28,4(r31)
-        lwzu    r29,4(r31)
-        lwzu    r30,4(r31)
-        mtsprg2 r30
-        lwzu    r30,4(r31)
-
-        mtsprg1 r30
-        mfsprg0 r3
+        mr      r31,r30
         mfsprg2 r30
-
-        lfsu    f0,4(r31)
-        mtfsf   0xff,f0
-        lfd     f0,512(r3)
-
-        lwzu    r3,4(r31)
-        mtctr   r3
-        lwzu    r3,4(r31)
-        mtxer   r3
-        lwzu    r3,4(r31)
-        mtcr    r3
-        lwzu    r3,4(r31)
-        mtlr    r3
-        lwzu    r3,4(r31)
-        mtdsisr r3
-        lwzu    r3,4(r31)
-        mtdar   r3
-        lwzu    r3,4(r31)
-        mtsrr1  r3
-        lwzu    r3,4(r31)
-        mtsrr0  r3
-
-        mfsprg0 r3
-        mfsprg1 r31
 
         rfi
 
