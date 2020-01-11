@@ -30,9 +30,11 @@
 *
 *********************************************************************************************/
 
-PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, int vector, struct iframe* iframe)
+PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
-    switch (vector)
+    PowerPCBase->pp_ExceptionMode = -1;
+
+    switch (iframe->if_ExceptionVector)
     {
         case VEC_EXTERNAL:
         {
@@ -50,7 +52,17 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, int vector, s
             break;
         }
         case VEC_PROGRAM:
-        {
+        {                
+            if (PowerPCBase->pp_SuperAddress == iframe->if_Context.ec_UPC.ec_PC)
+            {
+                iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                iframe->if_Context.ec_SRR1         &= ~PSL_PR;
+                iframe->if_Context.ec_GPR[0]        = 0;            //Set SuperKey
+            }
+            else
+            {
+                CommonExcHandler(PowerPCBase, iframe);
+            }
             break;
         }
         case VEC_ALIGNMENT:
@@ -59,6 +71,14 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, int vector, s
         }
         case VEC_ALTIVECUNAV:
         {
+            if (PowerPCBase->pp_EnAltivec)
+            {
+                iframe->if_Context.ec_SRR1 |= PSL_VEC;
+            }
+            else
+            {
+                CommonExcError(PowerPCBase, iframe);
+            }
             break;
         }
         default:
@@ -66,6 +86,8 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, int vector, s
             break;
         }
     }
+
+    PowerPCBase->pp_ExceptionMode = 0;
     return;
 }
 
@@ -87,6 +109,28 @@ PPCKERNEL void PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifr
 *********************************************************************************************/
 
 PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+{
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+{
+    return;
+}
+
+/********************************************************************************************
+*
+*     Entry point to print an exception error in a window.
+*
+*********************************************************************************************/
+
+PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
     return;
 }

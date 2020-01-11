@@ -143,9 +143,8 @@ _ExcCommon:
         stfsu   f0,4(r3)
 
         lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
-        lwz     r4,768(r1)
-        la      r5,256(r1)
-        mtsprg0 r5
+        la      r4,256(r1)
+        mtsprg0 r4
 
         bl _Exception_Entry
 

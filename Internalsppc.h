@@ -183,4 +183,6 @@ VOID PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SystemStart(void);
 VOID DispatchPPC(void);
+void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 
