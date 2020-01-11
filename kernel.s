@@ -32,27 +32,27 @@ _ExcCommon:
         b       ExcDLoadTLBMiss
         b       ExcDStoreTLBMiss
 
-        mtsprg2 r0                      #LR; sprg3 = r0
+        mtsprg2 r0                           #LR; sprg3 = r0
 		
         mfmsr   r0
         ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
-        mtmsr	r0				        #Reenable MMU
-        isync					        #Also reenable FPU
+        mtmsr	r0				             #Reenable MMU
+        isync					             #Also reenable FPU
         sync
 
         mtsprg0 r3
 
         stwu	r1,-2048(r1)
 
-        la      r3,804(r1)              #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
+        la      r3,804(r1)                   #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
 
         mfsprg3 r0
         stwu    r0,4(r3)
         lwz     r0,0(r1)
-        stwu    r0,4(r3)    #r1
+        stwu    r0,4(r3)                     #r1
         stwu    r2,4(r3)
         mfsprg0 r0
-        stwu    r0,4(r3)    #r3
+        stwu    r0,4(r3)                     #r3
         stwu    r4,4(r3)
         stwu    r5,4(r3)
         stwu    r6,4(r3)
@@ -121,7 +121,7 @@ _ExcCommon:
 
         la      r3,764(r1)
 
-        rlwinm  r0,r4,28,28,31
+        rlwinm  r0,r4,24,24,31
         stwu    r0,4(r3)                     #ec_ExcID; does not work for Altivec exception
         mfsrr0  r0
         stwu    r0,4(r3)
