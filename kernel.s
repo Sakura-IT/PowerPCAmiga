@@ -82,7 +82,7 @@ _ExcCommon:
         stwu    r30,4(r3)
         stwu    r31,4(r3)
 
-        stfdu   f0,8(r3)
+        stfdu   f0,4(r3)
         stfdu   f1,8(r3)
         stfdu   f2,8(r3)
         stfdu   f3,8(r3)
@@ -206,7 +206,7 @@ _ExcCommon:
         mtsprg2 r30
         lwzu    r30,4(r31)
 
-        lfdu    f0,8(r31)
+        lfdu    f0,4(r31)
         lfdu    f1,8(r31)
         lfdu    f2,8(r31)
         lfdu    f3,8(r31)
