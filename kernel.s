@@ -381,54 +381,54 @@ _DoAlign:
         la      r11,552(r3)            #reg table
         la      r12,680(r3)            #freg table
 
-		rlwinm  r6,r5,14,24,28         #get floating point register offset
-		rlwinm  r7,r5,18,25,29         #get destination register offset
-		mr.     r10,r7
-		beq     .ItsR0
-		lwzx    r10,r11,r7             #get address from destination register
+        rlwinm  r6,r5,14,24,28         #get floating point register offset
+        rlwinm  r7,r5,18,25,29         #get destination register offset
+        mr.     r10,r7
+        beq     .ItsR0
+        lwzx    r10,r11,r7             #get address from destination register
 
 .ItsR0:	
-    	rlwinm  r8,r5,0,16,31          #get displacement
-		rlwinm  r0,r5,6,26,31
-		cmpwi   r0,0x34                #test for stfs
-		beq     .stfs
-		cmpwi   r0,0x35
-		beq     .stfsu
-		cmpwi   r0,0x30
-		beq     .lfs
-		cmpwi   r0,0x31
-		beq     .lfsu
-		cmpwi   r0,0x1f
-		beq     .lstfsx
-		cmpwi   r0,0x32
-		beq     .lfd
-		cmpwi   r0,0x36
-		beq     .stfd
-		b       .HaltAlign
+        rlwinm  r8,r5,0,16,31          #get displacement
+        rlwinm  r0,r5,6,26,31
+        cmpwi   r0,0x34                #test for stfs
+        beq     .stfs
+        cmpwi   r0,0x35
+        beq     .stfsu
+        cmpwi   r0,0x30
+        beq     .lfs
+        cmpwi   r0,0x31
+        beq     .lfsu
+        cmpwi   r0,0x1f
+        beq     .lstfsx
+        cmpwi   r0,0x32
+        beq     .lfd
+        cmpwi   r0,0x36
+        beq     .stfd
+        b       .HaltAlign
 
 .stfd:		
         lwzx    r9,r12,r6
-		stwx    r9,r10,r8
-		addi    r6,r6,4
-		addi    r8,r8,4
-		lwzx    r9,r12,r6
-		stwx    r9,r10,r8
-		b       .AligExit
+        stwx    r9,r10,r8
+        addi    r6,r6,4
+        addi    r8,r8,4
+        lwzx    r9,r12,r6
+        stwx    r9,r10,r8
+        b       .AligExit
 
 .stfsu:		
         add     r9,r10,r8
-		stwx    r9,r11,r7
+        stwx    r9,r11,r7
 
 .stfs:		
         lfdx    f1,r12,r6              #get value from fp register
-		stfs    f1,936(r3)             #store it on correct aligned spot
-		lwz     r6,936(r3)             #Get the correct 32 bit value
-		stwx    r6,r10,r8              #Store correct value
-		b       .AligExit
+        stfs    f1,936(r3)             #store it on correct aligned spot
+        lwz     r6,936(r3)             #Get the correct 32 bit value
+        stwx    r6,r10,r8              #Store correct value
+        b       .AligExit
 
 .lfd:
         lwzx    r9,r10,r8
-        stw	    r9,936(r3)
+        stw     r9,936(r3)
         addi    r8,r8,4
         lwzx    r9,r10,r8
         stw     r9,936(r3)
