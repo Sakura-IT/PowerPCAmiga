@@ -259,3 +259,33 @@ ULONG                       ba_Ibatl;
 ULONG                       ba_Dbatu;
 ULONG                       ba_Dbatl;
 };
+
+struct ExcData {
+struct Node                 ed_Node;
+APTR                        ed_Code;
+ULONG                       ed_Data;
+struct TaskPPC*             ed_Task;
+ULONG                       ed_Flags;
+ULONG                       ed_ExcID;
+ULONG                       ed_RemovalTime;
+ULONG                       ed_TimeBaseUpper;
+ULONG                       ed_TimeBaseLower;
+ULONG                       ed_LastExc;
+};
+
+struct ExcInfo {
+struct ExcData              ei_ExcData;
+ULONG                       ei_MachineCheck;
+ULONG                       ei_DataAccess;
+ULONG                       ei_InstructionAccess;
+ULONG                       ei_Alignment;
+ULONG                       ei_Program;
+ULONG                       ei_FPUnavailable;
+ULONG                       ei_Decrementer;
+ULONG                       ei_SystemCall;
+ULONG                       ei_Trace;
+ULONG                       ei_PerfMon;
+ULONG                       ei_IABR;
+ULONG                       ei_External;
+};
+

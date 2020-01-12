@@ -20,7 +20,7 @@
 
 .include    constantsppc.i
 
-.global     _Exception_Entry
+.global     _Exception_Entry, _SmallExcHandler
 
 .section "kernel","acrx"
 
@@ -242,6 +242,136 @@ _ExcCommon:
         mfsprg2 r30
 
         rfi
+
+#********************************************************************************************
+
+_SmallExcHandler:
+
+        stwu    r1,-256(r1)
+
+        lwz     r0,516(r4)
+        mtcr    r0
+        lwz     r0,520(r4)
+        mtctr   r0
+        lwz     r0,524(r4)
+        mtsprg1 r0
+        lwz     r0,528(r4)
+        mtxer   r0
+
+        la      r12,548(r4)
+        stw     r4,208(r1)
+
+        lwz     r0,14(r3)               #code
+        mtlr    r0
+        lwz     r2,18(r3)               #data
+        la      r3,200(r1)              #XCONTEXT
+
+        lwzu    r0,4(r12)               #volatile regs
+        lwzu    r4,4(r12)
+        lwzu    r5,4(r12)
+        lwzu    r6,4(r12)
+        mtsprg2 r4
+        mtsprg3 r5
+        stw     r6,0(r3)
+        lwzu    r4,4(r12)
+        lwzu    r5,4(r12)
+        lwzu    r6,4(r12)
+        lwzu    r7,4(r12)
+        lwzu    r8,4(r12)
+        lwzu    r9,4(r12)
+        lwzu    r10,4(r12)
+        lwzu    r11,4(r12)
+        lwz     r12,4(r12)
+
+        blrl
+
+        stw     r3,204(r1)             #status
+        stw     r4,212(r1)
+        mfcr    r3
+        lwz     r4,208(r1)             #iframe
+        stw     r3,516(r4)
+        mfctr   r3
+        stw     r3,520(r4)
+        mfsprg1 r3
+        stw     r3,524(r4)             #lr
+        mfxer   r3
+        stw     r3,528(r4)
+
+        la      r3,548(r4)
+        stwu    r0,4(r3)
+        mfsprg2 r0
+        stwu    r0,4(r3)               #r1
+        mfsprg3 r0
+        stwu    r0,4(r3)               #r2
+        lwz     r0,200(r1)
+        stwu    r0,4(r3)               #r3
+        lwz     r4,212(r1)
+        stwu    r4,4(r3)
+        stwu    r5,4(r3)
+        stwu    r6,4(r3)
+        stwu    r7,4(r3)
+        stwu    r8,4(r3)
+        stwu    r9,4(r3)
+        stwu    r10,4(r3)
+        stwu    r11,4(r3)
+        stwu    r12,4(r3)
+        stwu    r13,4(r3)
+        stwu    r14,4(r3)
+        stwu    r15,4(r3)
+        stwu    r16,4(r3)
+        stwu    r17,4(r3)
+        stwu    r18,4(r3)
+        stwu    r19,4(r3)
+        stwu    r20,4(r3)
+        stwu    r21,4(r3)
+        stwu    r22,4(r3)
+        stwu    r23,4(r3)
+        stwu    r24,4(r3)
+        stwu    r25,4(r3)
+        stwu    r26,4(r3)
+        stwu    r27,4(r3)
+        stwu    r28,4(r3)
+        stwu    r29,4(r3)
+        stwu    r30,4(r3)
+        stwu    r31,4(r3)
+
+        stfdu   f0,4(r3)
+        stfdu   f1,8(r3)
+        stfdu   f2,8(r3)
+        stfdu   f3,8(r3)
+        stfdu   f4,8(r3)
+        stfdu   f5,8(r3)
+        stfdu   f6,8(r3)
+        stfdu   f7,8(r3)
+        stfdu   f8,8(r3)
+        stfdu   f9,8(r3)
+        stfdu   f10,8(r3)
+        stfdu   f11,8(r3)
+        stfdu   f12,8(r3)
+        stfdu   f13,8(r3)
+        stfdu   f14,8(r3)
+        stfdu   f15,8(r3)
+        stfdu   f16,8(r3)
+        stfdu   f17,8(r3)
+        stfdu   f18,8(r3)
+        stfdu   f19,8(r3)
+        stfdu   f20,8(r3)
+        stfdu   f21,8(r3)
+        stfdu   f22,8(r3)
+        stfdu   f23,8(r3)
+        stfdu   f24,8(r3)
+        stfdu   f25,8(r3)
+        stfdu   f26,8(r3)
+        stfdu   f27,8(r3)
+        stfdu   f28,8(r3)
+        stfdu   f29,8(r3)
+        stfdu   f30,8(r3)
+        stfdu   f31,8(r3)
+
+        lwz     r3,204(r1)
+        lwz     r1,0(r1)
+
+        blr
 
 #********************************************************************************************
 

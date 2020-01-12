@@ -61,7 +61,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             }
             else
             {
-                CommonExcHandler(PowerPCBase, iframe);
+                CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcProgram);
             }
             break;
         }
@@ -119,8 +119,35 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
 *
 *********************************************************************************************/
 
-PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList)
 {
+    struct ExcData* nxtNode;
+    struct ExcData* currNode = (struct ExcData*)excList->lh_Head;
+    ULONG status = 0;
+
+    while (nxtNode = (struct ExcData*)currNode->ed_Node.ln_Succ)
+    {
+        if (currNode->ed_ExcID & iframe->if_Context.ec_ExcID)
+        {
+            if ((currNode->ed_Flags & EXCF_GLOBAL) || ((currNode->ed_Flags & EXCF_LOCAL) && (currNode->ed_Task) && (currNode->ed_Task != PowerPCBase->pp_ThisPPCProc)))
+            {
+                if (currNode->ed_Flags & EXCF_LARGECONTEXT)
+                {
+                    ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") struct EXCContext*) = currNode->ed_Code;
+                    status = ExcHandler(currNode->ed_Data, &iframe->if_Context);
+                }
+                else if (currNode->ed_Flags &EXCF_SMALLCONTEXT)
+                {
+                    status = SmallExcHandler(currNode, iframe);
+                }
+                if (status == EXCRETURN_ABORT)
+                {
+                    break;
+                }
+            }
+        }
+        currNode = nxtNode;
+    }
     return;
 }
 
