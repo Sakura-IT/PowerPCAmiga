@@ -186,4 +186,5 @@ VOID DispatchPPC(void);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
+ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
 

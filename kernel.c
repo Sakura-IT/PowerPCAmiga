@@ -67,6 +67,22 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_ALIGNMENT:
         {
+
+            if (PowerPCBase->pp_EnAlignExc)
+            {
+                CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcAlign);
+            }
+            else
+            {
+                if(!(PowerPCBase->pp_AlignmentExcLow += 1))
+                {
+                    PowerPCBase->pp_AlignmentExcHigh += 1;
+                }
+                if(!(DoAlign(iframe, iframe->if_Context.ec_UPC.ec_SRR0)))
+                {
+                    CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcAlign);
+                }
+            }
             break;
         }
         case VEC_ALTIVECUNAV:
