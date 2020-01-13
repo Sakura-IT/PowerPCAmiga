@@ -20,7 +20,7 @@
 
 .include    constantsppc.i
 
-.global     _Exception_Entry, _SmallExcHandler, _DoAlign
+.global     _Exception_Entry, _SmallExcHandler, _DoAlign, _DoDataStore, _FinDataStore
 
 .section "kernel","acrx"
 
@@ -463,6 +463,166 @@ _DoAlign:
         li      r3,0
         blr
 .AligExit:
+        li      r3,1
+        blr
+
+#********************************************************************************************
+
+_DoDataStore:
+        li      r12,0                  #r3 = iframe, r4 = srr0, r5 = datastruct
+        stw     r12,936(r3)            #to get an offset of 0
+        la      r11,552(r3)            #get reg table in r11
+        lwz     r12,0(r4)              #get offending instruction in r12
+        li      r10,0
+        lis     r0,0xc000              #check for load or store instruction
+        mr      r7,r5
+        and.    r0,r12,r0
+        lis     r6,0x8000
+        cmpw    r6,r0
+        beq     .LoadStore
+
+        rlwinm  r6,r12,0,25,5
+        loadreg r8,0x7c00002e          #check for stbx/sthx/stwx/lbzx/lhzx/lwzx
+        cmpw    r6,r8
+        bne     .NotSupported
+
+        li      r10,1
+        rlwinm  r6,r12,13,25,29        #Source reg
+        rlwinm  r8,r12,18,25,29        #Dest 1
+        rlwinm  r4,r12,23,25,29        #Dest 2
+        lwzx    r4,r11,r4              #Displacement (word)
+        li      r5,0                   #Update bit
+        li      r9,1                   #Mark as Store instruction
+
+        b       .GoStore
+
+.LoadStore:	
+        rlwinm  r6,r12,13,25,29        #Get Destination Reg (l) or Source (s)
+        rlwinm  r8,r12,18,25,29        #Get Source Reg (l) or Destination (s)
+        rlwinm  r9,r12,4,31,31         #Check load or store
+        rlwinm  r5,r12,6,31,31         #Check for update bit
+        rlwinm  r4,r12,0,16,31         #Displacement (halfword)
+        extsh   r4,r4                  #Extend sign of displacement
+
+.GoStore:
+        mr.     r5,r5
+        bne     .NoZero                #When update r0 = r0 and not 0
+        mr.     r8,r8
+        bne     .NoZero
+        li      r8,936                 #Point to 0 in frame
+
+.NoZero:
+        lwzx    r3,r11,r8              #Get Destination Address
+        add     r3,r3,r4               #Add displacement
+        mr.     r5,r5
+        beq     .NoUpdate
+        stwx    r3,r11,r8              #Update Destination Reg
+
+.NoUpdate:
+        stw     r9,20(r7)
+        lwzx    r5,r11,r6              #Get value to store
+        mr.     r9,r9
+        beq     .GoLoad                #Load or store?
+
+        mr.     r10,r10                #Normal store or with index?
+        beq     .NoStxx
+
+        rlwinm  r0,r12,25,29,31        #Indexed store
+        cmpwi   r0,6
+        beq     .StoreHalf
+        cmpwi   r0,3
+        beq     .StoreByte
+        cmpwi   r0,2
+        beq     .StoreWord
+        mr.     r0,r0
+        beq     .GoLoadx               #Lwzx
+        cmpwi   r0,1
+        beq     .GoLoadx               #lbzx
+        cmpwi   r0,4
+        beq     .GoLoadx               #lhzx
+        cmpwi   r0,5
+        beq     .GoLoadx               #lhax
+        b       .NotSupported          #Not Supported
+
+.NoStxx:
+        rlwinm. r0,r12,3,31,31         #Normal store
+        bne     .StoreHalf
+        rlwinm. r0,r12,5,31,31
+        bne     .StoreByte
+
+.StoreWord:	
+        loadreg r9,'PUTW'
+        b       .DoStore
+
+.StoreHalf:	
+        loadreg r9,'PUTH'
+        b       .DoStore
+
+.StoreByte:	
+        loadreg r9,'PUTB'
+
+.DoStore:
+        stw     r9,0(r7)
+        stw     r5,4(r7)
+        stw     r3,8(r7)
+        b       .DoneDSI               #We're done
+
+.GoLoad:
+.GoLoadx:	
+        stw     r0,12(r7)
+        stw     r6,16(r7)
+        loadreg r9,'GETV'
+        stw     r9,0(r7)
+        stw     r5,4(r7)
+
+        b      .DoneDSI
+
+.NotSupported:
+        li      r3,0
+        blr
+
+#********************************************************************************************
+
+_FinDataStore:
+
+        lwz     r12,0(r5)
+        la      r11,552(r4)
+        lwz     r9,20(r6)
+        lwz     r4,12(r6)
+        lwz     r6,16(r6)
+        mr.     r9,r9
+        beq     .Normal
+
+        mr.     r4,r4
+        beq     .FixedValue            #Word
+        rlwinm  r10,r3,16,16,31
+        cmpwi   r4,4
+        beq     .FixedValue            #halfword
+        extsh   r10,r10
+        cmpwi   r4,5                   #halfword algebraic
+        beq     .FixedValue
+        rlwinm  r10,r10,24,24,31
+        b       .FixedValue            #byte
+
+.Normal:
+        rlwinm  r9,r12,16,16,31
+        andi.   r9,r9,0xa800
+        cmplwi  r9,0x8000              #lwz/lwzu 0x8000
+        beq     .FixedValue
+        rlwinm  r10,r10,16,16,31
+        cmplwi  r9,0xa000              #lhz/lhzu 0xa000
+        beq     .FixedValue
+        extsh   r10,r10
+        cmplwi  r9,0xa800              #lha/lhau 0xa800
+        beq     .FixedValue
+        rlwinm  r10,r10,24,24,31
+        cmplwi  r9,0x8800              #lbz/lbzu 0x8800
+        bne     .NotSupported          #Not Supported
+
+.FixedValue:
+    	stwx    r10,r11,r6             #Store gotten value in correct register
+
+.DoneDSI:
         li      r3,1
         blr
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -187,4 +187,6 @@ void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe,
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
 ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
+ULONG DoDataStore(struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
+ULONG FinDataStore(ULONG value, struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
 

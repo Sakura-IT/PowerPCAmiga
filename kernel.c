@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,6 +49,20 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_DATASTORAGE:
         {
+            if ((iframe->if_Context.ec_DAR == 4) || (iframe->if_Context.ec_UPC.ec_SRR0 > 0x10000) ||
+            ((iframe->if_Context.ec_DAR < 0xfffff800) && (iframe->if_Context.ec_DAR < 0x800)))
+            {
+                if(!(PowerPCBase->pp_DataExcLow += 1))
+                {
+                    PowerPCBase->pp_DataExcHigh += 1;
+                }
+                struct DataMsg myData;
+                myData.dm_Value    = 0;
+                myData.dm_Address  = 0;
+                myData.dm_LoadFlag = 0;
+                ULONG Status = DoDataStore(iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
+            }
+            CommonExcHandler(PowerPCBase, iframe,(struct List*)&PowerPCBase->pp_ExcDAccess);
             break;
         }
         case VEC_PROGRAM:

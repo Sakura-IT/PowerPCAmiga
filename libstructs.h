@@ -290,3 +290,12 @@ ULONG                       ei_IABR;
 ULONG                       ei_External;
 };
 
+struct DataMsg {
+ULONG                       dm_Type;
+ULONG                       dm_Value;
+ULONG                       dm_Address;
+ULONG                       dm_LoadType;
+ULONG                       dm_RegNumber;
+ULONG                       dm_LoadFlag;
+};
+
