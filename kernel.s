@@ -589,13 +589,14 @@ _FinDataStore:
         la      r11,552(r4)
         lwz     r9,20(r6)
         lwz     r4,12(r6)
+        mr      r10,r3
         lwz     r6,16(r6)
         mr.     r9,r9
         beq     .Normal
 
         mr.     r4,r4
         beq     .FixedValue            #Word
-        rlwinm  r10,r3,16,16,31
+        rlwinm  r10,r10,16,16,31
         cmpwi   r4,4
         beq     .FixedValue            #halfword
         extsh   r10,r10
