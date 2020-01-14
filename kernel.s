@@ -1,4 +1,4 @@
-## Copyright (c) 2019 Dennis van der Boon
+## Copyright (c) 2020 Dennis van der Boon
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -40,20 +40,71 @@ _ExcCommon:
         isync					             #Also reenable FPU
         sync
 
-        mtsprg0 r3
+        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
 
-        stwu	r1,-2048(r1)
-
-        la      r3,804(r1)                   #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
-
+        stw     r3,256+512+40+12(r1)         #GPR[3]
+        stw     r4,256+512+40+16(r1)         #GPR[4]
         mfsprg3 r0
+        stw     r0,256+512+40(r1)            #GPR[0]
+        mflr    r3
+        rlwinm  r0,r3,24,24,31
+        stw     r0,256+512(r1)               #EXC_ID
+        la      r4,256(r1)                   #iFrame
+        stw     r3,-4(r4)
+        mfsprg2 r0
+        stw     r0,-8(r4)                    #LR
+        la      r3,256+512(r1)
+
+        bl      _StoreFrame                  #r0 and r3 are skipped in this routine and were saved above
+
+        lwz     r4,252(r1)                   #same as -4(r4)
+        subi    r4,r4,PPC_VECLEN*4
+        stw     r4,256+512+40+128+256+8(r1)  #if_ExceptionVector
+
+        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
+        la      r4,256(r1)                   #iFrame
+
+        bl      _Exception_Entry
+
+        la      r31,256+512(r1)
+
+        bl      _LoadFrame                   #LR and r0 are skipped in this routine and are loaded below
+
+        lwz     r0,256+512+28(r1)            #EXC_LR
+        mtlr    r0
+        lwz     r0,256+512+40(r1)            #GPR[0]
+
+        lwz     r1,256+512+44(r1)            #GPR[1]
+
+        rfi
+
+#********************************************************************************************
+
+_StoreFrame:
+
+        mfsrr0  r0
         stwu    r0,4(r3)
+        mfsrr1  r0
+        stwu    r0,4(r3)
+        mfdar   r0
+        stwu    r0,4(r3)
+        mfdsisr r0
+        stwu    r0,4(r3)
+        mfcr    r0
+        stwu    r0,4(r3)
+        mfctr   r0
+        stwu    r0,4(r3)
+        lwz     r0,-8(r4)
+        stwu    r0,4(r3)                     #LR
+        mfxer   r0
+        stwu    r0,4(r3)
+        mffs    f0
+        stfsu   f0,4(r3)
+
         lwz     r0,0(r1)
-        stwu    r0,4(r3)                     #r1
+        stwu    r0,8(r3)                     #r1, skipped r0
         stwu    r2,4(r3)
-        mfsprg0 r0
-        stwu    r0,4(r3)                     #r3
-        stwu    r4,4(r3)
+        stwu    r4,8(r3)                     #skipped r3. Need to be stored seperately
         stwu    r5,4(r3)
         stwu    r6,4(r3)
         stwu    r7,4(r3)
@@ -115,41 +166,11 @@ _ExcCommon:
         stfdu   f30,8(r3)
         stfdu   f31,8(r3)
 
-        mflr    r4
-        subi    r4,r4,PPC_VECLEN*4
-        stw     r4,8(r3)
+        blr
 
-        la      r3,764(r1)
+#********************************************************************************************
 
-        rlwinm  r0,r4,24,24,31
-        stwu    r0,4(r3)                     #ec_ExcID; does not work for Altivec exception
-        mfsrr0  r0
-        stwu    r0,4(r3)
-        mfsrr1  r0
-        stwu    r0,4(r3)
-        mfdar   r0
-        stwu    r0,4(r3)
-        mfdsisr r0
-        stwu    r0,4(r3)
-        mfcr    r0
-        stwu    r0,4(r3)
-        mfctr   r0
-        stwu    r0,4(r3)
-        mfsprg2 r0
-        stwu    r0,4(r3)                     #LR
-        mfxer   r0
-        stwu    r0,4(r3)
-        mffs    f0
-        stfsu   f0,4(r3)
-
-        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
-        la      r4,256(r1)
-        mtsprg0 r4
-
-        bl _Exception_Entry
-
-        mfsprg0 r31
-        addi    r31,r31,512
+_LoadFrame:
 
         lwzu    r3,4(r31)
         mtsrr0  r3
@@ -163,16 +184,13 @@ _ExcCommon:
         mtcr    r3
         lwzu    r3,4(r31)
         mtctr   r3
-        lwzu    r3,4(r31)
-        mtlr    r3
-        lwzu    r3,4(r31)
+        lwzu    r3,8(r31)                    #skip lr, is loaded seperately
         mtxer   r3
         lfsu    f0,4(r31)
         mtfsf   0xff,f0
 
         lwzu    r0,4(r31)
-        lwzu    r1,4(r31)
-        lwzu    r2,4(r31)
+        lwzu    r2,8(r31)                    #skip r1, is loaded seperately
         lwzu    r3,4(r31)
         lwzu    r4,4(r31)
         lwzu    r5,4(r31)
@@ -201,9 +219,7 @@ _ExcCommon:
         lwzu    r28,4(r31)
         lwzu    r29,4(r31)
         lwzu    r30,4(r31)
-
-        mtsprg2 r30
-        lwzu    r30,4(r31)
+        lwzu    r0,4(r31)
 
         lfdu    f0,4(r31)
         lfdu    f1,8(r31)
@@ -238,10 +254,8 @@ _ExcCommon:
         lfdu    f30,8(r31)
         lfdu    f31,8(r31)
 
-        mr      r31,r30
-        mfsprg2 r30
-
-        rfi
+        mr      r31,r0
+        blr
 
 #********************************************************************************************
 
@@ -249,126 +263,58 @@ _SmallExcHandler:
 
         stwu    r1,-256(r1)
 
-        lwz     r0,516(r4)
-        mtcr    r0
-        lwz     r0,520(r4)
-        mtctr   r0
-        lwz     r0,524(r4)
+        la      r31,512(r4)
+        mtsprg0 r31
+        mtsprg3 r3
+        mflr    r3
+        stw     r3,-12(r4)                   #Store this function's lr
+
+        bl      _LoadFrame                   #LR and r0 are skipped in this routine and are loaded below
+
+        stw     r3,200(r1)
+        mfsprg0 r4
+        mfsprg3 r3
+        lwz     r0,28(r4)                    #EXC_LR
         mtsprg1 r0
-        lwz     r0,528(r4)
-        mtxer   r0
-
-        la      r12,548(r4)
-        stw     r4,208(r1)
-
-        lwz     r0,14(r3)               #code
+        stw     r0,-8(r4)                    #Will be used later in StoreFrame
+        lwz     r0,40+4(r4)                  #GPR[1]
+        mtsprg2 r0
+        lwz     r0,18(r3)                    #DATA
+        mr.     r0,r0
+        bne     .NewData
+        mr      r0,r2
+.NewData:
+        mtsprg3 r0
+        lwz     r0,14(r3)                    #CODE
         mtlr    r0
-        lwz     r2,18(r3)               #data
-        la      r3,200(r1)              #XCONTEXT
-
-        lwzu    r0,4(r12)               #volatile regs
-        lwzu    r4,4(r12)
-        lwzu    r5,4(r12)
-        lwzu    r6,4(r12)
-        mtsprg2 r4
-        mtsprg3 r5
-        stw     r6,0(r3)
-        lwzu    r4,4(r12)
-        lwzu    r5,4(r12)
-        lwzu    r6,4(r12)
-        lwzu    r7,4(r12)
-        lwzu    r8,4(r12)
-        lwzu    r9,4(r12)
-        lwzu    r10,4(r12)
-        lwzu    r11,4(r12)
-        lwz     r12,4(r12)
+        la      r3,200(r1)                   #XCONTEXT
+        stw     r4,208(r1)
+        lwz     r0,40(r4)                    #GPR[0]
+        lwz     r4,40+16(r4)                 #GPR[4]
 
         blrl
 
-        stw     r3,204(r1)             #status
-        stw     r4,212(r1)
-        mfcr    r3
-        lwz     r4,208(r1)             #iframe
-        stw     r3,516(r4)
-        mfctr   r3
-        stw     r3,520(r4)
-        mfsprg1 r3
-        stw     r3,524(r4)             #lr
-        mfxer   r3
-        stw     r3,528(r4)
+        stw     r3,204(r1)                   #Status
+        lwz     r3,200(r1)
+        stw     r4,212(r1)                   #Temp store r4
+        mfsprg0 r4
+        stw     r3,40+12(r4)                 #GPR[3]
+        stw     r0,40(r4)                    #GPR[0]
 
-        la      r3,548(r4)
-        stwu    r0,4(r3)
-        mfsprg2 r0
-        stwu    r0,4(r3)               #r1
-        mfsprg3 r0
-        stwu    r0,4(r3)               #r2
-        lwz     r0,200(r1)
-        stwu    r0,4(r3)               #r3
-        lwz     r4,212(r1)
-        stwu    r4,4(r3)
-        stwu    r5,4(r3)
-        stwu    r6,4(r3)
-        stwu    r7,4(r3)
-        stwu    r8,4(r3)
-        stwu    r9,4(r3)
-        stwu    r10,4(r3)
-        stwu    r11,4(r3)
-        stwu    r12,4(r3)
-        stwu    r13,4(r3)
-        stwu    r14,4(r3)
-        stwu    r15,4(r3)
-        stwu    r16,4(r3)
-        stwu    r17,4(r3)
-        stwu    r18,4(r3)
-        stwu    r19,4(r3)
-        stwu    r20,4(r3)
-        stwu    r21,4(r3)
-        stwu    r22,4(r3)
-        stwu    r23,4(r3)
-        stwu    r24,4(r3)
-        stwu    r25,4(r3)
-        stwu    r26,4(r3)
-        stwu    r27,4(r3)
-        stwu    r28,4(r3)
-        stwu    r29,4(r3)
-        stwu    r30,4(r3)
-        stwu    r31,4(r3)
+        bl      _StoreFrame
 
-        stfdu   f0,4(r3)
-        stfdu   f1,8(r3)
-        stfdu   f2,8(r3)
-        stfdu   f3,8(r3)
-        stfdu   f4,8(r3)
-        stfdu   f5,8(r3)
-        stfdu   f6,8(r3)
-        stfdu   f7,8(r3)
-        stfdu   f8,8(r3)
-        stfdu   f9,8(r3)
-        stfdu   f10,8(r3)
-        stfdu   f11,8(r3)
-        stfdu   f12,8(r3)
-        stfdu   f13,8(r3)
-        stfdu   f14,8(r3)
-        stfdu   f15,8(r3)
-        stfdu   f16,8(r3)
-        stfdu   f17,8(r3)
-        stfdu   f18,8(r3)
-        stfdu   f19,8(r3)
-        stfdu   f20,8(r3)
-        stfdu   f21,8(r3)
-        stfdu   f22,8(r3)
-        stfdu   f23,8(r3)
-        stfdu   f24,8(r3)
-        stfdu   f25,8(r3)
-        stfdu   f26,8(r3)
-        stfdu   f27,8(r3)
-        stfdu   f28,8(r3)
-        stfdu   f29,8(r3)
-        stfdu   f30,8(r3)
-        stfdu   f31,8(r3)
-
-        lwz     r3,204(r1)
+        lwz     r4,212(r1)                   #Really store r4
+        mfsprg0 r5
+        stw     r4,40+16(r5)                 #GPR[4]
+        mfsprg1 r6
+        lwz     r4,-12(r5)                   #Retrieve this function's lr
+        stw     r6,28(r5)                    #EXC_LR
+        mfsprg2 r7
+        mtlr    r4
+        mfsprg3 r6
+        stw     r7,40+4(r5)                  #GPR[1]
+        lwz     r3,204(r1)                   #Return Status
+        stw     r6,40+8(r5)                  #GPR[2]
         lwz     r1,0(r1)
 
         blr
@@ -585,7 +531,7 @@ _DoDataStore:
 
 _FinDataStore:
 
-        lwz     r12,0(r5)
+        lwz     r12,0(r5)              #r3 = value, r4 = iframe, r5 = srr0. r6 = data
         la      r11,552(r4)
         lwz     r9,20(r6)
         lwz     r4,12(r6)
