@@ -261,7 +261,7 @@ _LoadFrame:
 
 _SmallExcHandler:
 
-        stwu    r1,-256(r1)
+        stwu    r1,-512(r1)                  #Enough?
 
         la      r31,512(r4)
         mtsprg0 r31
@@ -271,7 +271,7 @@ _SmallExcHandler:
 
         bl      _LoadFrame                   #LR and r0 are skipped in this routine and are loaded below
 
-        stw     r3,200(r1)
+        stw     r3,300(r1)
         mfsprg0 r4
         mfsprg3 r3
         lwz     r0,28(r4)                    #EXC_LR
@@ -279,41 +279,40 @@ _SmallExcHandler:
         stw     r0,-8(r4)                    #Will be used later in StoreFrame
         lwz     r0,40+4(r4)                  #GPR[1]
         mtsprg2 r0
-        lwz     r0,18(r3)                    #DATA
-        mr.     r0,r0
-        bne     .NewData
-        mr      r0,r2
-.NewData:
+        stw     r2,-16(r4)
+        lwz     r0,40+8(r4)                  #GPR[2]
+        lwz     r2,18(r3)                    #DATA
         mtsprg3 r0
         lwz     r0,14(r3)                    #CODE
         mtlr    r0
-        la      r3,200(r1)                   #XCONTEXT
-        stw     r4,208(r1)
+        la      r3,300(r1)                   #XCONTEXT
+        stw     r4,308(r1)
         lwz     r0,40(r4)                    #GPR[0]
         lwz     r4,40+16(r4)                 #GPR[4]
 
         blrl
 
-        stw     r3,204(r1)                   #Status
-        lwz     r3,200(r1)
-        stw     r4,212(r1)                   #Temp store r4
+        stw     r3,304(r1)                   #Status
+        lwz     r3,300(r1)
+        stw     r4,312(r1)                   #Temp store r4
         mfsprg0 r4
         stw     r3,40+12(r4)                 #GPR[3]
         stw     r0,40(r4)                    #GPR[0]
 
         bl      _StoreFrame
 
-        lwz     r4,212(r1)                   #Really store r4
+        lwz     r4,312(r1)                   #Really store r4
         mfsprg0 r5
         stw     r4,40+16(r5)                 #GPR[4]
         mfsprg1 r6
         lwz     r4,-12(r5)                   #Retrieve this function's lr
+        lwz     r2,-16(r5)
         stw     r6,28(r5)                    #EXC_LR
         mfsprg2 r7
         mtlr    r4
         mfsprg3 r6
         stw     r7,40+4(r5)                  #GPR[1]
-        lwz     r3,204(r1)                   #Return Status
+        lwz     r3,304(r1)                   #Return Status
         stw     r6,40+8(r5)                  #GPR[2]
         lwz     r1,0(r1)
 
