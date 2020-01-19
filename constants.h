@@ -233,6 +233,8 @@
 #define IMMR_OMISR              0x8030
 #define IMMR_IMR0               0x8050
 #define IMMR_OMR0               0x8058
+#define IMMR_IDR                0x8068
+#define IMMR_IMISR              0x8080
 
 #define IMMR_PITAR0             0x8568
 #define IMMR_PIBAR0             0x8570
@@ -253,6 +255,8 @@
 #define IMMR_POCMR5             0x8488
 
 #define IMMR_OMISR_OM0I         0x01000000
+#define IMMR_IMISR_IM0I         0x00000001
+#define IMMR_IMISR_IDI          0x00000008
 
 #define PIWAR_EN                0x80000000
 #define PIWAR_PF                0x20000000

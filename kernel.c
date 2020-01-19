@@ -38,7 +38,38 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
     {
         case VEC_EXTERNAL:
         {
-            PreparePPC(PowerPCBase, iframe);
+            switch (PowerPCBase->pp_DeviceID)
+	        {
+		        case DEVICE_HARRIER:
+		        {
+			        break;
+		        }
+
+		        case DEVICE_MPC8343E:
+		        {
+                    if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_IMISR) & IMMR_IMISR_IDI)
+                    {
+                        storePCI(IMMR_ADDR_DEFAULT, IMMR_IDR, 1);
+                        CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcInterrupt);
+                    }
+                    struct MsgFrame* msgFrame;
+                    while (msgFrame = libGetMsgFramePPC())
+                    {
+                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
+                    }
+                    storePCI(IMMR_ADDR_DEFAULT, IMMR_IMISR, IMMR_IMISR_IM0I);
+		        }
+
+		        case DEVICE_MPC107:
+		        {
+			        break;
+		        }
+
+		        default:
+		        {
+			        break;
+		        }
+	        }
             SwitchPPC(PowerPCBase, iframe);
             break;
         }
@@ -134,17 +165,6 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
     }
 
     PowerPCBase->pp_ExceptionMode = 0;
-    return;
-}
-
-/********************************************************************************************
-*
-*	This function picks up messages from the 68K and prepares them for the SwitchPPC function
-*
-*********************************************************************************************/
-
-PPCKERNEL void PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
-{
     return;
 }
 

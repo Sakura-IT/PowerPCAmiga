@@ -168,11 +168,14 @@ PPCFUNCTION VOID EnablePPC(VOID)
 
 PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 {
-	ULONG msgFrame = 0;
+	ULONG key;
+    ULONG msgFrame = 0;
 
-	ULONG key = mySuper(PowerPCBase);
-
-	DisablePPC();
+	if (!(PowerPCBase->pp_ExceptionMode))
+    {
+        key = mySuper(PowerPCBase);
+	    DisablePPC();
+    }
 
 	switch (PowerPCBase->pp_DeviceID)
 	{
@@ -199,9 +202,11 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 			break;
 		}
 	}
-	EnablePPC();
-	myUser(PowerPCBase, key);
-
+    if (!(PowerPCBase->pp_ExceptionMode))
+    {
+	    EnablePPC();
+	    myUser(PowerPCBase, key);
+    }
 	return (struct MsgFrame*)msgFrame;
 }
 
@@ -213,7 +218,50 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 
 PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 {
-    return NULL;
+	ULONG key;
+    ULONG msgFrame = 0;
+
+	if (!(PowerPCBase->pp_ExceptionMode))
+    {
+	    key = mySuper(PowerPCBase);
+	    DisablePPC();
+    }
+	
+    switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			if (myFIFO->kf_MIIPH != myFIFO->kf_MIIPT)
+            {
+                msgFrame = *((ULONG*)(myFIFO->kf_MIIPT));
+			    myFIFO->kf_MIIPT = (myFIFO->kf_MIIPT + 4) & 0xffff3fff;
+            }
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+
+	if (!(PowerPCBase->pp_ExceptionMode))
+    {
+	    EnablePPC();
+	    myUser(PowerPCBase, key);
+    }
+	return (struct MsgFrame*)msgFrame;
 }
 
 /********************************************************************************************
@@ -224,9 +272,13 @@ PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-	ULONG key = mySuper(PowerPCBase);
+	ULONG key;
 
-	DisablePPC();
+    if (!(PowerPCBase->pp_ExceptionMode))
+	{
+        key = mySuper(PowerPCBase);
+	    DisablePPC();
+    }
 
 	switch (PowerPCBase->pp_DeviceID)
 	{
@@ -254,9 +306,12 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 			break;
 		}
 	}
-	EnablePPC();
-	myUser(PowerPCBase, key);
 
+	if (!(PowerPCBase->pp_ExceptionMode))
+    {
+	    EnablePPC();
+	    myUser(PowerPCBase, key);
+    }
 	return;
 }
 
@@ -268,11 +323,15 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 
 PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 {
-	ULONG key = mySuper(PowerPCBase);
+	ULONG key;
 
-	DisablePPC();
-
-	msgFrame->mf_Identifier = ID_FREE;
+    if (!(PowerPCBase->pp_ExceptionMode))
+	{
+        key = mySuper(PowerPCBase);
+	    DisablePPC();
+    }
+	
+    msgFrame->mf_Identifier = ID_FREE;
 
 	switch (PowerPCBase->pp_DeviceID)
 	{
@@ -299,9 +358,12 @@ PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 			break;
 		}
 	}
-	EnablePPC();
-	myUser(PowerPCBase, key);
 
+	if (!(PowerPCBase->pp_ExceptionMode))
+    {
+	    EnablePPC();
+	    myUser(PowerPCBase, key);
+    }
 	return;
 }
 

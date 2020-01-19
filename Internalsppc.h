@@ -69,6 +69,9 @@ void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
 
+ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
+void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";
+
 void setBAT0(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
         ="\tmtibatl\t0,r3\n\tmtibatu\t0,r4\n\tmtdbatl\t0,r5\n\tmtdbatu\t0,r6\n";
 void setBAT1(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
@@ -194,7 +197,6 @@ VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFra
 LONG StricmpPPC(STRPTR string1, STRPTR string2);
 VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
-VOID PreparePPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SystemStart(void);
 VOID DispatchPPC(void);
