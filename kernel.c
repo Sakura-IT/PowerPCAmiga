@@ -57,10 +57,26 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     PowerPCBase->pp_DataExcHigh += 1;
                 }
                 struct DataMsg myData;
-                myData.dm_Value    = 0;
-                myData.dm_Address  = 0;
-                myData.dm_LoadFlag = 0;
                 ULONG Status = DoDataStore(iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
+                if (Status)
+                {
+                    struct MsgFrame* myFrame = libCreateMsgFramePPC();
+                    myFrame->mf_Identifier = myData.dm_Type;
+                    myFrame->mf_Arg[1] = myData.dm_Address;
+                    myFrame->mf_Arg[0] = myData.dm_Value;
+                    libSendMsgFramePPC(myFrame);
+                    if (myData.dm_LoadFlag)
+                    {
+                         while (myFrame->mf_Identifier != ID_DONE);
+                         FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
+                    }
+                    iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                }
+                else
+                {
+                    CommonExcError(PowerPCBase, iframe);
+                }
+            break;
             }
             CommonExcHandler(PowerPCBase, iframe,(struct List*)&PowerPCBase->pp_ExcDAccess);
             break;
@@ -164,7 +180,9 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
                 if (currNode->ed_Flags & EXCF_LARGECONTEXT)
                 {
                     ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") struct EXCContext*) = currNode->ed_Code;
+                    ULONG tempR2 = getR2();
                     status = ExcHandler(currNode->ed_Data, &iframe->if_Context);
+                    storeR2(tempR2);
                 }
                 else if (currNode->ed_Flags &EXCF_SMALLCONTEXT)
                 {

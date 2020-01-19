@@ -518,7 +518,7 @@ _DoDataStore:
         stw     r6,16(r7)
         loadreg r9,'GETV'
         stw     r9,0(r7)
-        stw     r5,4(r7)
+        stw     r3,8(r7)
 
         b      .DoneDSI
 

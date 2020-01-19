@@ -33,6 +33,20 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 #define _LVOAllocMem        -198
 #define _LVOStricmp         -162
 
+
+struct MsgFrame* __CreateMsgFramePPC(void *)="\tlwz\tr0,-868(r3)\n\tmtlr\tr0\n\tblrl";
+#define libCreateMsgFramePPC() __CreateMsgFramePPC(PowerPCBase)
+struct MsgFrame* __GetMsgFramePPC(void *)="\tlwz\tr0,-874(r3)\n\tmtlr\tr0\n\tblrl";
+#define libGetMsgFramePPC() __GetMsgFramePPC(PowerPCBase)
+VOID __SendMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-880(r3)\n\tmtlr\tr0\n\tblrl";
+#define libSendMsgFramePPC(msgframe) __SendMsgFramePPC(PowerPCBase, (msgframe))
+VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\tmtlr\tr0\n\tblrl";
+#define libFreeMsgFramePPC(msgframe) __FreeMsgFramePPC(PowerPCBase, (msgframe))
+VOID __SystemStart(void *)="\tlwz\tr0,-892(r3)\n\tmtlr\tr0\n\tblrl";
+#define libSystemStart() __SystemStart(PowerPCBase)
+VOID __DispatchPPC(void *)="\tlwz\tr0,-898(r3)\n\tmtlr\tr0\n\tblrl";
+#define libDispatchPPC() __DispatchPPC(PowerPCBase)
+
 void        Reset  (void);
 ULONG   GetExcTable(void);
 ULONG   GetVecEntry(void);
@@ -51,6 +65,7 @@ void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
 void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
 ULONG getR2(void)                         = "\tmr\tr3,r2\n";
+void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
 

@@ -30,7 +30,7 @@
 
 struct MsgFrame {
 struct Message      mf_Message;
-ULONG               mf_Identifier;
+volatile ULONG      mf_Identifier;
 struct MsgPort*     mf_MirrorPort;
 struct TaskPPC*     mf_PPCTask;
 struct PPCArgs      mf_PPCArgs;
