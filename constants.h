@@ -60,6 +60,8 @@
 #define VEC_ALTIVECASSIST       0x1600
 #define VEC_THERMAL             0x1700
 
+#define EXCB_DECREMENTER        9
+
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
 #define ID_FREE                 0x46524545

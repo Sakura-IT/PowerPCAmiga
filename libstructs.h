@@ -271,23 +271,23 @@ ULONG                       ed_ExcID;
 ULONG                       ed_RemovalTime;
 ULONG                       ed_TimeBaseUpper;
 ULONG                       ed_TimeBaseLower;
-ULONG                       ed_LastExc;
+struct ExcData*             ed_LastExc;
 };
 
 struct ExcInfo {
 struct ExcData              ei_ExcData;
-ULONG                       ei_MachineCheck;
-ULONG                       ei_DataAccess;
-ULONG                       ei_InstructionAccess;
-ULONG                       ei_Alignment;
-ULONG                       ei_Program;
-ULONG                       ei_FPUnavailable;
-ULONG                       ei_Decrementer;
-ULONG                       ei_SystemCall;
-ULONG                       ei_Trace;
-ULONG                       ei_PerfMon;
-ULONG                       ei_IABR;
-ULONG                       ei_External;
+struct Node*                ei_MachineCheck;
+struct Node*                ei_DataAccess;
+struct Node*                ei_InstructionAccess;
+struct Node*                ei_Alignment;
+struct Node*                ei_Program;
+struct Node*                ei_FPUnavailable;
+struct Node*                ei_Decrementer;
+struct Node*                ei_SystemCall;
+struct Node*                ei_Trace;
+struct Node*                ei_PerfMon;
+struct Node*                ei_IABR;
+struct Node*                ei_Interrupt;
 };
 
 struct DataMsg {

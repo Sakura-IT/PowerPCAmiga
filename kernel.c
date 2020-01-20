@@ -75,6 +75,53 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_DECREMENTER:
         {
+            struct ExcData* eData;
+
+            while (eData = (struct ExcData*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyExc))
+            {
+                if (eData->ed_ExcID & 1<<EXCB_MCHECK)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcMCheck, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_DACCESS)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcDAccess, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_IACCESS)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcIAccess, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_INTERRUPT)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcInterrupt, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_ALIGN)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcAlign, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_PROGRAM)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcProgram, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_FPUN)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcFPUn, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_DECREMENTER)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcDecrementer, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_SC)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcSystemCall, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_TRACE)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcTrace, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_PERFMON)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcPerfMon, (struct Node*)eData);
+                if (eData->ed_ExcID & 1<<EXCB_IABR)
+                    EnqueuePPC((struct List*)&PowerPCBase->pp_ExcIABR, (struct Node*)eData);
+                eData->ed_Flags |= 1<<EXCB_ACTIVE;
+            }
+
+            while (eData = (struct ExcData*)RemHeadPPC((struct List*)&PowerPCBase->pp_RemovedExc))
+            {
+                ULONG nodeAddr = (ULONG)&eData->ed_LastExc;
+                for (int i=0; i<12; i++)
+                {
+                    nodeAddr += 4;
+                    ULONG actNode = *((ULONG*)(nodeAddr));
+                    if (actNode)
+                    {
+                        RemovePPC((struct Node*)actNode);
+                    }
+                }
+                struct ExcData* lastExc = eData->ed_LastExc;
+                lastExc->ed_Flags &= ~(1<EXCB_ACTIVE);
+            }
+
             SwitchPPC(PowerPCBase, iframe);
             break;
         }
