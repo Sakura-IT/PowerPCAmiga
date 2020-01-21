@@ -208,6 +208,7 @@ LONG                        pp_LowActivityPriOffset;
 ULONG                       pp_ErrorStrings;
 ULONG                       pp_BusClock;
 ULONG                       pp_Quantum;
+ULONG                       pp_StdQuantum;
 ULONG                       pp_NumRun68k;
 struct BATs                 pp_ExceptionBATs;
 struct BATs                 pp_StoredBATs;

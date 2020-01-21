@@ -92,7 +92,7 @@ void         PutChProc       (__reg("a6") struct ExecBase* SysBase, __reg("d0") 
                               __reg("a3") APTR PutChData);
 void         mySPrintF68K    (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Formatstring,
                               __reg("a1") APTR values);
-void         myPutXMsg       (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
+void         myPutXMsg       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
                               __reg("a1") struct Message* message);
-void      myCausePPCInterrupt(__reg("a6") struct PPCBase* PowerPCBase);
+void      myCausePPCInterrupt(__reg("a6") struct PrivatePPCBase* PowerPCBase);
 

@@ -33,6 +33,7 @@
 PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
     PowerPCBase->pp_ExceptionMode = -1;
+    PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
 
     switch (iframe->if_ExceptionVector)
     {
@@ -212,6 +213,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
     }
 
     PowerPCBase->pp_ExceptionMode = 0;
+    setDEC(PowerPCBase->pp_Quantum);
     return;
 }
 
@@ -223,6 +225,42 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 
 PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
+    if (PowerPCBase->pp_Mutex)
+    {
+        PowerPCBase->pp_Quantum = 0x1000;
+        return;
+    }
+
+    struct MsgFrame* currMsg;
+    while (currMsg = (struct MsgFrame*)RemHeadPPC((struct List*)&PowerPCBase->pp_MsgQueue))
+    {
+        switch (currMsg->mf_Identifier)
+        {
+            case ID_TPPC:
+            {
+                break;
+            }
+            case ID_XMSG:
+            {
+                break;
+            }
+            case ID_XPPC:
+            {
+                break;
+            }
+            case ID_DONE:
+            case ID_END:
+            case ID_DNLL:
+            {
+                break;
+            }
+            case ID_LLPP:
+            {
+                break;
+            }
+        }
+        libFreeMsgFramePPC(currMsg);
+    }
     return;
 }
 

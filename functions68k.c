@@ -778,9 +778,18 @@ LIBFUNC68K void mySPrintF68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
 *
 ********************************************************************************************/
 
-LIBFUNC68K void myPutXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
+LIBFUNC68K void myPutXMsg(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,
                __reg("a1") struct Message* message)
 {
+    message->mn_Node.ln_Type = NT_XMSG68K;
+    struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
+    myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+    myFrame->mf_Message.mn_Length = MSGLEN;
+    myFrame->mf_Identifier = ID_XPPC;
+    myFrame->mf_Arg[0] = (ULONG)MsgPortPPC;
+    myFrame->mf_Arg[1] = (ULONG)message;
+
+    SendMsgFrame(PowerPCBase, myFrame);
     return;
 }
 
@@ -791,8 +800,23 @@ LIBFUNC68K void myPutXMsg(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") s
 *
 ********************************************************************************************/
 
-LIBFUNC68K void myCausePPCInterrupt(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K void myCausePPCInterrupt(__reg("a6") struct PrivatePPCBase* PowerPCBase)
 {
-    return;
+    switch (PowerPCBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+        case DEVICE_MPC8343E:
+        {
+            writememLong(PowerPCBase->pp_BridgeConfig, IMMR_IDR, IMMR_IDR_IDR0);
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+    }
 }
 

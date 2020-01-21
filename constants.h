@@ -25,6 +25,7 @@
 #define NUM_OF_PPC_FUNCS        101
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
+#define MSGLEN                  192
 
 #define PPERR_MISCERR           3
 
@@ -82,6 +83,7 @@
 #define ID_DBGE                 0x44424745
 #define ID_CRSH                 0x43525348
 #define ID_DNLL                 0x444E4C4C
+#define ID_XPPC                 0x58505043
 
 #define STATUS_INIT             0x494E4954
 
@@ -259,6 +261,7 @@
 #define IMMR_OMISR_OM0I         0x01000000
 #define IMMR_IMISR_IM0I         0x00000001
 #define IMMR_IMISR_IDI          0x00000008
+#define IMMR_IDR_IDR0           0x01000000
 
 #define PIWAR_EN                0x80000000
 #define PIWAR_PF                0x20000000
