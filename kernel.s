@@ -40,7 +40,7 @@ _ExcCommon:
         isync					             #Also reenable FPU
         sync
 
-        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR
+        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs
 
         stw     r3,256+512+40+12(r1)         #GPR[3]
         stw     r4,256+512+40+16(r1)         #GPR[4]
@@ -68,12 +68,13 @@ _ExcCommon:
 
         la      r31,256+512(r1)
 
-        bl      _LoadFrame                   #LR and r0 are skipped in this routine and are loaded below
+        bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
         lwz     r0,256+512+28(r1)            #EXC_LR
         mtlr    r0
         lwz     r0,256+512+40(r1)            #GPR[0]
 
+        lwz     r3,256+512+52(r1)            #GPR[3]
         lwz     r1,256+512+44(r1)            #GPR[1]
 
         rfi
@@ -166,6 +167,39 @@ _StoreFrame:
         stfdu   f30,8(r3)
         stfdu   f31,8(r3)
 
+        mfibatu r0,0
+        stwu    r0,8(r3)
+        mfibatl r0,0
+        stwu    r0,4(r3)
+        mfibatu r0,1
+        stwu    r0,4(r3)
+        mfibatl r0,1
+        stwu    r0,4(r3)
+        mfibatu r0,2
+        stwu    r0,4(r3)
+        mfibatl r0,2
+        stwu    r0,4(r3)
+        mfibatu r0,3
+        stwu    r0,4(r3)
+        mfibatl r0,3
+        stwu    r0,4(r3)
+        mfdbatu r0,0
+        stwu    r0,4(r3)
+        mfdbatl r0,0
+        stwu    r0,4(r3)
+        mfdbatu r0,1
+        stwu    r0,4(r3)
+        mfdbatl r0,1
+        stwu    r0,4(r3)
+        mfdbatu r0,2
+        stwu    r0,4(r3)
+        mfdbatl r0,2
+        stwu    r0,4(r3)
+        mfdbatu r0,3
+        stwu    r0,4(r3)
+        mfdbatl r0,3
+        stwu    r0,4(r3)
+
         blr
 
 #********************************************************************************************
@@ -191,8 +225,7 @@ _LoadFrame:
 
         lwzu    r0,4(r31)
         lwzu    r2,8(r31)                    #skip r1, is loaded seperately
-        lwzu    r3,4(r31)
-        lwzu    r4,4(r31)
+        lwzu    r4,8(r31)                    #skip r3, is loaded seperately
         lwzu    r5,4(r31)
         lwzu    r6,4(r31)
         lwzu    r7,4(r31)
@@ -254,6 +287,39 @@ _LoadFrame:
         lfdu    f30,8(r31)
         lfdu    f31,8(r31)
 
+        lwzu    r3,8(r31)
+        mtibatu 0,r3
+        lwzu    r3,4(r31)
+        mtibatl 0,r3
+        lwzu    r3,4(r31)
+        mtibatu 1,r3
+        lwzu    r3,4(r31)
+        mtibatl 1,r3
+        lwzu    r3,4(r31)
+        mtibatu 2,r3
+        lwzu    r3,4(r31)
+        mtibatl 2,r3
+        lwzu    r3,4(r31)
+        mtibatu 3,r3
+        lwzu    r3,4(r31)
+        mtibatl 3,r3
+        lwzu    r3,4(r31)
+        mtdbatu 0,r3
+        lwzu    r3,4(r31)
+        mtdbatl 0,r3
+        lwzu    r3,4(r31)
+        mtdbatu 1,r3
+        lwzu    r3,4(r31)
+        mtdbatl 1,r3
+        lwzu    r3,4(r31)
+        mtdbatu 2,r3
+        lwzu    r3,4(r31)
+        mtdbatl 2,r3
+        lwzu    r3,4(r31)
+        mtdbatu 3,r3
+        lwzu    r3,4(r31)
+        mtdbatl 3,r3
+
         mr      r31,r0
         blr
 
@@ -269,10 +335,11 @@ _SmallExcHandler:
         mflr    r3
         stw     r3,-12(r4)                   #Store this function's lr
 
-        bl      _LoadFrame                   #LR and r0 are skipped in this routine and are loaded below
+        bl      _LoadFrame                   #LR, r0, r1 and r3 are skipped in this routine and are loaded below
 
-        stw     r3,300(r1)
         mfsprg0 r4
+        lwz     r3,52(r4)                    #GPR[3]
+        stw     r3,300(r1)
         mfsprg3 r3
         lwz     r0,28(r4)                    #EXC_LR
         mtsprg1 r0

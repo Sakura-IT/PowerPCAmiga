@@ -197,7 +197,7 @@ VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFra
 LONG StricmpPPC(STRPTR string1, STRPTR string2);
 VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
-VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(void);
 VOID SystemStart(void);
 VOID DispatchPPC(void);

@@ -71,7 +71,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 			        break;
 		        }
 	        }
-            HandleMsgs(PowerPCBase, iframe);
+            HandleMsgs(PowerPCBase);
             SwitchPPC();
             break;
         }
@@ -124,7 +124,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 lastExc->ed_Flags &= ~(1<EXCB_ACTIVE);
             }
 
-            HandleMsgs(PowerPCBase, iframe);
+            HandleMsgs(PowerPCBase);
             SwitchPPC();
             break;
         }
@@ -225,7 +225,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 *
 *********************************************************************************************/
 
-PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
 {
     if (PowerPCBase->pp_Mutex)
     {
@@ -388,6 +388,7 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase, struct iframe* ifr
             }
             default:
             {
+                RemovePPC((struct Node*)currMsg);
                 libFreeMsgFramePPC(currMsg);
             }
         }
@@ -455,5 +456,10 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
 PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
-    return;
+    //create error msg here
+    struct MsgFrame* myFrame = libCreateMsgFramePPC();
+    myFrame->mf_Identifier = ID_CRSH;
+    libSendMsgFramePPC(myFrame);
+    PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
+    SwitchPPC();
 }

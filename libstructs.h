@@ -232,6 +232,7 @@ ULONG                       kf_MIIPT;
 struct iframe {
 ULONG                       if_regAltivec[32*4];
 struct EXCContext           if_Context;
+struct BATs                 if_BATs;
 DOUBLE                      if_AlignStore;
 ULONG                       if_ExceptionVector;
 };
