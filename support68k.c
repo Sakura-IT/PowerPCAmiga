@@ -676,12 +676,15 @@ FUNC68K void MasterControl(void)
 							PrintError(SysBase, "PPC crashed but could not output crash window");
 							break;
 						}
-						if(!(*((ULONG*)PowerPCBase->pp_PPCMemBase + FIFO_OFFSET + 0x100)))
+						if(!(*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100)))))
 						{
-							*((ULONG*)PowerPCBase->pp_PPCMemBase + FIFO_OFFSET + 0x100) = (ULONG)&msgPanic;
+							*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100))) = (ULONG)&msgPanic;
 						}
-						VFPrintf(excWindow, (STRPTR)&CrashMessage, (LONG*)PowerPCBase->pp_PPCMemBase + FIFO_OFFSET + 0x100);
-						switch (*((ULONG*)PowerPCBase->pp_PPCMemBase + FIFO_OFFSET + 0x14c))
+                        ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100));
+                        errorData[2] = ExcStrings[(errorData[2])];
+
+						VFPrintf(excWindow, (STRPTR)&CrashMessage, (LONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100)));
+						switch (*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x14c))))
 						{
 							case ERR_ESEM:
 							{
