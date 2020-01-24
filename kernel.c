@@ -198,6 +198,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_ALTIVECUNAV:
         {
+            iframe->if_Context.ec_ExcID = EXCB_ALTIVECUNAV;
             if (PowerPCBase->pp_EnAltivec)
             {
                 iframe->if_Context.ec_SRR1 |= PSL_VEC;

@@ -58,6 +58,35 @@ UBYTE CrashMessage[] =
 
 UBYTE msgPanic[] = "Kernel Panic!\0";
 
+UBYTE excSysReset[]    = "System Reset\0";
+UBYTE excMCheck[]      = "Machine Check\0";
+UBYTE excDAccess[]     = "Data Storage\0";
+UBYTE excIAccess[]     = "Instruction Storage\0";
+UBYTE excInterrupt[]   = "External\0";
+UBYTE excAlign[]       = "Alignment\0";
+UBYTE excProgram[]     = "Program\0";
+UBYTE excFPUn[]        = "FPU Unavailable\0";
+UBYTE excDecrementer[] = "Decrementer\0";
+UBYTE excAltivecUnav[] = "AltiVec Unavailable\0";
+UBYTE excSC[]          = "System Call\0";
+UBYTE excTrace[]       = "Trace\0";
+UBYTE excFPAssist[]    = "Floating Point Assist\0";
+UBYTE excPerfMon[]     = "Performance Monitor\0";
+UBYTE excIABR[]        = "Instruction Breakpoint\0";
+UBYTE excSysMan[]      = "System Management\0";
+UBYTE excAVAssist[]    = "AltiVec Assist\0";
+UBYTE excTherMan[]     = "Thermal Management\0";
+UBYTE excUnsupported[] = "Unsupported\0";
+
+ULONG ExcStrings[24]   = {(ULONG)&excUnsupported, (ULONG)&excUnsupported, (ULONG)&excMCheck,
+                          (ULONG)&excDAccess, (ULONG)&excIAccess, (ULONG)&excInterrupt,
+                          (ULONG)&excAlign, (ULONG)&excProgram, (ULONG)&excFPUn, (ULONG)&excDecrementer,
+                          (ULONG)&excAltivecUnav, (ULONG)&excUnsupported, (ULONG)&excSC,
+                          (ULONG)&excTrace, (ULONG)&excFPAssist, (ULONG)&excPerfMon,
+                          (ULONG)&excUnsupported, (ULONG)&excUnsupported, (ULONG)&excUnsupported,
+                          (ULONG)&excIABR, (ULONG)&excSysMan, (ULONG)&excUnsupported,
+                          (ULONG)&excAVAssist, (ULONG)&excTherMan};
+
 /********************************************************************************************
 *
 *	Task patch functions. To remove PPC tasks and free memory when the 68K part is ended
