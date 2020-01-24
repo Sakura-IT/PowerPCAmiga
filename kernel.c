@@ -72,7 +72,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 		        }
 	        }
             HandleMsgs(PowerPCBase);
-            SwitchPPC();
+            SwitchPPC(PowerPCBase);
             break;
         }
         case VEC_DECREMENTER:
@@ -125,7 +125,72 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             }
 
             HandleMsgs(PowerPCBase);
-            SwitchPPC();
+
+            struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
+
+            if (currTask)
+            {
+                if (currTask->tp_Task.tc_State == TS_ATOMIC)
+                {
+                    break;
+                }
+            }
+
+            ULONG mask;
+
+            if ((PowerPCBase->pp_TaskExcept) && (PowerPCBase->pp_TaskExcept == currTask) &&
+               (currTask->tp_Task.tc_ExceptData) && (mask = currTask->tp_Task.tc_SigRecvd & currTask->tp_Task.tc_SigExcept))
+            {
+                currTask->tp_Task.tc_SigRecvd &= ~mask;
+                currTask->tp_Task.tc_SigExcept &= ~mask;
+
+                ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") ULONG) = currTask->tp_Task.tc_ExceptCode;
+                ULONG tempR2 = getR2();
+                ULONG signal = ExcHandler((ULONG)currTask->tp_Task.tc_ExceptData, mask);
+                storeR2(tempR2);
+
+                currTask->tp_Task.tc_SigExcept |= signal;
+            }
+
+            if (!(PowerPCBase->pp_FlagWait))
+            {
+                struct WaitTime* currWait = (struct WaitTime*)PowerPCBase->pp_WaitTime.mlh_Head;
+                struct WaitTime* nxtWait;
+
+                while (nxtWait = (struct WaitTime*)currWait->wt_Node.ln_Succ)
+                {
+                    if ((currWait->wt_TimeBaseUpper > getTBU()) || (currWait->wt_TimeBaseUpper == getTBU() && currWait->wt_TimeBaseLower > getTBL()))
+                    {
+                        if (currTask == currWait->wt_Task)
+                        {
+                            currWait->wt_Task->tp_Task.tc_State = TS_RUN;
+                        }
+                        else
+                        {
+                            currWait->wt_Task->tp_Task.tc_State = TS_READY;
+                        }
+                        currWait->wt_Task->tp_Task.tc_SigRecvd |= SIGF_WAIT;
+                        RemovePPC((struct Node*)currWait);
+                    }
+                currWait = nxtWait;
+                }
+            }
+
+            struct TaskPPC* currWTask = (struct TaskPPC*)PowerPCBase->pp_WaitingTasks.mlh_Head;
+            struct TaskPPC* nxtWTask;
+
+            while (nxtWTask = (struct TaskPPC*)currWTask->tp_Task.tc_Node.ln_Succ)
+            {
+                if ((currWTask->tp_Task.tc_State == TS_READY) || (currWTask->tp_Task.tc_SigWait & currWTask->tp_Task.tc_SigRecvd))
+                {
+                    currWTask->tp_Task.tc_State = TS_READY;
+                    RemovePPC((struct Node*)currWTask);
+                    AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)currWTask); //Enqueue on pri?
+                }
+                currWTask = nxtWTask;
+            }
+
+            SwitchPPC(PowerPCBase);
             break;
         }
         case VEC_DATASTORAGE:
@@ -403,7 +468,7 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCKERNEL void SwitchPPC(void)
+PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase)
 {
     return;
 }
@@ -530,5 +595,5 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     myFrame->mf_Identifier = ID_CRSH;
     libSendMsgFramePPC(myFrame);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
-    SwitchPPC();
+    SwitchPPC(PowerPCBase);
 }

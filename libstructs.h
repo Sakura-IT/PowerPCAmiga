@@ -301,3 +301,9 @@ ULONG                       dm_RegNumber;
 ULONG                       dm_LoadFlag;
 };
 
+struct WaitTime {
+struct Node                 wt_Node;
+ULONG                       wt_TimeBaseUpper;
+ULONG                       wt_TimeBaseLower;
+struct TaskPPC*             wt_Task;
+};

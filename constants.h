@@ -29,6 +29,10 @@
 
 #define PPERR_MISCERR           3
 
+#define TS_ATOMIC               8
+
+#define SIGF_WAIT               1<<10
+
 #define NT_XMSG68K              102
 #define NT_XMSGPPC              103
 

@@ -202,7 +202,7 @@ LONG StricmpPPC(STRPTR string1, STRPTR string2);
 VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
 VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
-VOID SwitchPPC(void);
+VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase);
 VOID SystemStart(void);
 VOID DispatchPPC(void);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
