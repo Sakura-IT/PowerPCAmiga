@@ -72,7 +72,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 		        }
 	        }
             HandleMsgs(PowerPCBase);
-            SwitchPPC(PowerPCBase);
+            SwitchPPC(PowerPCBase, iframe);
             break;
         }
         case VEC_DECREMENTER:
@@ -190,7 +190,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 currWTask = nxtWTask;
             }
 
-            SwitchPPC(PowerPCBase);
+            SwitchPPC(PowerPCBase, iframe);
             break;
         }
         case VEC_DATASTORAGE:
@@ -462,17 +462,114 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
     }
     return;
 }
+
 /********************************************************************************************
 *
 *
 *
 *********************************************************************************************/
 
-PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase)
+PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
+    struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
+    while (1)
+    {
+        if (!(currTask))
+        {
+            if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_NewTasks))
+            {
+                DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
+                break;
+            }
+            if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
+            {
+                currTask->tp_Task.tc_State = TS_RUN;
+                PowerPCBase->pp_ThisPPCProc = currTask;
+                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(iframe));
+                break;
+            }
+        }
+        if (currTask->tp_Task.tc_State == TS_REMOVED)
+        {
+            RemovePPC((struct Node*)currTask);
+            AddTailPPC((struct List*)&PowerPCBase->pp_RemovedTasks, (struct Node*)currTask);
+            currTask = NULL;
+            PowerPCBase->pp_ThisPPCProc = currTask;
+        }
+        else if (currTask->tp_Task.tc_State == TS_CHANGING)
+        {
+            currTask->tp_Task.tc_State = TS_WAIT;
+            CopyMemPPC((APTR)iframe, (APTR)currTask->tp_ContextMem, sizeof(iframe));
+            AddTailPPC((struct List*)&PowerPCBase->pp_WaitingTasks, (struct Node*)currTask);
+            currTask = NULL;
+            PowerPCBase->pp_ThisPPCProc = currTask;
+        }
+        else
+        {
+            if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_NewTasks))
+            {
+                struct TaskPPC* oldTask = PowerPCBase->pp_ThisPPCProc;
+                oldTask->tp_Task.tc_State = TS_READY;
+                AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
+                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(iframe));
+                DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
+                break;
+            }
+            if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
+            {
+                struct TaskPPC* oldTask = PowerPCBase->pp_ThisPPCProc;
+                oldTask->tp_Task.tc_State = TS_READY;
+                currTask->tp_Task.tc_State = TS_RUN;
+                AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
+                PowerPCBase->pp_ThisPPCProc = currTask;
+                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(iframe));
+                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(iframe));
+                break;
+            }
+        }
+    }
     return;
 }
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
+PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* myFrame)
+{
+    struct NewTask* newTask = (struct NewTask*)myFrame->mf_Arg[0];
+    PowerPCBase->pp_IdUsrTasks += 1;
+    newTask->nt_Task.tp_PowerPCBase = PowerPCBase;
+    newTask->nt_Task.tp_Task.tc_Node.ln_Type = NT_PPCTASK;
+    newTask->nt_Task.tp_Task.tc_State = TS_RUN;
+    newTask->nt_Task.tp_ContextMem = &newTask->nt_Context;
+    newTask->nt_Task.tp_BATStorage = &newTask->nt_BatStore;
+    newTask->nt_Task.tp_Link.tl_Task = newTask;
+    newTask->nt_Task.tp_Link.tl_Sig = 0xfff;
+    newTask->nt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
+    newTask->nt_MirrorPort = myFrame->mf_MirrorPort;
+    newTask->nt_Task.tp_Task.tc_Node.ln_Name = (APTR)&newTask->nt_Name;
+    newTask->nt_Task.tp_StackSize = (ULONG)myFrame->mf_Message.mn_Node.ln_Name;
+    newTask->nt_Task.tp_StackMem = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048);
+    newTask->nt_Task.tp_Task.tc_SPLower = newTask->nt_Task.tp_StackMem;
+    newTask->nt_Task.tp_Task.tc_SPUpper = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048 + newTask->nt_Task.tp_StackSize);
+    newTask->nt_Task.tp_Task.tc_SPReg   = (APTR)((ULONG)newTask->nt_Task.tp_Task.tc_SPUpper - 32);
+    NewListPPC((struct List*)&newTask->nt_Task.tp_Task.tc_MemEntry);
+    newTask->nt_Task.tp_Task.tc_SigAlloc = myFrame->mf_Arg[1];
+    //setup port
+    PowerPCBase->pp_ThisPPCProc = (struct TaskPPC*)newTask;
+    newTask->nt_Task.tp_TaskPtr = &newTask->nt_TaskPtr;
+    newTask->nt_TaskPtr.tptr_Task = (struct TaskPPC*)newTask;
+    newTask->nt_TaskPtr.tptr_Node.ln_Name = newTask->nt_Task.tp_Task.tc_Node.ln_Name;
+    AddTailPPC((struct List*)&PowerPCBase->pp_AllTasks, (struct Node*)&newTask->nt_TaskPtr);
+    PowerPCBase->pp_NumAllTasks += 1;
+
+    //fill registers
+    iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+
+    return;
+}
 
 /********************************************************************************************
 *
@@ -595,5 +692,5 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     myFrame->mf_Identifier = ID_CRSH;
     libSendMsgFramePPC(myFrame);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
-    SwitchPPC(PowerPCBase);
+    SwitchPPC(PowerPCBase, iframe);
 }

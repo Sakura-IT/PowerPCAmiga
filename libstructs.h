@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -307,3 +307,19 @@ ULONG                       wt_TimeBaseUpper;
 ULONG                       wt_TimeBaseLower;
 struct TaskPPC*             wt_Task;
 };
+
+struct NewTask {
+struct TaskPPC              nt_Task;
+struct Message*             nt_StartMsg;
+struct Task*                nt_Mirror68K;
+struct MsgPort*             nt_MirrorPort;
+struct iframe               nt_Context;
+struct SignalSemaphorePPC   nt_SSReserve1;
+struct MsgPortPPC           nt_Port;
+struct TaskPtr              nt_TaskPtr;
+struct SignalSemaphorePPC   nt_SSReserve2;
+struct MsgPortPPC           nt_IntPort;
+struct BATs                 nt_BatStore;
+UBYTE                       nt_Name[256];
+};
+

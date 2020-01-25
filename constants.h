@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -174,6 +174,8 @@
 #define	   PSL_PMM	  PSL_PM      /* B... Performance monitor */
 #define	   PSL_RI	  0x00000002  /* ..6. recoverable interrupt */
 #define	   PSL_LE	  0x00000001  /* ..6. endian mode (1 == le) */
+
+#define MACHINESTATE_DEFAULT    PSL_IR|PSL_DR|PSL_FP|PSL_PR|PSL_EE|PSL_ME
 
 // general BAT defines for bit settings to compose BAT regs
 // represent all the different block lengths

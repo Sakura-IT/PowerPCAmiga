@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -157,10 +157,10 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
 {
     struct MinList myList;
     struct MirrorTask* myMirror;
-    ULONG  stackMem, taskName;
+    ULONG  stackMem, stackSize, taskName;
     APTR   stackPP;
     UWORD  cmndSize;
-    struct TaskPPC* newPPCTask;
+    struct NewTask* newPPCTask;
     struct CommandLineInterface* comLineInt;
     STRPTR cmndName;
 
@@ -222,24 +222,25 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
 
         Enable();
 
-        stackMem = (ULONG)AllocVec32((((ULONG)(thisTask->tc_SPUpper) - (ULONG)(thisTask->tc_SPLower)) | 0x80000) + 2048,
-                              MEMF_PUBLIC | MEMF_PPC | MEMF_REVERSE);
+        stackSize = ((((ULONG)(thisTask->tc_SPUpper) - (ULONG)(thisTask->tc_SPLower)) | 0x80000) & -128);
+
+        stackMem = (ULONG)AllocVec32((stackSize + 2048), MEMF_PUBLIC | MEMF_PPC | MEMF_REVERSE);
 
         if(!(stackMem))
         {
            return (PPERR_MISCERR);
         }
 
-        newPPCTask = (struct TaskPPC*)stackMem;
+        newPPCTask = (struct NewTask*)stackMem;
 
-        for (int n=0; n<512; n++)
+        for (int n=0; n<(sizeof(struct NewTask)/4); n++)
         {
             *((ULONG*)(stackMem)) = 0;
             stackMem +=4;
         }
 
-        newPPCTask->tp_TaskPools.lh_Head     = (struct Node*)&newPPCTask->tp_TaskPools.lh_TailPred;
-        newPPCTask->tp_TaskPools.lh_TailPred = (struct Node*)&newPPCTask->tp_TaskPools.lh_Tail;
+        newPPCTask->nt_Task.tp_TaskPools.lh_Head     = (struct Node*)&newPPCTask->nt_Task.tp_TaskPools.lh_TailPred;
+        newPPCTask->nt_Task.tp_TaskPools.lh_TailPred = (struct Node*)&newPPCTask->nt_Task.tp_TaskPools.lh_Tail;
 
         if (comLineInt = (struct CommandLineInterface*)((ULONG)(thisProc->pr_CLI <<2)))
         {
@@ -261,7 +262,7 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
             cmndSize = 255;
         }
 
-    char* destName = (char*)((ULONG)newPPCTask + 1720);
+    char* destName = (char*)((ULONG)&newPPCTask->nt_Name);
 
     ULONG pointer = 0;
 
@@ -277,9 +278,10 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
 
     struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
 
-    myFrame->mf_Message.mn_Length       = 0xc0;
+    myFrame->mf_Message.mn_Length       = MSGLEN;
     myFrame->mf_Identifier              = ID_TPPC;
     myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+    myFrame->mf_Message.mn_Node.ln_Name = (APTR)stackSize;
     myFrame->mf_Message.mn_ReplyPort    = thisMirrorNode->mt_Port;
     myFrame->mf_MirrorPort              = thisMirrorNode->mt_Port;
     myFrame->mf_PPCTask                 = thisMirrorNode->mt_PPCTask;
