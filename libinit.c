@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -840,7 +840,7 @@ static const APTR LibVectors[] =
     (APTR)SendMsgFramePPC,
     (APTR)FreeMsgFramePPC,
     (APTR)SystemStart,
-    (APTR)DispatchPPC,
+    (APTR)StartTask,             //Should not be jumped to, just a holder for the address
 
     (APTR) -1
 };

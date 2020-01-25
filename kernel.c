@@ -555,18 +555,34 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_Task.tp_Task.tc_SPLower = newTask->nt_Task.tp_StackMem;
     newTask->nt_Task.tp_Task.tc_SPUpper = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048 + newTask->nt_Task.tp_StackSize);
     newTask->nt_Task.tp_Task.tc_SPReg   = (APTR)((ULONG)newTask->nt_Task.tp_Task.tc_SPUpper - 32);
+
     NewListPPC((struct List*)&newTask->nt_Task.tp_Task.tc_MemEntry);
     newTask->nt_Task.tp_Task.tc_SigAlloc = myFrame->mf_Arg[1];
-    //setup port
     PowerPCBase->pp_ThisPPCProc = (struct TaskPPC*)newTask;
+
     newTask->nt_Task.tp_TaskPtr = &newTask->nt_TaskPtr;
     newTask->nt_TaskPtr.tptr_Task = (struct TaskPPC*)newTask;
     newTask->nt_TaskPtr.tptr_Node.ln_Name = newTask->nt_Task.tp_Task.tc_Node.ln_Name;
     AddTailPPC((struct List*)&PowerPCBase->pp_AllTasks, (struct Node*)&newTask->nt_TaskPtr);
+
     PowerPCBase->pp_NumAllTasks += 1;
 
-    //fill registers
+    NewListPPC((struct List*)&newTask->nt_Port.mp_IntMsg);
+    NewListPPC((struct List*)&newTask->nt_Port.mp_Port.mp_MsgList);
+    newTask->nt_Port.mp_Port.mp_SigBit = SIGB_DOS;
+    NewListPPC((struct List*)&newTask->nt_Port.mp_Semaphore.ssppc_SS.ss_WaitQueue);
+    newTask->nt_Port.mp_Semaphore.ssppc_SS.ss_Owner = NULL;
+    newTask->nt_Port.mp_Semaphore.ssppc_SS.ss_NestCount = 0;
+    newTask->nt_Port.mp_Semaphore.ssppc_SS.ss_QueueCount = -1;
+    newTask->nt_Port.mp_Semaphore.ssppc_reserved = &newTask->nt_SSReserved1;
+    newTask->nt_Port.mp_Port.mp_SigTask = newTask;
+    newTask->nt_Port.mp_Port.mp_Flags = PA_SIGNAL;
+    newTask->nt_Port.mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
+
     iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+    iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)PowerPCBase - _LVOStartTask;
+    iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
+    iframe->if_Context.ec_GPR[4] = (ULONG)myFrame;
 
     return;
 }

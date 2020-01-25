@@ -44,8 +44,8 @@ VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\
 #define libFreeMsgFramePPC(msgframe) __FreeMsgFramePPC(PowerPCBase, (msgframe))
 VOID __SystemStart(void *)="\tlwz\tr0,-892(r3)\n\tmtlr\tr0\n\tblrl";
 #define libSystemStart() __SystemStart(PowerPCBase)
-VOID __DispatchPPC(void *)="\tlwz\tr0,-898(r3)\n\tmtlr\tr0\n\tblrl";
-#define libDispatchPPC() __DispatchPPC(PowerPCBase)
+
+#define _LVOStartTask       -898
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -205,7 +205,7 @@ VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SystemStart(void);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
-void RunCPP(void);
+void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);

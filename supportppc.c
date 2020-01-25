@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -753,4 +753,17 @@ PPCFUNCTION VOID SystemStart(void)
     return;
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+{
+    return;
+}
+
 /********************************************************************************************/
+
+
