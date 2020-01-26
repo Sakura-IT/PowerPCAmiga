@@ -488,6 +488,10 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(iframe));
                 break;
             }
+            iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+            iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM;
+            iframe->if_Context.ec_GPR[1] = (ULONG)(PowerPCBase->pp_PPCMemBase) + MEM_GAP - 512;
+            break;
         }
         if (currTask->tp_Task.tc_State == TS_REMOVED)
         {

@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 #include <exec/types.h>
+#include <proto/powerpc.h>
 #include "libstructs.h"
 #include "constants.h"
 #include "internalsppc.h"
@@ -373,7 +374,7 @@ void killerFIFOs(struct InitData* initData)
     return;
 }
 
-__section (".setupppc","acrx") void setupPPC(struct InitData* initData)
+__section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initData)
 {
     ULONG mem = 0;
     ULONG copySrc = 0;
@@ -411,9 +412,49 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
     initData->id_Status = 0x426f6f6e;   //Boon
 
-    while (1)
-    {
-        mem += 4;   //fake end
-    }
+    while (myZP->zp_Status != STATUS_INIT);
+
+    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
+
+    NewListPPC((struct List*)&PowerPCBase->pp_WaitingTasks);
+    NewListPPC((struct List*)&PowerPCBase->pp_AllTasks);
+    NewListPPC((struct List*)&PowerPCBase->pp_Snoop);
+    NewListPPC((struct List*)&PowerPCBase->pp_Semaphores);
+    NewListPPC((struct List*)&PowerPCBase->pp_RemovedExc);
+    NewListPPC((struct List*)&PowerPCBase->pp_ReadyExc);
+    NewListPPC((struct List*)&PowerPCBase->pp_InstalledExc);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcInterrupt);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcIABR);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcPerfMon);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcTrace);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcSystemCall);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcDecrementer);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcFPUn);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcProgram);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcAlign);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcIAccess);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcDAccess);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcMCheck);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcSysMan);
+    NewListPPC((struct List*)&PowerPCBase->pp_ExcTherMan);
+    NewListPPC((struct List*)&PowerPCBase->pp_WaitTime);
+    NewListPPC((struct List*)&PowerPCBase->pp_Ports);
+    NewListPPC((struct List*)&PowerPCBase->pp_NewTasks);
+    NewListPPC((struct List*)&PowerPCBase->pp_ReadyTasks);
+    NewListPPC((struct List*)&PowerPCBase->pp_RemovedTasks);
+    NewListPPC((struct List*)&PowerPCBase->pp_MsgQueue);
+
+    //set up lib base defaults (e.g. clocks)
+    //set up Semaphores
+    //set up caches
+    //set up REDY
+
+    setDEC(PowerPCBase->pp_StdQuantum);
+    setSRR0((ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM);
+    setSRR1(MACHINESTATE_DEFAULT);
+
+    while(1); //fake end
+
+    return;
 }
 
