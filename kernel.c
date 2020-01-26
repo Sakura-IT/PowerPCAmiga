@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -544,6 +544,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
 {
     struct NewTask* newTask = (struct NewTask*)myFrame->mf_Arg[0];
     PowerPCBase->pp_IdUsrTasks += 1;
+    newTask->nt_Task.tp_Id = PowerPCBase->pp_IdUsrTasks;
     newTask->nt_Task.tp_PowerPCBase = PowerPCBase;
     newTask->nt_Task.tp_Task.tc_Node.ln_Type = NT_PPCTASK;
     newTask->nt_Task.tp_Task.tc_State = TS_RUN;

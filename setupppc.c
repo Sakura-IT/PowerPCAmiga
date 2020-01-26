@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,16 @@
 
 #include <exec/types.h>
 #include <proto/powerpc.h>
+#include <powerpc/semaphoresPPC.h>
 #include "libstructs.h"
 #include "constants.h"
 #include "internalsppc.h"
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
 BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {
@@ -82,6 +88,12 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
     return TRUE;
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 void setupPT(void)
 {
     struct PPCZeroPage *myZP = 0;
@@ -128,6 +140,12 @@ void setupPT(void)
         keyVal += 1;
     }
 }
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
 void mmuSetup(struct InitData* initData)
 {
@@ -293,6 +311,12 @@ void mmuSetup(struct InitData* initData)
     return;
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 void installExceptions(void)
 {
     UWORD excVector;
@@ -334,6 +358,12 @@ void installExceptions(void)
     return;
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 void killerFIFOs(struct InitData* initData)
 {
     ULONG memBase  = initData->id_MemBase;
@@ -373,6 +403,80 @@ void killerFIFOs(struct InitData* initData)
 
     return;
 }
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+void initSema(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
+{
+    NewListPPC((struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue);
+    struct LibSema* libSema = (struct LibSema*)SemaphorePPC;
+	SemaphorePPC->ssppc_SS.ss_Owner = 0;
+	SemaphorePPC->ssppc_SS.ss_NestCount = 0;
+	SemaphorePPC->ssppc_SS.ss_QueueCount = -1;
+    SemaphorePPC->ssppc_reserved = (APTR)&libSema->ls_Reserved;
+                                             
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+void setupCaches(struct PrivatePPCBase* PowerPCBase)
+{
+    ULONG value0 = getHID0();
+    value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
+    setHID0(value0);
+
+    ULONG value1 = getHID1();
+
+    ULONG pll;
+
+    switch (PowerPCBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+        case DEVICE_MPC8343E:
+        {
+            PowerPCBase->pp_L2Size = 0;
+            PowerPCBase->pp_CurrentL2Size = 0;
+            pll = (value1 >> 25) & 0x7f;
+            switch (pll)
+            {
+                case 0x23:
+                {
+                    PowerPCBase->pp_CPUSpeed = 400000000;
+                    break;
+                }
+                case 0x25:
+                {
+                    PowerPCBase->pp_CPUSpeed = 333333333;
+                    break;
+                }
+            }
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+    }
+
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
 __section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initData)
 {
@@ -444,10 +548,55 @@ __section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initDa
     NewListPPC((struct List*)&PowerPCBase->pp_RemovedTasks);
     NewListPPC((struct List*)&PowerPCBase->pp_MsgQueue);
 
-    //set up lib base defaults (e.g. clocks)
-    //set up Semaphores
-    //set up caches
-    //set up REDY
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemWaitList);
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+    initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
+
+    PowerPCBase->pp_IdUsrTasks = 100;
+    PowerPCBase->pp_EnAltivec = 1;
+    PowerPCBase->pp_BusyCounter = 24;
+    PowerPCBase->pp_LowActivityPri = 6000;
+    PowerPCBase->pp_EnAlignExc = initData->id_Environment1 >> 8;
+    PowerPCBase->pp_EnDAccessExc = initData->id_Environment2 >> 8;
+    PowerPCBase->pp_CacheDoDFlushAll = initData->id_Environment2 >> 24;
+    PowerPCBase->pp_DebugLevel = initData->id_Environment1 >> 16;
+
+    ULONG quantum = 0;
+    ULONG busclock = 0;
+
+    switch (PowerPCBase->pp_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            break;
+        }
+        case DEVICE_MPC8343E:
+        {
+            quantum = KILLERQUANTUM;
+            busclock = KILLERBUSCLOCK;
+
+            if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_RCWLR) & (1<<30))
+            {
+                quantum = quantum >> 1;
+                busclock = busclock >> 1;
+            }
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+    }
+
+    PowerPCBase->pp_StdQuantum = quantum;
+    PowerPCBase->pp_BusClock = busclock;
+
+    setupCaches(PowerPCBase);
+
+    myZP->zp_Status = STATUS_READY;
 
     setDEC(PowerPCBase->pp_StdQuantum);
     setSRR0((ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM);

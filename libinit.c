@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -632,6 +632,19 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     myProc->pr_Task.tc_UserData = (APTR)myConsts;
     Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
+
+    for (i=0; i<0xEC0000; i++)
+    {
+        if (myZeroPage->zp_Status == STATUS_READY)
+        {
+            break;
+        }
+    }
+    if (i == 0xEC0000)
+    {
+        PrintCrtErr(myConsts, "PowerPC CPU possibly crashed during setup");
+        return NULL;
+    }
 
     Disable();
 

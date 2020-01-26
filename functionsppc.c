@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -213,7 +213,7 @@ PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, ST
 		return PowerPCBase->pp_ThisPPCProc;
 	}
 
-	myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 
 	struct TaskPPC* fndTask;
 	struct TaskPtr* taskPtr = (struct TaskPtr*)myFindNamePPC(PowerPCBase,
@@ -226,7 +226,7 @@ PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, ST
 	{
 		fndTask = NULL;
 	}
-	myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 
 	printDebugExit(PowerPCBase, function, (ULONG)fndTask);
 
@@ -293,11 +293,11 @@ PPCFUNCTION LONG myAddSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 
 	if (result = myInitSemaphorePPC(PowerPCBase, SemaphorePPC))
 	{
-		myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+		myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
 		myEnqueuePPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Semaphores, (struct Node*)SemaphorePPC);
 
-		myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+		myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
 	}
     printDebugExit(PowerPCBase, function, (ULONG)result);
@@ -315,11 +315,11 @@ PPCFUNCTION VOID myRemSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 {
 	printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, 0, 0, 0);
 
-	myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
 	myRemovePPC(PowerPCBase, (struct Node*)SemaphorePPC);
 
-	myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
 	myFreeSemaphorePPC(PowerPCBase, SemaphorePPC);
 
@@ -558,11 +558,11 @@ PPCFUNCTION struct SignalSemaphorePPC* myFindSemaphorePPC(struct PrivatePPCBase*
 {
 	printDebugEntry(PowerPCBase, function, (ULONG)name, 0, 0, 0);
 
-	myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
 	struct SignalSemaphorePPC* mySem = (struct SignalSemaphorePPC*)myFindNamePPC(PowerPCBase, (struct List*)&PowerPCBase->pp_SemSemList, name);
 
-	myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemSemList);
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
     printDebugExit(PowerPCBase, function, (ULONG)mySem);
 
@@ -1153,7 +1153,7 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 
 PPCFUNCTION struct TaskPtr* myLockTaskList(struct PrivatePPCBase* PowerPCBase)
 {
-	myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 	return ((struct TaskPtr*)&PowerPCBase->pp_AllTasks.mlh_Head);
 }
 
@@ -1165,7 +1165,7 @@ PPCFUNCTION struct TaskPtr* myLockTaskList(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID myUnLockTaskList(struct PrivatePPCBase* PowerPCBase)
 {
-	myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemTaskList);
+	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 	return;
 }
 
@@ -1803,7 +1803,7 @@ PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 
 	if (poolheader)
 	{
-		myObtainSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemMemory);
+		myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
 		myRemovePPC(PowerPCBase, (struct Node*)poolheader);
 
         struct poolHeader* myheader = (struct poolHeader*)poolheader;
@@ -1823,7 +1823,7 @@ PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 
 		FreeVec68K(PowerPCBase, poolheader);
 
-		myReleaseSemaphorePPC(PowerPCBase, &PowerPCBase->pp_SemMemory);
+		myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
 	}
 	printDebugExit(PowerPCBase, function, 0);
 	return;

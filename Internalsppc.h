@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +62,8 @@ ULONG getSRIn(ULONG address)              = "\tmfsrin\tr3,r3\n";
 void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tisync\n\tsync\n";
 ULONG getMSR(void)                        = "\tmfmsr\tr3\n";
 ULONG getHID0(void)                       = "\tmfspr\tr3,1008\n";
+ULONG getHID1(void)                       = "\tmfspr\tr3,1009\n";
+void  setHID0(ULONG)                      = "\tsync\n\tmtspr\t1008,r3\n\tsync\n";
 void  setDEC(LONG value)                  = "\tmtdec\tr3\n";
 ULONG getDEC(void)                        = "\tmfdec\tr3\n";
 ULONG getTBU(void)                        = "\tmftbu\tr3\n";

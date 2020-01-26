@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -121,6 +121,11 @@ struct Task*                pt_Mirror68K;
 struct MsgPort*             pt_MirrorPort;
 };
 
+struct LibSema {
+struct SignalSemaphorePPC   ls_Semaphore;
+ULONG                       ls_Reserved[8];
+};
+
 struct PrivatePPCBase {
 struct PPCBase              pp_PowerPCBase;
 struct MinList              pp_MirrorList;
@@ -172,12 +177,12 @@ struct MinList              pp_NewTasks;
 struct MinList              pp_ReadyTasks;
 struct MinList              pp_RemovedTasks;
 struct MinList              pp_MsgQueue;
-struct SignalSemaphorePPC   pp_SemWaitList;
-struct SignalSemaphorePPC   pp_SemTaskList;
-struct SignalSemaphorePPC   pp_SemSemList;
-struct SignalSemaphorePPC   pp_SemPortList;
-struct SignalSemaphorePPC   pp_SemSnoopList;
-struct SignalSemaphorePPC   pp_SemMemory;
+struct LibSema              pp_SemWaitList;
+struct LibSema              pp_SemTaskList;
+struct LibSema              pp_SemSemList;
+struct LibSema              pp_SemPortList;
+struct LibSema              pp_SemSnoopList;
+struct LibSema              pp_SemMemory;
 ULONG                       pp_AlignmentExcHigh;
 ULONG                       pp_AlignmentExcLow;
 ULONG                       pp_DataExcHigh;
@@ -193,7 +198,7 @@ UBYTE                       pp_CacheDLockState;
 UBYTE                       pp_FlagReschedule;
 UBYTE                       pp_FlagWait;
 UBYTE                       pp_FlagPortInUse;
-UBYTE                       pp_FlagBusyCounter;
+UBYTE                       pp_BusyCounter;
 UBYTE                       pp_Pad2[2];
 ULONG                       pp_NumAllTasks;
 struct TaskPPC*             pp_ThisPPCProc;

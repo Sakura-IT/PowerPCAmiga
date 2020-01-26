@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,9 @@
 
 #define OPCODE_NOP              0x60000000
 #define OPCODE_BRANCH           0x4C000000  //only for backward jump
+
+#define KILLERQUANTUM           1333333
+#define KILLERBUSCLOCK          266666666
 
 #define PPERR_MISCERR           3
 
@@ -94,6 +97,7 @@
 #define ID_XPPC                 0x58505043
 
 #define STATUS_INIT             0x494E4954
+#define STATUS_READY            0x52454459
 
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
@@ -144,6 +148,18 @@
 #define OFFSET_SYSMEM           0x400000
 #define OFFSET_PCIMEM           0x60000000
 #define VECTOR_TABLE_DEFAULT    0xfff00000
+
+#define HID0_TBEN               0x04000000
+#define HID0_NHR                0x00010000
+#define HID0_ICFI               0x00000800
+#define HID0_DCFI               0x00000400
+#define HID0_ICE                0x00008000
+#define HID0_DCE                0x00004000
+#define HID0_ILOCK              0x00002000
+#define HID0_DLOCK              0x00001000
+#define HID0_SGE                0x00000080
+#define HID0_BTIC               0x00000020
+#define HID0_BHTE               0x00000004
 
 #define MMU_PAGESIZE            0x1000
 
@@ -234,6 +250,7 @@
 #define IMMR_ADDR_DEFAULT       0xFF400000
 #define IMMR_IMMRBAR            0x0
 
+#define IMMR_RCWLR              0x900
 #define IMMR_RSR                0x910
 #define IMMR_RPR                0x918
 #define IMMR_RCR                0x91C
