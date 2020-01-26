@@ -1,4 +1,4 @@
-## Copyright (c) 2019 Dennis van der Boon
+## Copyright (c) 2020 Dennis van der Boon
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@
 
 .set PPC_VECLEN,                3
 .set PowerPCBase,               16                #Align this number with the zp struct in libstructs.h
+
+.set SYSSTACK,                  0x480000          #Equals to MEM_GAP
 
 .set HID0,                      1008
 .set HID0_NHR,	                0x00010000

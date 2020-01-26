@@ -20,12 +20,15 @@
 
 #define CUSTOMBASE             0xdff000
 
-#define PPC_VECLEN              3       //Number of instructions of VecEntry (setupppc.s)
+#define PPC_VECLEN              3           //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
 #define NUM_OF_PPC_FUNCS        101
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
 #define MSGLEN                  192
+
+#define OPCODE_NOP              0x60000000
+#define OPCODE_BRANCH           0x4C000000  //only for backward jump
 
 #define PPERR_MISCERR           3
 
@@ -66,7 +69,7 @@
 #define VEC_THERMAL             0x1700
 
 #define EXCB_DECREMENTER        9
-#define EXCB_ALTIVECUNAV        10    //Is normally reserved for implementation specific exceptions
+#define EXCB_ALTIVECUNAV        10          //Is normally reserved for implementation specific exceptions
 
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043
@@ -97,9 +100,9 @@
 #define SIZE_KFIFO              0x10000
 #define FIFO_OFFSET             0x380000
 
-#define HW_CPUTYPE              11      //Private
-#define HW_SETDEBUGMODE         12      //Private
-#define HW_PPCSTATE             13      //Private
+#define HW_CPUTYPE              11          //Private
+#define HW_SETDEBUGMODE         12          //Private
+#define HW_PPCSTATE             13          //Private
 
 #define ID_MPC834X              0x8083
 

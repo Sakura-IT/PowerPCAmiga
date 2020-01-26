@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -397,6 +397,11 @@ __section (".setupppc","acrx") void setupPPC(struct InitData* initData)
 
         killerFIFOs(initData);
     }
+
+    ULONG* IdleTask = (ULONG*)OFFSET_SYSMEM;
+    IdleTask[0] = OPCODE_NOP;
+    IdleTask[1] = OPCODE_NOP;
+    IdleTask[2] = OPCODE_BRANCH - 12;
 
     installExceptions();
 
