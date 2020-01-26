@@ -761,7 +761,57 @@ PPCFUNCTION VOID SystemStart(void)
 
 PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
-    return;
+    // go asm start
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+    struct PrivateTask* myPTask = (struct PrivateTask*)myTask;
+    struct MsgFrame* newFrame;
+    struct MsgPort* myPort;
+    ULONG signals;
+    ULONG mask;
+
+    while(1)
+    {
+        signals = myWaitPPC(PowerPCBase, myTask->tp_Task.tc_SigAlloc & 0xfffff100);
+
+        if (signals & SIGF_DOS)
+        {
+            if (mask = signals & ~SIGF_DOS)
+            {
+                while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+
+                myTask->tp_Task.tc_SigRecvd |= mask;
+
+                FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            }
+            while (newFrame = (struct MsgFrame*)myGetMsgPPC(PowerPCBase, myTask->tp_Msgport))
+            {
+                switch (newFrame->mf_Identifier)
+                {
+                    case ID_TPPC:
+                    {
+                               //go asm start
+                        break;
+                    }
+                    case ID_END:
+                    {
+                               //go kill ppc
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else if (mask = signals & ~SIGF_DOS)
+        {
+            if (myPort = myPTask->pt_MirrorPort)
+            {
+                mySignal68K(PowerPCBase, myPort->mp_SigTask, mask);
+            }
+        }
+    }
 }
 
 /********************************************************************************************/

@@ -581,6 +581,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
 
     iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
     iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)PowerPCBase - _LVOStartTask;
+    iframe->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.tp_Task.tc_SPReg;
     iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
     iframe->if_Context.ec_GPR[4] = (ULONG)myFrame;
 
