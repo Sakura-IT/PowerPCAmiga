@@ -36,7 +36,7 @@
 
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
 extern struct PPCBase* myPPCBase;
-APTR   RemSysTask;
+APTR  RemSysTask;
 UBYTE powerlib[] = "powerpc.library\0";
 UBYTE ampname[]  = "AmigaAMP\0";
 UBYTE testlongs[] = "2005_68K_PPCsk_0sk_1\0\0\0\0";
@@ -95,7 +95,32 @@ ULONG ExcStrings[24]   = {(ULONG)&excUnsupported, (ULONG)&excUnsupported, (ULONG
 
 void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
-    return;
+    if (!(myTask))
+    {
+        myTask = SysBase->ThisTask;
+    }
+
+    if (myTask->tc_Node.ln_Type == NT_PROCESS)
+    {
+        struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+        struct MirrorTask* currMir = (struct MirrorTask*)PowerPCBase->pp_MirrorList.mlh_Head;
+        struct MirrorTask* nxtMir;
+        while (nxtMir = (struct MirrorTask*)currMir->mt_Node.mln_Succ)
+        {
+            if (currMir->mt_Task == myTask)
+            {
+                struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
+                myFrame->mf_Identifier = ID_END;
+                SendMsgFrame(PowerPCBase, myFrame);
+                Disable();
+                Remove((struct Node*)currMir);
+                Enable();
+                DeleteMsgPort(currMir->mt_Port);
+                FreeVec(currMir);
+            }
+        }
+    }
+        return;;
 }
 
 PATCH68K void SysExitCode(void)
@@ -130,6 +155,21 @@ PATCH68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR ini
     APTR (*AddTask_ptr)(__reg("a1") struct Task*, __reg("a2") APTR,
     __reg("a3") APTR, __reg("a6") struct ExecBase*) = OldAddTask;
 
+    if (myTask->tc_Node.ln_Type == NT_PROCESS)
+    {
+        if (!(finalPC))
+        {
+            finalPC = (APTR)&patchRemTask;
+        }
+        else
+        {
+            if (!((ULONG)finalPC & 0xff000000))
+            {
+                RemSysTask = finalPC;
+                finalPC = (APTR)&SysExitCode;
+            }
+        }
+    }
     return ((*AddTask_ptr)(myTask, initialPC, finalPC, SysBase));
 }
 
