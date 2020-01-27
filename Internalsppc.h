@@ -42,9 +42,8 @@ VOID __SendMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-880(r3)\n\
 #define libSendMsgFramePPC(msgframe) __SendMsgFramePPC(PowerPCBase, (msgframe))
 VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\tmtlr\tr0\n\tblrl";
 #define libFreeMsgFramePPC(msgframe) __FreeMsgFramePPC(PowerPCBase, (msgframe))
-VOID __SystemStart(void *)="\tlwz\tr0,-892(r3)\n\tmtlr\tr0\n\tblrl";
-#define libSystemStart() __SystemStart(PowerPCBase)
 
+#define _LVOSystemStart     -892
 #define _LVOStartTask       -898
 
 void        Reset  (void);
@@ -207,11 +206,12 @@ VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
 VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
-VOID SystemStart(void);
+VOID SystemStart(struct PrivatePPCBase* PowerPCBase);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
 void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+STRPTR GetName(void);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
 ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
 ULONG DoDataStore(struct iframe* iframe, ULONG SRR0, struct DataMsg* data);

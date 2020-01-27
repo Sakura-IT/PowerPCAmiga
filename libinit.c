@@ -30,6 +30,8 @@
 #include <exec/resident.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
+#include <hardware/intbits.h>
+#include <exec/interrupts.h>
 
 #include <dos/var.h>
 #include <dos/dosextens.h>
@@ -38,6 +40,7 @@
 #include <dos/dostags.h>
 
 #include <powerpc/powerpc.h>
+#include <powerpc/tasksPPC.h>
 #include <intuition/intuition.h>
 #include "librev.h"
 #include "constants.h"
@@ -201,6 +204,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
     struct Process *myProc;
+    struct Interrupt myInt;
     ULONG medflag   = 0;
     ULONG gfxisati  = 0;
     ULONG gfxnotv45 = 0;
@@ -619,6 +623,18 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     CacheClearU();
 
+//#if 0
+
+    myInt.is_Code = (APTR)&GortInt;
+    myInt.is_Data = NULL;
+    myInt.is_Node.ln_Pri = 100;
+    myInt.is_Node.ln_Name = "Gort\0";
+    myInt.is_Node.ln_Type = NT_INTERRUPT;
+    AddInterrupt(ppcdevice, (struct Interrupt*)&myInt);
+    SetInterrupt(ppcdevice);
+
+//endif
+
     if(!(myProc = CreateNewProcTags(
                            NP_Entry, (ULONG)&MasterControl,
                            NP_Name, "MasterControl",
@@ -656,9 +672,48 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
-    PrintError(SysBase, "Test completed!");
+//#if 0
 
-    CleanUp(myConsts);
+    if (myBase->pp_DeviceID == DEVICE_MPC8343E)
+    {
+        myInt.is_Code = (APTR)&ZenInt;
+        myInt.is_Data = NULL;
+        myInt.is_Node.ln_Pri = -50;
+        myInt.is_Node.ln_Name = "Zen\0";
+        myInt.is_Node.ln_Type = NT_INTERRUPT;
+        AddIntServer(INTB_VERTB, (struct Interrupt*)&myInt);
+    }
+
+    struct TagItem myTags[] =
+    {
+        TASKATTR_CODE, (ULONG)((ULONG)&PowerPCBase + _LVOSystemStart + 2),
+        TASKATTR_NAME, TRUE, //we cheat here. normally this is mandatory
+        TASKATTR_SYSTEM, TRUE,
+        TAG_DONE
+    };
+
+    if (!(myCreatePPCTask(PowerPCBase, (struct TagItem*)&myTags)))
+    {
+        PrintError(SysBase, "Error setting up Kryten PPC process");
+        return NULL;
+    }
+
+    struct Library* ppcemu;
+
+    if (ppcemu = OpenLibrary("ppc.library", 46L))
+    {
+        if (ppcemu->lib_Revision < 41)
+        {
+            PrintError(SysBase, "Phase 5 ppc.library detected. Please remove it");
+            return NULL;
+        }
+    }
+
+//endif
+
+    PrintError(SysBase, "Test completed!"); //removeme
+
+    CleanUp(myConsts); //removeme
 
     return PowerPCBase;
 }

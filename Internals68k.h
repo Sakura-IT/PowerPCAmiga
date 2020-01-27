@@ -96,3 +96,5 @@ void         myPutXMsg       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __
                               __reg("a1") struct Message* message);
 void      myCausePPCInterrupt(__reg("a6") struct PrivatePPCBase* PowerPCBase);
 
+ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code);
+ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code);
