@@ -748,9 +748,30 @@ PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SystemStart(void)
+PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
 {
-    return;
+    PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name = GetName();
+    struct TaskPPC* myTask;
+    APTR myPool;
+    struct MemList* myMem;
+
+    while (1)
+    {
+        myWaitTime(PowerPCBase, 0, 0x4c0000); // Around 5 seconds.
+        while (myTask = (struct TaskPPC*)myRemHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_RemovedTasks))
+        {
+            while (myPool = (APTR)myRemHeadPPC(PowerPCBase, (struct List*)&myTask->tp_TaskPools))
+            {
+                myDeletePoolPPC(PowerPCBase, myPool);
+            }
+            while (myMem = (struct MemList*)myRemHeadPPC(PowerPCBase, (struct List*)&myTask->tp_Task.tc_MemEntry))
+            {
+                FreeVec68K(PowerPCBase, myMem->ml_ME[0].me_Un.meu_Addr);
+                FreeVec68K(PowerPCBase, myMem);
+            }
+            FreeVec68K(PowerPCBase, myTask);
+         }
+    }
 }
 
 /********************************************************************************************

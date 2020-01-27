@@ -20,7 +20,7 @@
 
 #********************************************************************************************
 
-.global     _LockMutexPPC, _FreeMutexPPC, _RunCPP
+.global     _LockMutexPPC, _FreeMutexPPC, _GetName, _RunCPP
 
 #********************************************************************************************
 
@@ -49,7 +49,7 @@ _LockMutexPPC:
         b       .AtomicOff
 
 .AtomicOn:	
-        li	r3,0
+        li      r3,0
 
 .AtomicOff:	
         isync
@@ -63,8 +63,8 @@ _LockMutexPPC:
 
 _FreeMutexPPC:
         sync
-        li	r0,0
-        stw	r0,0(r3)
+        li      r0,0
+        stw	    r0,0(r3)
         blr
 
 #********************************************************************************************
@@ -75,5 +75,23 @@ _FreeMutexPPC:
 
 _RunCPP:
         blr
+#********************************************************************************************
+#
+#    Getting a name for our clean-up task without the need for SDA/relocation.
+#
+#********************************************************************************************
+
+_GetName:
+       mflr     r4
+       bl       .skipName
+
+       .byte  "Kryten\0\0"
+
+.skipName:
+      mflr      r3
+      mtlr      r4
+      blr
 
 #********************************************************************************************
+
+
