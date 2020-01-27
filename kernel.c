@@ -583,6 +583,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_Port.mp_Port.mp_SigTask = newTask;
     newTask->nt_Port.mp_Port.mp_Flags = PA_SIGNAL;
     newTask->nt_Port.mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
+    newTask->nt_Task.tp_Msgport = &newTask->nt_Port;
 
     iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
     iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)PowerPCBase - _LVOStartTask;
