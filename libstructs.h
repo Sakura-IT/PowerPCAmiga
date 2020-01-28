@@ -95,23 +95,11 @@ ULONG               id_StartBat;
 ULONG               id_SizeBat;
 };
 
-struct BATs {
-ULONG               bt_ibat0u;
-ULONG               bt_ibat0l;
-ULONG               bt_ibat1u;
-ULONG               bt_ibat1l;
-ULONG               bt_ibat2u;
-ULONG               bt_ibat2l;
-ULONG               bt_ibat3u;
-ULONG               bt_ibat3l;
-ULONG               bt_dbat0u;
-ULONG               bt_dbat0l;
-ULONG               bt_dbat1u;
-ULONG               bt_dbat1l;
-ULONG               bt_dbat2u;
-ULONG               bt_dbat2l;
-ULONG               bt_dbat3u;
-ULONG               bt_dbat3l;
+struct BATArray {
+ULONG                       ba_ibatu;
+ULONG                       ba_ibatl;
+ULONG                       ba_dbatu;
+ULONG                       ba_dbatl;
 };
 
 struct PrivateTask {
@@ -215,9 +203,9 @@ ULONG                       pp_BusClock;
 ULONG                       pp_Quantum;
 ULONG                       pp_StdQuantum;
 ULONG                       pp_NumRun68k;
-struct BATs                 pp_ExceptionBATs;
-struct BATs                 pp_StoredBATs;
-struct BATs                 pp_SystemBATs;
+struct BATArray             pp_ExceptionBATs[4];
+struct BATArray             pp_StoredBATs[4];
+struct BATArray             pp_SystemBATs[4];
 };
 
 struct killFIFO {
@@ -236,8 +224,11 @@ ULONG                       kf_MIIPT;
 
 struct iframe {
 ULONG                       if_regAltivec[32*4];
+ULONG                       if_VSCR[4];
+ULONG                       if_VRSAVE;
+ULONG                       if_Pad;         //16 bit alignment for FP regs
 struct EXCContext           if_Context;
-struct BATs                 if_BATs;
+struct BATArray             if_BATs[4];
 DOUBLE                      if_AlignStore;
 ULONG                       if_ExceptionVector;
 };
@@ -259,13 +250,6 @@ struct SignalSemaphorePPC* sw_Semaphore;
 
 struct TagItemPtr {
 struct TagItem* tip_TagItem;
-};
-
-struct BATArray {
-ULONG                       ba_Ibatu;
-ULONG                       ba_Ibatl;
-ULONG                       ba_Dbatu;
-ULONG                       ba_Dbatl;
 };
 
 struct ExcData {
@@ -324,7 +308,7 @@ ULONG                       nt_SSReserved1[8];  //Belongs to Semaphore of nt_Por
 struct TaskPtr              nt_TaskPtr;
 struct MsgPortPPC           nt_IntPort;         //Currently not used or set-up.
 ULONG                       nt_SSReserved2[8];  //Belongs to Sempahore of nt_IntPort
-struct BATs                 nt_BatStore;
+struct BATArray             nt_BatStore[4];
 UBYTE                       nt_Name[256];
 };
 

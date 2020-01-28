@@ -32,50 +32,50 @@ _ExcCommon:
         b       ExcDLoadTLBMiss
         b       ExcDStoreTLBMiss
 
-        mtsprg2 r0                           #LR; sprg3 = r0
+        mtsprg2 r0                                         #LR; sprg3 = r0
 		
         mfmsr   r0
         ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
-        mtmsr	r0				             #Reenable MMU
-        isync					             #Also reenable FPU
+        mtmsr	r0				                           #Reenable MMU
+        isync					                           #Also reenable FPU
         sync
 
         stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs
 
-        stw     r3,256+512+40+12(r1)         #GPR[3]
-        stw     r4,256+512+40+16(r1)         #GPR[4]
+        stw     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
+        stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
         mfsprg3 r0
-        stw     r0,256+512+40(r1)            #GPR[0]
+        stw     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         mflr    r3
         rlwinm  r0,r3,24,24,31
-        stw     r0,256+512(r1)               #EXC_ID
-        la      r4,256(r1)                   #iFrame
+        stw     r0,IF_GAP+IF_CONTEXT_EXCID(r1)             #EXC_ID
+        la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,-4(r4)
         mfsprg2 r0
-        stw     r0,-8(r4)                    #LR
-        la      r3,256+512(r1)
+        stw     r0,-8(r4)                                  #LR
+        la      r3,IF_GAP+IF_CONTEXT(r1)
 
         bl      _StoreFrame                  #r0 and r3 are skipped in this routine and were saved above
 
-        lwz     r4,252(r1)                   #same as -4(r4)
+        lwz     r4,IF_GAP-4(r1)                            #same as -4(r4)
         subi    r4,r4,PPC_VECLEN*4
-        stw     r4,256+512+40+128+256+8(r1)  #if_ExceptionVector
+        stw     r4,IF_GAP+IF_EXCEPTIONVECTOR(r1)           #if_ExceptionVector
 
-        lwz     r3,PowerPCBase(r0)           #Loads PowerPCBase
-        la      r4,256(r1)                   #iFrame
+        lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
+        la      r4,IF_GAP(r1)                              #iFrame
 
         bl      _Exception_Entry
 
-        la      r31,256+512(r1)
+        la      r31,IF_GAP+IF_CONTEXT(r1)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
-        lwz     r0,256+512+28(r1)            #EXC_LR
+        lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
-        lwz     r0,256+512+40(r1)            #GPR[0]
+        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
 
-        lwz     r3,256+512+52(r1)            #GPR[3]
-        lwz     r1,256+512+44(r1)            #GPR[1]
+        lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
+        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[1]
 
         rfi
 
@@ -329,8 +329,8 @@ _SmallExcHandler:
 
         stwu    r1,-512(r1)                  #Enough?
 
-        la      r31,512(r4)
-        mtsprg0 r31
+        la      r31,IF_CONTEXT(r4)
+        mtsprg0 r4
         mtsprg3 r3
         mflr    r3
         stw     r3,-12(r4)                   #Store this function's lr
@@ -338,24 +338,24 @@ _SmallExcHandler:
         bl      _LoadFrame                   #LR, r0, r1 and r3 are skipped in this routine and are loaded below
 
         mfsprg0 r4
-        lwz     r3,52(r4)                    #GPR[3]
+        lwz     r3,IF_CONTEXT_GPR+GPR3(r4)   #GPR[3]
         stw     r3,300(r1)
         mfsprg3 r3
-        lwz     r0,28(r4)                    #EXC_LR
+        lwz     r0,IF_CONTEXT_LR(r4)         #EXC_LR
         mtsprg1 r0
         stw     r0,-8(r4)                    #Will be used later in StoreFrame
-        lwz     r0,40+4(r4)                  #GPR[1]
+        lwz     r0,IF_CONTEXT_GPR+GPR1(r4)   #GPR[1]
         mtsprg2 r0
         stw     r2,-16(r4)
-        lwz     r0,40+8(r4)                  #GPR[2]
+        lwz     r0,IF_CONTEXT_GPR+GPR2(r4)   #GPR[2]
         lwz     r2,18(r3)                    #DATA
         mtsprg3 r0
         lwz     r0,14(r3)                    #CODE
         mtlr    r0
         la      r3,300(r1)                   #XCONTEXT
         stw     r4,308(r1)
-        lwz     r0,40(r4)                    #GPR[0]
-        lwz     r4,40+16(r4)                 #GPR[4]
+        lwz     r0,IF_CONTEXT_GPR+GPR0(r4)   #GPR[0]
+        lwz     r4,IF_CONTEXT_GPR+GPR4(r4)   #GPR[4]
 
         blrl
 
@@ -363,24 +363,24 @@ _SmallExcHandler:
         lwz     r3,300(r1)
         stw     r4,312(r1)                   #Temp store r4
         mfsprg0 r4
-        stw     r3,40+12(r4)                 #GPR[3]
-        stw     r0,40(r4)                    #GPR[0]
+        stw     r3,IF_CONTEXT_GPR+GPR3(r4)   #GPR[3]
+        stw     r0,IF_CONTEXT_GPR+GPR0(r4)   #GPR[0]
 
         bl      _StoreFrame
 
         lwz     r4,312(r1)                   #Really store r4
         mfsprg0 r5
-        stw     r4,40+16(r5)                 #GPR[4]
+        stw     r4,IF_CONTEXT_GPR+GPR4(r5)   #GPR[4]
         mfsprg1 r6
         lwz     r4,-12(r5)                   #Retrieve this function's lr
         lwz     r2,-16(r5)
-        stw     r6,28(r5)                    #EXC_LR
+        stw     r6,IF_CONTEXT_LR(r5)         #EXC_LR
         mfsprg2 r7
         mtlr    r4
         mfsprg3 r6
-        stw     r7,40+4(r5)                  #GPR[1]
+        stw     r7,IF_CONTEXT_GPR+GPR1(r5)   #GPR[1]
         lwz     r3,304(r1)                   #Return Status
-        stw     r6,40+8(r5)                  #GPR[2]
+        stw     r6,IF_CONTEXT_GPR+GPR2(r5)   #GPR[2]
         lwz     r1,0(r1)
 
         blr
@@ -390,19 +390,19 @@ _SmallExcHandler:
 _DoAlign:
 
         lwz     r5,0(r4)
-        la      r11,552(r3)            #reg table
-        la      r12,680(r3)            #freg table
+        la      r11,IF_CONTEXT_GPR(r3)       #reg table
+        la      r12,IF_CONTEXT_FPR(r3)       #freg table
 
-        rlwinm  r6,r5,14,24,28         #get floating point register offset
-        rlwinm  r7,r5,18,25,29         #get destination register offset
+        rlwinm  r6,r5,14,24,28               #get floating point register offset
+        rlwinm  r7,r5,18,25,29               #get destination register offset
         mr.     r10,r7
         beq     .ItsR0
-        lwzx    r10,r11,r7             #get address from destination register
+        lwzx    r10,r11,r7                   #get address from destination register
 
 .ItsR0:	
-        rlwinm  r8,r5,0,16,31          #get displacement
+        rlwinm  r8,r5,0,16,31                #get displacement
         rlwinm  r0,r5,6,26,31
-        cmpwi   r0,0x34                #test for stfs
+        cmpwi   r0,0x34                      #test for stfs
         beq     .stfs
         cmpwi   r0,0x35
         beq     .stfsu
@@ -432,41 +432,41 @@ _DoAlign:
         stwx    r9,r11,r7
 
 .stfs:		
-        lfdx    f1,r12,r6              #get value from fp register
-        stfs    f1,936(r3)             #store it on correct aligned spot
-        lwz     r6,936(r3)             #Get the correct 32 bit value
-        stwx    r6,r10,r8              #Store correct value
+        lfdx    f1,r12,r6                    #get value from fp register
+        stfs    f1,IF_ALIGNSTORE(r3)         #store it on correct aligned spot
+        lwz     r6,IF_ALIGNSTORE(r3)         #Get the correct 32 bit value
+        stwx    r6,r10,r8                    #Store correct value
         b       .AligExit
 
 .lfd:
         lwzx    r9,r10,r8
-        stw     r9,936(r3)
+        stw     r9,IF_ALIGNSTORE(r3)
         addi    r8,r8,4
         lwzx    r9,r10,r8
-        stw     r9,936(r3)
-        lfd     f1,936(r3)
+        stw     r9,IF_ALIGNSTORE(r3)
+        lfd     f1,IF_ALIGNSTORE(r3)
         stfdx   f1,r12,r6
         b       .AligExit
 
 .lfsu:	
-        add     r5,r10,r8              #Add displacement
+        add     r5,r10,r8                    #Add displacement
         stwx    r5,r11,r7
 
 .lfs:	
-        lwzx    r9,r10,r8              #Get 32 bit value
-        stw     r9,936(r3)             #Store it on aligned spot
-        lfs     f1,936(r3)             #Get it and convert it to 64 bit
-        stfdx   f1,r12,r6              #Store the 64 bit value
+        lwzx    r9,r10,r8                    #Get 32 bit value
+        stw     r9,IF_ALIGNSTORE(r3)         #Store it on aligned spot
+        lfs     f1,IF_ALIGNSTORE(r3)         #Get it and convert it to 64 bit
+        stfdx   f1,r12,r6                    #Store the 64 bit value
         b       .AligExit
 
 .lstfsx:
-        rlwinm. r0,r5,25,31,31         #0 = s; 1 = d
+        rlwinm. r0,r5,25,31,31               #0 = s; 1 = d
         bne     .HaltAlign
-        rlwinm. r0,r5,26,31,31         #0 = x; 1 = ux
+        rlwinm. r0,r5,26,31,31               #0 = x; 1 = ux
         bne     .HaltAlign
 
-        rlwinm  r8,r5,23,25,29         #get index register
-        lwzx    r8,r11,r8              #get index register value
+        rlwinm  r8,r5,23,25,29               #get index register
+        lwzx    r8,r11,r8                    #get index register value
         rlwinm. r0,r5,24,31,31
         bne     .stfs
         b       .lfs
@@ -481,12 +481,12 @@ _DoAlign:
 #********************************************************************************************
 
 _DoDataStore:
-        li      r12,0                  #r3 = iframe, r4 = srr0, r5 = datastruct
-        stw     r12,936(r3)            #to get an offset of 0
-        la      r11,552(r3)            #get reg table in r11
-        lwz     r12,0(r4)              #get offending instruction in r12
+        li      r12,0                        #r3 = iframe, r4 = srr0, r5 = datastruct
+        stw     r12,IF_ALIGNSTORE(r3)        #to get an offset of 0 (reusing an unused variable)
+        la      r11,IF_CONTEXT_GPR(r3)       #get reg table in r11
+        lwz     r12,0(r4)                    #get offending instruction in r12
         li      r10,0
-        lis     r0,0xc000              #check for load or store instruction
+        lis     r0,0xc000                    #check for load or store instruction
         mr      r7,r5
         and.    r0,r12,r0
         lis     r6,0x8000
@@ -494,52 +494,52 @@ _DoDataStore:
         beq     .LoadStore
 
         rlwinm  r6,r12,0,25,5
-        loadreg r8,0x7c00002e          #check for stbx/sthx/stwx/lbzx/lhzx/lwzx
+        loadreg r8,0x7c00002e                #check for stbx/sthx/stwx/lbzx/lhzx/lwzx
         cmpw    r6,r8
         bne     .NotSupported
 
         li      r10,1
-        rlwinm  r6,r12,13,25,29        #Source reg
-        rlwinm  r8,r12,18,25,29        #Dest 1
-        rlwinm  r4,r12,23,25,29        #Dest 2
-        lwzx    r4,r11,r4              #Displacement (word)
-        li      r5,0                   #Update bit
-        li      r9,1                   #Mark as Store instruction
+        rlwinm  r6,r12,13,25,29              #Source reg
+        rlwinm  r8,r12,18,25,29              #Dest 1
+        rlwinm  r4,r12,23,25,29              #Dest 2
+        lwzx    r4,r11,r4                    #Displacement (word)
+        li      r5,0                         #Update bit
+        li      r9,1                         #Mark as Store instruction
 
         b       .GoStore
 
 .LoadStore:	
-        rlwinm  r6,r12,13,25,29        #Get Destination Reg (l) or Source (s)
-        rlwinm  r8,r12,18,25,29        #Get Source Reg (l) or Destination (s)
-        rlwinm  r9,r12,4,31,31         #Check load or store
-        rlwinm  r5,r12,6,31,31         #Check for update bit
-        rlwinm  r4,r12,0,16,31         #Displacement (halfword)
-        extsh   r4,r4                  #Extend sign of displacement
+        rlwinm  r6,r12,13,25,29              #Get Destination Reg (l) or Source (s)
+        rlwinm  r8,r12,18,25,29              #Get Source Reg (l) or Destination (s)
+        rlwinm  r9,r12,4,31,31               #Check load or store
+        rlwinm  r5,r12,6,31,31               #Check for update bit
+        rlwinm  r4,r12,0,16,31               #Displacement (halfword)
+        extsh   r4,r4                        #Extend sign of displacement
 
 .GoStore:
         mr.     r5,r5
-        bne     .NoZero                #When update r0 = r0 and not 0
+        bne     .NoZero                      #When update r0 = r0 and not 0
         mr.     r8,r8
         bne     .NoZero
-        li      r8,936                 #Point to 0 in frame
+        li      r8,IF_ALIGNSTORE             #Point to 0 in frame
 
 .NoZero:
-        lwzx    r3,r11,r8              #Get Destination Address
-        add     r3,r3,r4               #Add displacement
+        lwzx    r3,r11,r8                    #Get Destination Address
+        add     r3,r3,r4                     #Add displacement
         mr.     r5,r5
         beq     .NoUpdate
-        stwx    r3,r11,r8              #Update Destination Reg
+        stwx    r3,r11,r8                    #Update Destination Reg
 
 .NoUpdate:
         stw     r9,20(r7)
-        lwzx    r5,r11,r6              #Get value to store
+        lwzx    r5,r11,r6                    #Get value to store
         mr.     r9,r9
-        beq     .GoLoad                #Load or store?
+        beq     .GoLoad                      #Load or store?
 
-        mr.     r10,r10                #Normal store or with index?
+        mr.     r10,r10                      #Normal store or with index?
         beq     .NoStxx
 
-        rlwinm  r0,r12,25,29,31        #Indexed store
+        rlwinm  r0,r12,25,29,31              #Indexed store
         cmpwi   r0,6
         beq     .StoreHalf
         cmpwi   r0,3
@@ -547,17 +547,17 @@ _DoDataStore:
         cmpwi   r0,2
         beq     .StoreWord
         mr.     r0,r0
-        beq     .GoLoadx               #Lwzx
+        beq     .GoLoadx                     #Lwzx
         cmpwi   r0,1
-        beq     .GoLoadx               #lbzx
+        beq     .GoLoadx                     #lbzx
         cmpwi   r0,4
-        beq     .GoLoadx               #lhzx
+        beq     .GoLoadx                     #lhzx
         cmpwi   r0,5
-        beq     .GoLoadx               #lhax
-        b       .NotSupported          #Not Supported
+        beq     .GoLoadx                     #lhax
+        b       .NotSupported                #Not Supported
 
 .NoStxx:
-        rlwinm. r0,r12,3,31,31         #Normal store
+        rlwinm. r0,r12,3,31,31               #Normal store
         bne     .StoreHalf
         rlwinm. r0,r12,5,31,31
         bne     .StoreByte
@@ -577,7 +577,7 @@ _DoDataStore:
         stw     r9,0(r7)
         stw     r5,4(r7)
         stw     r3,8(r7)
-        b       .DoneDSI               #We're done
+        b       .DoneDSI                     #We're done
 
 .GoLoad:
 .GoLoadx:	
@@ -597,8 +597,8 @@ _DoDataStore:
 
 _FinDataStore:
 
-        lwz     r12,0(r5)              #r3 = value, r4 = iframe, r5 = srr0. r6 = data
-        la      r11,552(r4)
+        lwz     r12,0(r5)                    #r3 = value, r4 = iframe, r5 = srr0. r6 = data
+        la      r11,IF_CONTEXT_GPR(r4)
         lwz     r9,20(r6)
         lwz     r4,12(r6)
         mr      r10,r3
@@ -607,33 +607,33 @@ _FinDataStore:
         beq     .Normal
 
         mr.     r4,r4
-        beq     .FixedValue            #Word
+        beq     .FixedValue                  #Word
         rlwinm  r10,r10,16,16,31
         cmpwi   r4,4
-        beq     .FixedValue            #halfword
+        beq     .FixedValue                  #halfword
         extsh   r10,r10
-        cmpwi   r4,5                   #halfword algebraic
+        cmpwi   r4,5                         #halfword algebraic
         beq     .FixedValue
         rlwinm  r10,r10,24,24,31
-        b       .FixedValue            #byte
+        b       .FixedValue                  #byte
 
 .Normal:
         rlwinm  r9,r12,16,16,31
         andi.   r9,r9,0xa800
-        cmplwi  r9,0x8000              #lwz/lwzu 0x8000
+        cmplwi  r9,0x8000                    #lwz/lwzu 0x8000
         beq     .FixedValue
         rlwinm  r10,r10,16,16,31
-        cmplwi  r9,0xa000              #lhz/lhzu 0xa000
+        cmplwi  r9,0xa000                    #lhz/lhzu 0xa000
         beq     .FixedValue
         extsh   r10,r10
-        cmplwi  r9,0xa800              #lha/lhau 0xa800
+        cmplwi  r9,0xa800                    #lha/lhau 0xa800
         beq     .FixedValue
         rlwinm  r10,r10,24,24,31
-        cmplwi  r9,0x8800              #lbz/lbzu 0x8800
-        bne     .NotSupported          #Not Supported
+        cmplwi  r9,0x8800                    #lbz/lbzu 0x8800
+        bne     .NotSupported                #Not Supported
 
 .FixedValue:
-    	stwx    r10,r11,r6             #Store gotten value in correct register
+    	stwx    r10,r11,r6                   #Store gotten value in correct register
 
 .DoneDSI:
         li      r3,1

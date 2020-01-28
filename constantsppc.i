@@ -18,6 +18,7 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
+
 .macro loadreg register, value
 	.if 	(\value >= -0x8000) && (\value <= 0x7fff)
         	li      \register, \value
@@ -26,6 +27,35 @@
 		ori     \register, \register, \value@l
 	.endif
 .endm
+
+.set IF_GAP,                    256
+.set IF_VPR,                    0                 #Align this with the if_Frame struct in libstructs.h
+.set IF_VSCR,                   32*16
+.set IF_VRSAVE,                 IF_VSCR+16
+.set IF_PAD,                    IF_VRSAVE+4
+.set IF_CONTEXT,                IF_PAD+4
+.set IF_CONTEXT_EXCID,          IF_CONTEXT
+.set IF_CONTEXT_SRR0,           IF_CONTEXT+4
+.set IF_CONTEXT_SRR1,           IF_CONTEXT+8
+.set IF_CONTEXT_DAR,            IF_CONTEXT+12
+.set IF_CONTEXT_DSISR,          IF_CONTEXT+16
+.set IF_CONTEXT_CR,             IF_CONTEXT+20
+.set IF_CONTEXT_CTR,            IF_CONTEXT+24
+.set IF_CONTEXT_LR,             IF_CONTEXT+28
+.set IF_CONTEXT_XER,            IF_CONTEXT+32
+.set IF_CONTEXT_FPSCR,          IF_CONTEXT+36
+.set IF_CONTEXT_GPR,            IF_CONTEXT+40
+.set IF_CONTEXT_FPR,            IF_CONTEXT+40+128
+.set IF_BATS,                   IF_CONTEXT+40+128+256
+.set IF_ALIGNSTORE,             IF_BATS+64
+.set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
+.set IF_SIZE,                   IF_EXCEPTIONVECTOR+4
+
+.set GPR0,                      0*4
+.set GPR1,                      1*4
+.set GPR2,                      2*4
+.set GPR3,                      3*4
+.set GPR4,                      4*4
 
 .set PPC_VECLEN,                3
 .set PowerPCBase,               16                #Align this number with the zp struct in libstructs.h

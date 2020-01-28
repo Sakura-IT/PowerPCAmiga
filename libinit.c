@@ -686,8 +686,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     struct TagItem myTags[] =
     {
-        TASKATTR_CODE, (ULONG)((ULONG)&PowerPCBase + _LVOSystemStart + 2),
-        TASKATTR_NAME, TRUE, //we cheat here. normally this is mandatory
+        TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
+        TASKATTR_NAME,   TRUE, //we cheat here. normally this is mandatory
+        TASKATTR_R3,     (ULONG)PowerPCBase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
