@@ -91,6 +91,96 @@ void setBAT3(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
 void mSync(void)                          = "\tsync\n\tisync\n";
 
 
+void mvfrBAT0(struct BATArray*)
+        ="\tmfibatu\tr4,0\n\
+          \tstw\tr4,0(r3)\n\
+          \tmfibatl\tr4,0\n\
+          \tstw\tr4,4(r3)\n\
+          \tmfdbatu\tr4,0\n\
+          \tstw\tr4,8(r3)\n\
+          \tmfdbatl\tr4,0\n\
+          \tstw\tr4,12(r3)\n";
+
+void mvfrBAT0(struct BATArray*)
+        ="\tmfibatu\tr4,0\n\
+          \tstw\tr4,0(r3)\n\
+          \tmfibatl\tr4,0\n\
+          \tstw\tr4,4(r3)\n\
+          \tmfdbatu\tr4,0\n\
+          \tstw\tr4,8(r3)\n\
+          \tmfdbatl\tr4,0\n\
+          \tstw\tr4,12(r3)\n";
+
+void mvfrBAT1(struct BATArray*)
+        ="\tmfibatu\tr4,1\n\
+          \tstw\tr4,0(r3)\n\
+          \tmfibatl\tr4,1\n\
+          \tstw\tr4,4(r3)\n\
+          \tmfdbatu\tr4,r1\n\
+          \tstw\tr4,8(r3)\n\
+          \tmfdbatl\tr4,1\n\
+          \tstw\tr4,12(r3)\n";
+
+void mvfrBAT2(struct BATArray*)
+        ="\tmfibatu\tr4,2\n\
+          \tstw\tr4,0(r3)\n\
+          \tmfibatl\tr4,2\n\
+          \tstw\tr4,4(r3)\n\
+          \tmfdbatu\tr4,2\n\
+          \tstw\tr4,8(r3)\n\
+          \tmfdbatl\tr4,2\n\
+          \tstw\tr4,12(r3)\n";
+
+void mvfrBAT3(struct BATArray*)
+        ="\tmfibatu\tr4,3\n\
+          \tstw\tr4,0(r3)\n\
+          \tmfibatl\tr4,3\n\
+          \tstw\tr4,4(r3)\n\
+          \tmfdbatu\tr4,3\n\
+          \tstw\tr4,8(r3)\n\
+          \tmfdbatl\tr4,3\n\
+          \tstw\tr4,12(r3)\n";
+
+void mvtoBAT0(struct BATArray*)
+        ="\tlwz\tr4,0(r3)\n\
+          \tmtibatu\t0,r4\n\
+          \tlwz\tr4,4(r3)\n\
+          \tmtibatu\t0,r4\n\
+          \tlwz\tr4,8(r3)\n\
+          \tmtibatu\t0,r4\n\
+          \tlwz\tr4,12(r3)\n\
+          \tmtibatu\t0,r4\n";
+
+void mvtoBAT1(struct BATArray*)
+        ="\tlwz\tr4,0(r3)\n\
+          \tmtibatu\t1,r4\n\
+          \tlwz\tr4,4(r3)\n\
+          \tmtibatu\t1,r4\n\
+          \tlwz\tr4,8(r3)\n\
+          \tmtibatu\t1,r4\n\
+          \tlwz\tr4,12(r3)\n\
+          \tmtibatu\t1,r4\n";
+
+void mvtoBAT2(struct BATArray*)
+        ="\tlwz\tr4,0(r3)\n\
+          \tmtibatu\t2,r4\n\
+          \tlwz\tr4,4(r3)\n\
+          \tmtibatu\t2,r4\n\
+          \tlwz\tr4,8(r3)\n\
+          \tmtibatu\t2,r4\n\
+          \tlwz\tr4,12(r3)\n\
+          \tmtibatu\t2,r4\n";
+
+void mvtoBAT3(struct BATArray*)
+        ="\tlwz\tr4,0(r3)\n\
+          \tmtibatu\t3,r4\n\
+          \tlwz\tr4,4(r3)\n\
+          \tmtibatu\t3,r4\n\
+          \tlwz\tr4,8(r3)\n\
+          \tmtibatu\t3,r4\n\
+          \tlwz\tr4,12(r3)\n\
+          \tmtibatu\t3,r4\n";
+
 LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
 LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
 VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstring, APTR Values);

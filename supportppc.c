@@ -706,6 +706,22 @@ PPCFUNCTION VOID printDebugExit(struct PrivatePPCBase* PowerPCBase, ULONG functi
 
 PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase)
 {
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    ULONG key = mySuper(PowerPCBase);
+
+    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 0));
+    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 16));
+    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 32));
+    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 48));
+
+    MoveToBAT(CHMMU_BAT0, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
+    MoveToBAT(CHMMU_BAT1, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
+    MoveToBAT(CHMMU_BAT2, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
+    MoveToBAT(CHMMU_BAT3, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
+
+    myUser(PowerPCBase, key);
+
     return;
 }
 
@@ -717,7 +733,21 @@ PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase)
 {
-    return;
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    ULONG key = mySuper(PowerPCBase);
+
+    MoveToBAT(CHMMU_BAT0, (struct BATArray*)&PowerPCBase->pp_StoredBATs[0]);
+    MoveToBAT(CHMMU_BAT1, (struct BATArray*)&PowerPCBase->pp_StoredBATs[1]);
+    MoveToBAT(CHMMU_BAT2, (struct BATArray*)&PowerPCBase->pp_StoredBATs[2]);
+    MoveToBAT(CHMMU_BAT3, (struct BATArray*)&PowerPCBase->pp_StoredBATs[3]);
+
+    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 0));
+    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 16));
+    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 32));
+    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 64));
+
+    myUser(PowerPCBase, key);
 }
 
 /********************************************************************************************
@@ -728,6 +758,29 @@ PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray)
 {
+    switch (BATnumber)
+    {
+       case CHMMU_BAT0:
+       {
+           mvtoBAT0(batArray);
+           break;
+       }
+       case CHMMU_BAT1:
+       {
+           mvtoBAT1(batArray);
+           break;
+       }
+       case CHMMU_BAT2:
+       {
+           mvtoBAT2(batArray);
+           break;
+       }
+       case CHMMU_BAT3:
+       {
+           mvtoBAT3(batArray);
+           break;
+       }
+    }
     return;
 }
 
@@ -739,6 +792,29 @@ PPCFUNCTION VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray)
 
 PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 {
+    switch (BATnumber)
+    {
+       case CHMMU_BAT0:
+       {
+           mvfrBAT0(batArray);
+           break;
+       }
+       case CHMMU_BAT1:
+       {
+           mvfrBAT1(batArray);
+           break;
+       }
+       case CHMMU_BAT2:
+       {
+           mvfrBAT2(batArray);
+           break;
+       }
+       case CHMMU_BAT3:
+       {
+           mvfrBAT3(batArray);
+           break;
+       }
+    }
     return;
 }
 

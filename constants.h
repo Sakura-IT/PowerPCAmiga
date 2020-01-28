@@ -246,6 +246,11 @@
 #define BAT_READ_ONLY           0x00000001
 #define BAT_READ_WRITE          0x00000002
 
+#define CHMMU_BAT0              0
+#define CHMMU_BAT1              1
+#define CHMMU_BAT2              2
+#define CHMMU_BAT3              3
+
 // IMMR offsets
 #define IMMR_ADDR_DEFAULT       0xFF400000
 #define IMMR_IMMRBAR            0x0

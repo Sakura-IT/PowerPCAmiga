@@ -42,27 +42,27 @@ _ExcCommon:
 
         stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs
 
-        stw     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
+        la      r4,IF_GAP(r1)                              #iFrame
+        stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
         mfsprg3 r0
-        stw     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
+        stw     r0,IF_CONTEXT_GPR+GPR0(r4)                 #GPR[0]
         mflr    r3
         rlwinm  r0,r3,24,24,31
-        stw     r0,IF_GAP+IF_CONTEXT_EXCID(r1)             #EXC_ID
-        la      r4,IF_GAP(r1)                              #iFrame
+        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID
         stw     r3,-4(r4)
         mfsprg2 r0
         stw     r0,-8(r4)                                  #LR
-        la      r3,IF_GAP+IF_CONTEXT(r1)
+        la      r3,IF_CONTEXT(r4)
 
         bl      _StoreFrame                  #r0 and r3 are skipped in this routine and were saved above
 
-        lwz     r4,IF_GAP-4(r1)                            #same as -4(r4)
-        subi    r4,r4,PPC_VECLEN*4
-        stw     r4,IF_GAP+IF_EXCEPTIONVECTOR(r1)           #if_ExceptionVector
+        la      r4,IF_GAP(r1)                              #iFrame
+        lwz     r5,-4(r4)                                  #same as -4(r4)
+        subi    r5,r5,PPC_VECLEN*4
+        stw     r5,IF_EXCEPTIONVECTOR(r4)                  #if_ExceptionVector
 
         lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
-        la      r4,IF_GAP(r1)                              #iFrame
 
         bl      _Exception_Entry
 
@@ -75,7 +75,7 @@ _ExcCommon:
         lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
 
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
-        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[1]
+        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
 
         rfi
 
