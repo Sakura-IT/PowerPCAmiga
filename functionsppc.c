@@ -931,6 +931,52 @@ PPCFUNCTION ULONG mySetSignalPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 
 PPCFUNCTION VOID mySignalPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, ULONG signals)
 {
+    printDebugEntry(PowerPCBase, function, (ULONG)task, signals, 0, 0);
+
+    switch (task->tp_Task.tc_Node.ln_Type)
+    {
+        case NT_TASK:
+        {
+            mySignal68K(PowerPCBase, (struct Task*)task, signals);
+            break;
+        }
+        case NT_PPCTASK:
+        {
+            CheckExcSignal(PowerPCBase, task, signals);
+            while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+            task->tp_Task.tc_SigRecvd |= signals;
+
+            switch (task->tp_Task.tc_State)
+            {
+                case TS_WAIT:
+                {
+                    if (task->tp_Task.tc_SigWait & signals)
+                    {
+                        myRemovePPC(PowerPCBase, (struct Node*)task);
+                        task->tp_Task.tc_State = TS_READY;
+                        InsertOnPri(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyTasks, task);
+                        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+                        struct TaskPPC* topTask = (struct TaskPPC*)PowerPCBase->pp_ReadyTasks.mlh_Head;
+
+                        if (topTask == task)
+                        {
+                            PowerPCBase->pp_FlagReschedule = -1;
+                            CauseDECInterrupt(PowerPCBase);
+                        }
+                        return;
+                    }
+                    break;
+                }
+                case TS_CHANGING:
+                {
+                    task->tp_Task.tc_State = TS_RUN;
+                    break;
+                }
+            }
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        }
+    }
     return;
 }
 
@@ -1345,7 +1391,30 @@ PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase,
 
 PPCFUNCTION struct Message* myWaitPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return NULL;
+    printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+    volatile struct Message* topMsg = (struct Message*)port->mp_Port.mp_MsgList.lh_Head;
+
+    while (!(topMsg->mn_Node.ln_Succ))
+    {
+        ULONG waitSig = 1 << (port->mp_Port.mp_SigBit);
+
+        myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+        myWaitPPC(PowerPCBase, waitSig);
+
+        myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+        topMsg = (struct Message*)port->mp_Port.mp_MsgList.lh_Head;
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+    printDebugExit(PowerPCBase, function, (ULONG)topMsg);
+
+    return (struct Message*)topMsg;
 }
 
 /********************************************************************************************
@@ -1356,6 +1425,19 @@ PPCFUNCTION struct Message* myWaitPortPPC(struct PrivatePPCBase* PowerPCBase, st
 
 PPCFUNCTION VOID myPutMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port, struct Message* message)
 {
+    printDebugEntry(PowerPCBase, function, (ULONG)port, (ULONG)message, 0, 0);
+
+    message->mn_Node.ln_Type = NT_MESSAGE;
+
+    myAddTailPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList, (struct Node*)message);
+
+    if ((port->mp_Port.mp_SigTask) && (!(port->mp_Port.mp_Flags & PF_ACTION)))
+    {
+         mySignalPPC(PowerPCBase, port->mp_Port.mp_SigTask, (1 << port->mp_Port.mp_SigBit));
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
     return;
 }
 
@@ -1367,7 +1449,17 @@ PPCFUNCTION VOID myPutMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortP
 
 PPCFUNCTION struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
-    return NULL;
+    printDebugEntry(PowerPCBase, function, (ULONG)port, 0, 0, 0);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+    struct Message* myMsg = (struct Message*)myRemHeadPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList);
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
+    printDebugExit(PowerPCBase, function, (ULONG)myMsg);
+
+    return myMsg;
 }
 
 /********************************************************************************************

@@ -185,7 +185,7 @@ UBYTE                       pp_CacheDState;
 UBYTE                       pp_CacheDLockState;
 UBYTE                       pp_FlagReschedule;
 UBYTE                       pp_FlagWait;
-UBYTE                       pp_FlagPortInUse;
+UBYTE                       pp_FlagPortInUse;  //for nt_IntPort....not used
 UBYTE                       pp_BusyCounter;
 UBYTE                       pp_Pad2[2];
 ULONG                       pp_NumAllTasks;
@@ -306,7 +306,7 @@ struct iframe               nt_Context;
 struct MsgPortPPC           nt_Port;
 ULONG                       nt_SSReserved1[8];  //Belongs to Semaphore of nt_Port
 struct TaskPtr              nt_TaskPtr;
-struct MsgPortPPC           nt_IntPort;         //Currently not used or set-up.
+struct MsgPortPPC           nt_IntPort;         //Currently not used or set-up. Also removed from functions atm.
 ULONG                       nt_SSReserved2[8];  //Belongs to Sempahore of nt_IntPort
 struct BATArray             nt_BatStore[4];
 UBYTE                       nt_Name[256];
