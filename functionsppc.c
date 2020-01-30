@@ -1470,6 +1470,36 @@ PPCFUNCTION struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, stru
 
 PPCFUNCTION VOID myReplyMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message)
 {
+    printDebugEntry(PowerPCBase, function, (ULONG)message, 0, 0, 0);
+
+    if (!(message->mn_ReplyPort))
+    {
+        message->mn_Node.ln_Type = NT_FREEMSG;
+        return;
+    }
+
+    if (message->mn_Node.ln_Type = NT_XMSG68K)
+    {
+        message->mn_Node.ln_Type = NT_REPLYMSG;
+        struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+        myFrame->mf_Arg[0] = (ULONG)message;
+        myFrame->mf_Identifier = ID_RX68;
+        SendMsgFramePPC(PowerPCBase, myFrame);
+        return;
+    }
+    else
+    {
+        struct MsgPortPPC* myPort = (struct MsgPortPPC*)message->mn_ReplyPort;
+        myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&myPort->mp_Semaphore);
+        myAddTailPPC(PowerPCBase, (struct List*)&myPort->mp_Port.mp_MsgList, (struct Node*)message);
+
+        if ((myPort->mp_Port.mp_SigTask) && (!(myPort->mp_Port.mp_Flags & PF_ACTION)))
+        {
+             mySignalPPC(PowerPCBase, myPort->mp_Port.mp_SigTask, (1 << myPort->mp_Port.mp_SigBit));
+        }
+
+        myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&myPort->mp_Semaphore);
+    }
     return;
 }
 
@@ -1660,6 +1690,24 @@ PPCFUNCTION VOID myGetHALInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem
 
 PPCFUNCTION VOID mySetScheduling(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
+    printDebugEntry(PowerPCBase, function, (LONG)taglist, 0, 0, 0);
+
+    struct TagItem* myTagItem;
+    ULONG result;
+
+    if (myTagItem = myFindTagItemPPC(PowerPCBase, SCHED_REACTION, taglist))
+    {
+        result = myTagItem->ti_Data;
+        if (result < 1)
+        {
+            result = 1;
+        }
+        else if (result > 20)
+        {
+            result = 20;
+        }
+        PowerPCBase->pp_LowActivityPri = (result * 1000);
+    }
     return;
 }
 
@@ -1817,6 +1865,38 @@ PPCFUNCTION LONG myAttemptSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase,
 
 PPCFUNCTION VOID myProcurePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, struct SemaphoreMessage* SemaphoreMessage)
 {
+    printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, (ULONG)SemaphoreMessage, 0, 0);
+
+    SemaphoreMessage->ssm_Semaphore = (struct SignalSemaphore*)PowerPCBase->pp_ThisPPCProc;
+
+    struct TaskPPC* owner = PowerPCBase->pp_ThisPPCProc;
+
+    ULONG myStore = (ULONG)&SemaphoreMessage->ssm_Message.mn_Node.ln_Type;
+
+    if (*((ULONG*)(myStore)) = (ULONG)SemaphoreMessage->ssm_Message.mn_Node.ln_Name)
+    {
+        owner = NULL;
+    }
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    if ((SemaphorePPC->ssppc_SS.ss_QueueCount += 1) && (SemaphorePPC->ssppc_SS.ss_Owner))
+    {
+        myAddTailPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue, (struct Node*)SemaphoreMessage);
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+    }
+    else
+    {
+        if (!(SemaphorePPC->ssppc_SS.ss_QueueCount += 1))
+        {
+            SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)PowerPCBase->pp_ThisPPCProc;
+        }
+        SemaphoreMessage->ssm_Semaphore = (struct SignalSemaphore*)SemaphorePPC;
+        SemaphoreMessage->ssm_Message.mn_Node.ln_Type = 0;
+        SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        myReplyMsgPPC(PowerPCBase, (struct Message*)SemaphoreMessage);
+    }
     return;
 }
 
@@ -1828,6 +1908,36 @@ PPCFUNCTION VOID myProcurePPC(struct PrivatePPCBase* PowerPCBase, struct SignalS
 
 PPCFUNCTION VOID myVacatePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, struct SemaphoreMessage* SemaphoreMessage)
 {
+    printDebugEntry(PowerPCBase, function, (ULONG)SemaphorePPC, (ULONG)SemaphoreMessage, 0, 0);
+
+    ULONG myStore = (ULONG)&SemaphoreMessage->ssm_Message.mn_Node.ln_Type;
+    myStore = 0;
+    SemaphoreMessage->ssm_Semaphore = 0;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    struct Node* currMsg = (struct Node*)SemaphorePPC->ssppc_SS.ss_WaitQueue.mlh_Head;
+
+    while (1)
+    {
+        if (currMsg == (struct Node*)SemaphoreMessage)
+        {
+            SemaphorePPC->ssppc_SS.ss_QueueCount -= 1;
+            myRemovePPC(PowerPCBase, currMsg);
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            myReplyMsgPPC(PowerPCBase, (struct Message*)SemaphoreMessage);
+            break;
+        }
+        else
+        {
+            if(!(currMsg = currMsg->ln_Succ))
+            {
+                FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+                myReleaseSemaphorePPC(PowerPCBase, SemaphorePPC);
+                break;
+            }
+        }
+    }
     return;
 }
 
@@ -1962,7 +2072,26 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
 
 PPCFUNCTION LONG myPutPublicMsgPPC(struct PrivatePPCBase* PowerPCBase, STRPTR portname, struct Message* message)
 {
-    return 0;
+    printDebugEntry(PowerPCBase, function, (ULONG)portname, (ULONG)message, 0, 0);
+
+    LONG status = PUBMSG_SUCCESS;
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+    struct MsgPortPPC* myPort = myFindPortPPC(PowerPCBase, portname);
+
+    if (myPort)
+    {
+        myPutMsgPPC(PowerPCBase, myPort, message);
+    }
+    else
+    {
+        status = PUBMSG_NOPORT;
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
+
+    return status;
 }
 
 /********************************************************************************************
