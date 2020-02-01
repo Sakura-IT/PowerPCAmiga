@@ -683,12 +683,14 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 
 PPCFUNCTION VOID printDebugEntry(struct PrivatePPCBase* PowerPCBase, struct DebugArgs* args)
 {
-    struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
-    myFrame->mf_Identifier = ID_DBGS;
-    args->db_Process = PowerPCBase->pp_ThisPPCProc;
-    myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
-    SendMsgFramePPC(PowerPCBase, myFrame);
-
+    if (PowerPCBase->pp_DebugLevel)
+    {
+        struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+        myFrame->mf_Identifier = ID_DBGS;
+        args->db_Process = PowerPCBase->pp_ThisPPCProc;
+        myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
+        SendMsgFramePPC(PowerPCBase, myFrame);
+    }
     return;
 }
 
@@ -700,11 +702,13 @@ PPCFUNCTION VOID printDebugEntry(struct PrivatePPCBase* PowerPCBase, struct Debu
 
 PPCFUNCTION VOID printDebugExit(struct PrivatePPCBase* PowerPCBase, struct DebugArgs* args)
 {
-    struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
-    myFrame->mf_Identifier = ID_DBGE;
-    myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
-    SendMsgFramePPC(PowerPCBase, myFrame);
-
+    if (PowerPCBase->pp_DebugLevel)
+    {
+        struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+        myFrame->mf_Identifier = ID_DBGE;
+        myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
+        SendMsgFramePPC(PowerPCBase, myFrame);
+    }
     return;
 }
 
