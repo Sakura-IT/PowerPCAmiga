@@ -22,6 +22,7 @@
 #include <powerpc/portsPPC.h>
 #include <powerpc/semaphoresPPC.h>
 #include <powerpc/tasksPPC.h>
+#include <exec/types.h>
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <powerpc/portsPPC.h>
@@ -37,6 +38,13 @@ struct PPCArgs      mf_PPCArgs;
 ULONG               mf_Signals;
 ULONG               mf_Arg[3];
 };
+
+struct DebugArgs {
+struct TaskPPC*     db_Process;
+ULONG               db_Function;
+ULONG               db_Arg[4];
+};
+
 
 struct MirrorTask {
 struct MinNode      mt_Node;
