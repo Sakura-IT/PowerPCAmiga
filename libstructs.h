@@ -243,7 +243,7 @@ ULONG                       if_ExceptionVector;
 
 struct poolHeader {
 struct MinNode              ph_Node;
-ULONG                       ph_requirements;
+ULONG                       ph_Requirements;
 ULONG                       ph_PuddleSize;
 ULONG                       ph_ThresholdSize;
 struct MinList              ph_PuddleList;
@@ -251,9 +251,10 @@ struct MinList              ph_BlockList;
 };
 
 struct SemWait {
-struct Node sw_Node;
-struct TaskPPC* sw_Task;
-struct SignalSemaphorePPC* sw_Semaphore;
+struct Node                 sw_Node;
+UWORD                       sw_Pad;
+struct TaskPPC*             sw_Task;
+struct SignalSemaphorePPC*  sw_Semaphore;
 };
 
 struct TagItemPtr {

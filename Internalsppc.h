@@ -307,4 +307,6 @@ ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
 ULONG DoDataStore(struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
 ULONG FinDataStore(ULONG value, struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
 VOID SwapStack(ULONG oldspupper, ULONG newspupper);
+APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize);
+VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, APTR memoryBlock, ULONG byteSize);
 

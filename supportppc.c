@@ -590,7 +590,7 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
 
 /********************************************************************************************
 *
-*        VOID deallocatePPC(struct Library*, struct MemHeader*, APTR, ULONG)
+*        VOID DeallocatePPC(struct Library*, struct MemHeader*, APTR, ULONG)
 *
 *********************************************************************************************/
 

@@ -1885,6 +1885,35 @@ PPCFUNCTION ULONG mySetExceptPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 
 PPCFUNCTION VOID myObtainSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    struct SemWait myWait;
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    if (!(SemaphorePPC->ssppc_SS.ss_QueueCount += 1))
+    {
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+    }
+    else
+    {
+        if ((!(SemaphorePPC->ssppc_SS.ss_Owner)) || (SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask))
+        {
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+        }
+        else
+        {
+            myWait.sw_Task = (struct TaskPPC*)((ULONG)myTask | SM_SHARED);
+            myTask->tp_Task.tc_SigRecvd &= ~(SIGF_SINGLE);
+            myAddTailPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue, (struct Node*)&myWait);
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            myWaitPPC(PowerPCBase, SIGF_SINGLE);
+        }
+    }
     return;
 }
 
@@ -1896,7 +1925,30 @@ PPCFUNCTION VOID myObtainSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, 
 
 PPCFUNCTION LONG myAttemptSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
-    return 0;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    LONG result;
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    if (!(SemaphorePPC->ssppc_SS.ss_QueueCount + 1) || !(SemaphorePPC->ssppc_SS.ss_Owner) || (SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask))
+    {
+        SemaphorePPC->ssppc_SS.ss_QueueCount += 1;
+        SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+        result = ATTEMPT_SUCCESS;
+    }
+    else
+    {
+        result = ATTEMPT_FAILURE;
+    }
+
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return result;
 }
 
 /********************************************************************************************
@@ -2027,7 +2079,7 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
 			myNewListPPC(PowerPCBase, (struct List*)&myPoolHeader->ph_PuddleList);
 			myNewListPPC(PowerPCBase, (struct List*)&myPoolHeader->ph_BlockList);
 
-			myPoolHeader->ph_requirements = flags;
+			myPoolHeader->ph_Requirements = flags;
 			myPoolHeader->ph_PuddleSize = puddle_size;
 			myPoolHeader->ph_ThresholdSize = thres_size;
 
@@ -2085,7 +2137,82 @@ PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 
 PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader, ULONG size)
 {
-    return NULL;
+    struct DebugArgs args;
+    struct Node* memBlock;
+    struct MemHeader* puddle;
+    APTR mem = NULL;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    struct poolHeader* myHeader = (struct poolHeader*)poolheader;
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
+
+    if (myHeader->ph_ThresholdSize < size)
+    {
+        if (memBlock = AllocVec68K(PowerPCBase, size+32, myHeader->ph_Requirements))
+        {
+            memBlock->ln_Type = NT_MEMORY;
+            myAddHeadPPC(PowerPCBase, (struct List*)&myHeader->ph_BlockList, memBlock);
+            mem = (APTR)((ULONG)memBlock + 32);
+            (*((ULONG*)((ULONG)mem - 4))) = size + 32;
+        }
+    }
+    else
+    {
+        if (!(puddle = (struct MemHeader*)myRemHeadPPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList)))
+        {
+            if (puddle = AllocVec68K(PowerPCBase, myHeader->ph_PuddleSize + sizeof(struct MemHeader), myHeader->ph_Requirements))
+            {
+                struct MemChunk* startPuddle = (struct MemChunk*)((ULONG)puddle + sizeof(struct MemHeader));
+                puddle->mh_First = startPuddle;
+                puddle->mh_Lower = startPuddle;
+                puddle->mh_Node.ln_Type = NT_MEMORY;
+                puddle->mh_Attributes = myHeader->ph_Requirements;
+                startPuddle->mc_Next = NULL;
+                startPuddle->mc_Bytes = myHeader->ph_PuddleSize;
+                puddle->mh_Free = myHeader->ph_PuddleSize;
+                puddle->mh_Upper = (APTR)((ULONG)startPuddle + myHeader->ph_PuddleSize);
+            }
+        }
+        if (puddle)
+        {
+            if (!(mem = AllocatePPC(PowerPCBase, puddle, size + 32)))
+            {
+                myAddHeadPPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList, (struct Node*)puddle);
+
+                if (puddle = AllocVec68K(PowerPCBase, myHeader->ph_PuddleSize + sizeof(struct MemHeader), myHeader->ph_Requirements))
+                {
+                    struct MemChunk* startPuddle = (struct MemChunk*)((ULONG)puddle + sizeof(struct MemHeader));
+                    puddle->mh_First = startPuddle;
+                    puddle->mh_Lower = startPuddle;
+                    puddle->mh_Node.ln_Type = NT_MEMORY;
+                    puddle->mh_Attributes = myHeader->ph_Requirements;
+                    startPuddle->mc_Next = NULL;
+                    startPuddle->mc_Bytes = myHeader->ph_PuddleSize;
+                    puddle->mh_Free = myHeader->ph_PuddleSize;
+                    puddle->mh_Upper = (APTR)((ULONG)startPuddle + myHeader->ph_PuddleSize);
+                    mem = AllocatePPC(PowerPCBase, puddle, size + 32);
+                 }
+            }
+            if (puddle)
+            {
+                ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xff;
+                ULONG granularity = (puddle->mh_Free / divider) + 0x80;
+                puddle->mh_Node.ln_Pri = (UBYTE)granularity;
+                myEnqueuePPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList, (struct Node*)puddle);
+            }
+            if (mem)
+            {
+                (*((ULONG*)((ULONG)mem - 4))) = size + 32;
+            }
+        }
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return mem;
 }
 
 /********************************************************************************************
@@ -2096,6 +2223,61 @@ PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolh
 
 PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader, APTR ptr, ULONG size)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    ULONG realsize;
+    struct poolHeader* myHeader = poolheader;
+
+    if (!(ptr))
+    {
+        return;
+    }
+    if (!(size))
+    {
+        realsize = (*((ULONG*)((ULONG)ptr - 4)));
+        size = realsize - 32;
+    }
+
+    ULONG mem = (ULONG)ptr - 32;
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
+
+    if (myHeader->ph_PuddleSize < size)
+    {
+        struct Node* memBlock = (struct Node*)(mem);
+        myRemovePPC(PowerPCBase, memBlock);
+        FreeVec68K(PowerPCBase, (APTR)memBlock);
+    }
+    else
+    {
+        struct MemHeader* currPuddle = (struct MemHeader*)myHeader->ph_PuddleList.mlh_Head;
+        struct MemHeader* nextPuddle;
+
+        while (nextPuddle = (struct MemHeader*)currPuddle->mh_Node.ln_Succ)
+        {
+            if ((mem >= (ULONG)currPuddle->mh_Lower) && (mem < (ULONG)currPuddle->mh_Upper))
+            {
+                DeallocatePPC(PowerPCBase, currPuddle, (APTR)mem, realsize);
+
+                myRemovePPC(PowerPCBase, (struct Node*)currPuddle);
+
+                if (currPuddle->mh_Free == myHeader->ph_PuddleSize)
+                {
+                    FreeVec68K(PowerPCBase, currPuddle);
+                }
+                else
+                {
+                    ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xff;
+                    ULONG granularity = (currPuddle->mh_Free / divider) + 0x80;
+                    currPuddle->mh_Node.ln_Pri = (UBYTE)granularity;
+                    myEnqueuePPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList, (struct Node*)currPuddle);
+                }
+                break;
+            }
+            currPuddle = nextPuddle;
+        }
+    }
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
     return;
 }
 
