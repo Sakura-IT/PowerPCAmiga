@@ -1549,6 +1549,11 @@ PPCFUNCTION VOID myFreeAllMem(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID myCopyMemPPC(struct PrivatePPCBase* PowerPCBase, APTR source, APTR dest, ULONG size)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    CopyMemQuickPPC(PowerPCBase, source, dest, size);
+
     return;
 }
 
@@ -2255,7 +2260,55 @@ PPCFUNCTION VOID myResetPPC(void)
 
 PPCFUNCTION BOOL myChangeStack(struct PrivatePPCBase* PowerPCBase, ULONG NewStackSize)
 {
-    return FALSE;
+    BOOL result;
+    APTR newStack;
+    ULONG src, dst, siz, sup;
+    struct MemList* stackMem;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    if (NewStackSize < PowerPCBase->pp_ThisPPCProc->tp_StackSize)
+    {
+        return FALSE;
+    }
+
+    if (!(newStack = AllocVec68K(PowerPCBase, NewStackSize, MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC)))
+    {
+        return FALSE;
+    }
+
+    if (stackMem = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC))
+    {
+        struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+        stackMem->ml_NumEntries = 1;
+        stackMem->ml_ME[0].me_Un.meu_Addr = newStack;
+        stackMem->ml_ME[0].me_Length = NewStackSize;
+
+        myAddHeadPPC(PowerPCBase, (struct List*)&myTask->tp_Task.tc_MemEntry, (struct Node*)stackMem);
+
+        src = (ULONG)myTask->tp_Task.tc_SPLower;
+        sup = (ULONG)myTask->tp_Task.tc_SPUpper;
+        siz = sup - src;
+        dst = (ULONG)newStack + NewStackSize - siz;
+
+        myCopyMemPPC(PowerPCBase, (APTR)src, (APTR)dst, siz);
+
+        myTask->tp_Task.tc_SPLower = (APTR)dst;
+        myTask->tp_Task.tc_SPUpper = (APTR)((ULONG)newStack + NewStackSize);
+        myTask->tp_StackSize = NewStackSize;
+
+        SwapStack(sup, ((ULONG)newStack + NewStackSize));
+
+        result = TRUE;
+    }
+    else
+    {
+        FreeVec68K(PowerPCBase, stackMem);
+        result = FALSE;
+    }
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    return result;
 }
 
 /********************************************************************************************

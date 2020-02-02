@@ -240,6 +240,7 @@ struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPP
 VOID myReplyMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message);
 VOID myFreeAllMem(struct PrivatePPCBase* PowerPCBase);
 VOID myCopyMemPPC(struct PrivatePPCBase* PowerPCBase, APTR source, APTR dest, ULONG size);
+VOID CopyMemQuickPPC(struct PrivatePPCBase* PowerPCBase, APTR source, APTR dest, ULONG size);
 struct Message* myAllocXMsgPPC(struct PrivatePPCBase* PowerPCBase, ULONG length, struct MsgPortPPC* port);
 VOID myFreeXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message);
 VOID myPutXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort* port, struct Message* message);
@@ -305,4 +306,5 @@ ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
 ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
 ULONG DoDataStore(struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
 ULONG FinDataStore(ULONG value, struct iframe* iframe, ULONG SRR0, struct DataMsg* data);
+VOID SwapStack(ULONG oldspupper, ULONG newspupper);
 

@@ -556,7 +556,6 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_MirrorPort = myFrame->mf_MirrorPort;
     newTask->nt_Task.tp_Task.tc_Node.ln_Name = (APTR)&newTask->nt_Name;
     newTask->nt_Task.tp_StackSize = (ULONG)myFrame->mf_Message.mn_Node.ln_Name;
-    newTask->nt_Task.tp_StackMem = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048);
     newTask->nt_Task.tp_Task.tc_SPLower = newTask->nt_Task.tp_StackMem;
     newTask->nt_Task.tp_Task.tc_SPUpper = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048 + newTask->nt_Task.tp_StackSize);
     newTask->nt_Task.tp_Task.tc_SPReg   = (APTR)((ULONG)newTask->nt_Task.tp_Task.tc_SPUpper - 32);

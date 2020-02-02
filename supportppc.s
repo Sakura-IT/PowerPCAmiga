@@ -20,7 +20,7 @@
 
 #********************************************************************************************
 
-.global     _LockMutexPPC, _FreeMutexPPC, _GetName, _RunCPP
+.global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _RunCPP
 
 #********************************************************************************************
 
@@ -75,6 +75,7 @@ _FreeMutexPPC:
 
 _RunCPP:
         blr
+
 #********************************************************************************************
 #
 #    Getting a name for our clean-up task without the need for SDA/relocation.
@@ -91,6 +92,154 @@ _GetName:
       mflr      r3
       mtlr      r4
       blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_CopyMemQuickPPC:
+      mfctr     r8
+
+      andi.     r3,r4,7
+      bne-      .NoSAlign8
+
+      andi.     r7,r5,7
+      beq-      .Align8
+
+.NoSAlign8:	
+      andi.     r3,r4,3
+      bne-      .NoSAlign4
+
+      andi.     r7,r5,3
+      beq-      .Align4
+
+.NoSAlign4:	
+      andi.     r3,r4,1
+      bne-      .NoSAlign2
+
+      andi.     r7,r5,1
+      beq-      .Align2
+
+.NoSAlign2:	
+      mr.       r6,r6
+      beq-      .ExitCopy
+
+      mtctr     r6
+      subi      r4,r4,1
+      subi      r5,r5,1
+.LoopAl1:	
+      lbzu      r0,1(r4)
+      stbu      r0,1(r5)
+      bdnz+     .LoopAl1
+
+      b         .ExitCopy
+
+.Align2:	
+      rlwinm    r7,r6,31,1,31
+      mtctr     r7
+      subi      r4,r4,2
+      subi      r5,r5,2
+      mr.       r7,r7
+      beq-      .ExitAl2
+
+.LoopAl2:	
+      lhzu      r0,2(r4)
+      sthu      r0,2(r5)
+      bdnz+     .LoopAl2
+
+.ExitAl2:	
+      andi.     r6,r6,1
+      beq-      .ExitCopy
+
+      lbzu      r0,2(r4)
+      stbu      r0,2(r5)
+      b         .ExitCopy
+
+.Align4:
+      rlwinm    r7,r6,30,2,31
+      mtctr     r7
+      subi      r4,r4,4
+      subi      r5,r5,4
+      mr.       r7,r7
+      beq-      .SmallSize4
+
+.LoopAl4:
+      lwzu      r0,4(r4)
+      stwu      r0,4(r5)
+      bdnz+     .LoopAl4
+
+.SmallSize4:
+      andi.     r6,r6,3
+      beq-      .ExitCopy
+
+      mtctr     r6
+      addi      r4,r4,3
+      addi      r5,r5,3
+
+.SmallLoop4:	
+      lbzu      r0,1(r4)
+      stbu      r0,1(r5)
+      bdnz+     .SmallLoop4
+
+      b         .ExitCopy
+
+.Align8:	
+      rlwinm    r7,r6,29,3,31
+      mtctr     r7
+      subi      r4,r4,8
+      subi      r5,r5,8
+      mr.       r7,r7
+      beq-      .SmallSize8
+
+.LoopAl8:	
+      lfdu      f0,8(r4)
+      stfdu     f0,8(r5)
+      bdnz+     .LoopAl8
+
+.SmallSize8:
+      andi.     r6,r6,7
+      beq-      .ExitCopy
+
+      mtctr     r6
+      addi      r4,r4,7
+      addi      r5,r5,7
+
+.SmallLoop8:	
+      lbzu      r0,1(r4)
+      stbu      r0,1(r5)
+      bdnz+     .SmallLoop8
+
+.ExitCopy:	
+      mtctr     r8
+      blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_SwapStack:
+
+        sub     r5,r3,r1
+        sub     r1,r4,r5
+        sub     r4,r4,r3
+        mr      r6,r1
+
+.StckPntrLoop:
+        lwz     r3,0(r6)
+        mr.     r3,r3
+        beq-    .DoneSwap
+
+        add     r3,r3,r4
+        stw     r3,0(r6)
+        mr      r6,r3
+        b      .StckPntrLoop
+
+.DoneSwap:
+        blr
 
 #********************************************************************************************
 
