@@ -156,7 +156,63 @@ PPCFUNCTION VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstri
 
 PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags, ULONG align)
 {
-    return NULL;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    APTR mem = 0;
+
+    flags = (flags & ~MEMF_CHIP) | MEMF_PPC;
+
+    struct poolHeader* currPool = (struct poolHeader*)PowerPCBase->pp_ThisPPCProc->tp_TaskPools.lh_Head;
+    struct poolHeader* nextPool;
+
+    while (nextPool = (struct poolHeader*)currPool->ph_Node.mln_Succ)
+    {
+        if ((currPool->ph_ThresholdSize == 0x80000) && (currPool->ph_Requirements == flags))
+        {
+            break;
+        }
+        currPool = nextPool;
+    }
+
+    if (!(align) || (align & 0x1f))
+    {
+        align = 32;
+    }
+    else
+    {
+        ULONG zeros = getLeadZ(align - 1);
+        zeros = 32 - zeros;
+        align = 1 << zeros;
+    }
+    if (!(currPool))
+    {
+        currPool = myCreatePoolPPC(PowerPCBase, flags, 0x100000, 0x80000);
+    }
+    if (currPool)
+    {
+        mem = myAllocPooledPPC(PowerPCBase, currPool, size + align +32);
+    }
+    if (mem)
+    {
+        ULONG origmem = (ULONG)mem;
+        mem = (APTR)(((ULONG)mem + 31 + align) & ~align);
+        if (flags & MEMF_CLEAR)
+        {
+            UBYTE* buffer = mem;
+            for (int i=0; i < size; i++)
+            {
+                buffer[i] = 0;
+            }
+        }
+        ULONG* values = mem;
+        values[-1] = size;
+        values[-2] = (ULONG)currPool;
+        values[-3] = origmem;
+    }
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return mem;
 }
 
 /********************************************************************************************
@@ -172,7 +228,7 @@ PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 
 	if (memblock)
 	{
-		ULONG* myMemblock = (ULONG*)memblock;
+		ULONG* myMemblock = memblock;
 		myFreePooledPPC(PowerPCBase, (APTR)myMemblock[-2], (APTR)myMemblock[-3], myMemblock[-1]);
 	}
 
@@ -1187,7 +1243,105 @@ PPCFUNCTION VOID myUser(struct PrivatePPCBase* PowerPCBase, ULONG key)
 
 PPCFUNCTION ULONG mySetHardware(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR param)
 {
-    return 0;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    ULONG status = HW_AVAILABLE;
+
+    if (flags == HW_TRACEON) //case will result in a need for SDA_BASE
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setMSR(getMSR() | PSL_SE);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_TRACEOFF)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setMSR(getMSR() & ~PSL_SE);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_BRANCHTRACEON)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setMSR(getMSR() | PSL_BE);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_BRANCHTRACEOFF)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setMSR(getMSR() & ~PSL_SE);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_FPEXCON)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        SetFPExc();
+        setMSR(getMSR() | PSL_FE0 | PSL_FE1);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_FPEXCOFF)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setMSR(getMSR() & ~(PSL_FE0 | PSL_FE1));
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_SETIBREAK)
+    {
+        ULONG address = (ULONG)param;
+        address = (address & -4) | 3;
+        ULONG key = mySuper(PowerPCBase);
+        setIABR(address);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_CLEARIBREAK)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setIABR(0);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_SETDBREAK)
+    {
+        ULONG address = (ULONG)param;
+        address = (address & -8) | 7;
+        ULONG key = mySuper(PowerPCBase);
+        setDABR(address);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_CLEARDBREAK)
+    {
+        ULONG key = mySuper(PowerPCBase);
+        setDABR(0);
+        myUser(PowerPCBase, key);
+    }
+    else if (flags == HW_CPUTYPE) //private
+    {
+        status = PowerPCBase->pp_CPUInfo;
+    }
+    else if (flags == HW_SETDEBUGMODE) //private
+    {
+        ULONG level = (ULONG)param;
+        PowerPCBase->pp_DebugLevel = level;
+    }
+    else if (flags == HW_PPCSTATE) //private
+    {
+        status = PPCSTATEF_POWERSAVE;
+        if (PowerPCBase->pp_WaitingTasks.mlh_Head->mln_Succ)
+        {
+            status = PPCSTATEF_APPACTIVE;
+        }
+        if (PowerPCBase->pp_ReadyTasks.mlh_Head->mln_Succ)
+        {
+            status = PPCSTATEF_APPACTIVE;
+        }
+    }
+    else
+    {
+        status = HW_NOTAVAILABLE;
+    }
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return status;
 }
 
 /********************************************************************************************
@@ -1266,6 +1420,28 @@ PPCFUNCTION VOID myClearExcMMU(struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION VOID myChangeMMU(struct PrivatePPCBase* PowerPCBase, ULONG mode)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return; //stub
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    switch (mode)
+    {
+        case CHMMU_STANDARD:
+        {
+            myTask->tp_Flags &= ~MMUF_BAT;
+            GetBATs(PowerPCBase);
+            break;
+        }
+        case CHMMU_BAT:
+        {
+            myTask->tp_Flags |= MMUF_BAT;
+            StoreBATs(PowerPCBase);
+            break;
+        }
+    }
     return;
 }
 
@@ -1277,6 +1453,9 @@ PPCFUNCTION VOID myChangeMMU(struct PrivatePPCBase* PowerPCBase, ULONG mode)
 
 PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     return;
 }
 
@@ -1717,6 +1896,27 @@ PPCFUNCTION VOID myEndSnoopTask(struct PrivatePPCBase* PowerPCBase, ULONG id)
 
 PPCFUNCTION VOID myGetHALInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    struct TagItem* myTagItem;
+
+    if (myTagItem = myFindTagItemPPC(PowerPCBase,HINFO_ALEXC_HIGH, taglist))
+    {
+        myTagItem->ti_Data = PowerPCBase->pp_AlignmentExcHigh;
+    }
+    if (myTagItem = myFindTagItemPPC(PowerPCBase,HINFO_ALEXC_LOW, taglist))
+    {
+        myTagItem->ti_Data = PowerPCBase->pp_AlignmentExcLow;
+    }
+    if (myTagItem = myFindTagItemPPC(PowerPCBase,HINFO_DSEXC_HIGH, taglist))
+    {
+        myTagItem->ti_Data = PowerPCBase->pp_DataExcHigh;
+    }
+    if (myTagItem = myFindTagItemPPC(PowerPCBase,HINFO_DSEXC_LOW, taglist))
+    {
+        myTagItem->ti_Data = PowerPCBase->pp_DataExcLow;
+    }
     return;
 }
 

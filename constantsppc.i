@@ -79,6 +79,8 @@
 .set ICMP,                      981
 .set RPA,                       982
 
+.set HID0_ICFI,                 0x00000800
+
 .set PTE_GUARDED,               0x00000001
 .set PTE_REFERENCED,            0x00000100
 .set PTE_CHANGED,               0x00000080

@@ -54,6 +54,8 @@ ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
 ULONG getPVR(void)                        = "\tmfpvr\tr3\n";
 ULONG getSDR1(void)                       = "\tmfsdr1\tr3\n";
 void  setSDR1(ULONG value)                = "\tmtsdr1\tr3\n";
+void  setIABR(ULONG value)                = "\tmtspr\t1010,r3\n";
+void  setDABR(ULONG value)                = "\tmtspr\t1013,r3\n";
 void  setSRR0(ULONG value)                = "\tmtsrr0\tr3\n";
 void  setSRR1(ULONG value)                = "\tmtsrr1\tr3\n";
 void  setSRIn(ULONG keyVal, ULONG segVal) = "\tmtsrin\tr3,r4\n";
@@ -75,6 +77,7 @@ ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
+ULONG StateL2(void)                       = "\tmfl2cr\tr3\n";
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";
@@ -309,4 +312,5 @@ ULONG FinDataStore(ULONG value, struct iframe* iframe, ULONG SRR0, struct DataMs
 VOID SwapStack(ULONG oldspupper, ULONG newspupper);
 APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize);
 VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, APTR memoryBlock, ULONG byteSize);
+VOID SetFPExc(VOID);
 

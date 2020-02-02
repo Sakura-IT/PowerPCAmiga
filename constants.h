@@ -108,9 +108,12 @@
 #define HW_SETDEBUGMODE         12          //Private
 #define HW_PPCSTATE             13          //Private
 
+#define HINFO_DSEXC_HIGH        0x80103002
+#define HINFO_DSEXC_LOW         0x80103003
 #define ID_MPC834X              0x8083
 
 #define MEMF_PPC                (1L<<13)
+#define MMUF_BAT                (1L<<1)
 #define MEM_GAP                 0x480000
 #define TF_PPC                  1<<2
 #define VENDOR_ELBOX            0x89e
