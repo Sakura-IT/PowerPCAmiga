@@ -51,6 +51,9 @@
 .set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
 .set IF_SIZE,                   IF_EXCEPTIONVECTOR+4
 
+.set WAITTIME_UPPER,            14                #Align with struct WaitTime in libstructs.h
+.set WAITTIME_LOWER,            18
+
 .set GPR0,                      0*4
 .set GPR1,                      1*4
 .set GPR2,                      2*4

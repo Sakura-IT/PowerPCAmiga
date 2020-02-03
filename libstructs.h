@@ -266,7 +266,7 @@ struct Node                 ed_Node;
 APTR                        ed_Code;
 ULONG                       ed_Data;
 struct TaskPPC*             ed_Task;
-ULONG                       ed_Flags;
+volatile ULONG              ed_Flags;
 ULONG                       ed_ExcID;
 ULONG                       ed_RemovalTime;
 ULONG                       ed_TimeBaseUpper;
@@ -301,8 +301,8 @@ ULONG                       dm_LoadFlag;
 
 struct WaitTime {
 struct Node                 wt_Node;
-ULONG                       wt_TimeBaseUpper;
-ULONG                       wt_TimeBaseLower;
+ULONG                       wt_TimeUpper;
+ULONG                       wt_TimeLower;
 struct TaskPPC*             wt_Task;
 };
 

@@ -18,10 +18,12 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
+.include    constantsppc.i
+
 #********************************************************************************************
 
 .global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
-.global     _RunCPP
+.global     _TimeCalc, _FinalCalc, _RunCPP
 
 #********************************************************************************************
 
@@ -259,5 +261,90 @@ _SetFPExc:
         blr
 
 #********************************************************************************************
+#
+#
+#
+#********************************************************************************************
 
+_TimeCalc:
+        mflr    r7
+        mr      r8,r5
+        mr      r5,r4
+		mr      r6,r3
+		mulhw	r3,r5,r6
+		mullw	r4,r5,r6
+
+        mr      r5,r8
+
+		bl      .Calculator
+
+        mtlr    r7
+		blr
+
+.Calculator:	
+        li      r9,32
+        mtctr   r9
+        li      r6,0
+        mr.     r3,r3
+
+.DoCalcLoop:	
+        bge-    .XNotNeg
+
+        addc    r4,r4,r4
+        adde    r3,r3,r3
+        add     r6,r6,r6
+        b       .XWasNeg
+
+.XNotNeg:	
+        addc    r4,r4,r4
+        adde    r3,r3,r3
+        add     r6,r6,r6
+        cmplw   r5,r3
+        bgt-    .SkipNext
+
+.XWasNeg:	
+        sub.    r3,r3,r5
+        addi    r6,r6,1
+.SkipNext:	
+        bdnz+   .DoCalcLoop
+
+        mr	r3,r6
+
+		blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_FinalCalc:
+        mr      r8,r6
+        mr      r6,r4
+        mr      r7,r5
+.TimeLoop:	
+        mftbu   r4
+        mftbl   r5
+        mftbu   r0
+        cmplw   r0,r4
+        bne+    .TimeLoop
+
+        mtctr   r3
+        mr.     r3,r3
+        beq-    .TimeCalced
+
+.CalcLoop:	
+        addc    r5,r5,r6
+        addze   r4,r4
+        bdnz+   .CalcLoop
+
+.TimeCalced:
+        addc    r5,r5,r7
+        addze   r4,r4
+
+        stw     r4,WAITTIME_UPPER(r8)
+        stw     r5,WAITTIME_LOWER(r8)
+        blr
+
+#********************************************************************************************
 

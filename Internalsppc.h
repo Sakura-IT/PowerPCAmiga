@@ -313,4 +313,6 @@ VOID SwapStack(ULONG oldspupper, ULONG newspupper);
 APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize);
 VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, APTR memoryBlock, ULONG byteSize);
 VOID SetFPExc(VOID);
+ULONG TimeCalc(ULONG value1, ULONG value2, ULONG value3);
+VOID FinalCalc(ULONG value1, ULONG value2, ULONG value3, struct WaitTime* myWait);
 

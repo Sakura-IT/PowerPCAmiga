@@ -1196,6 +1196,77 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
 
 PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    if (!(xlock))
+    {
+        return;
+    }
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    myAddHeadPPC(PowerPCBase,(struct List*)&PowerPCBase->pp_RemovedExc, (struct Node*)xlock);
+
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    CauseDECInterrupt(PowerPCBase);
+
+    struct ExcInfo* myInfo = xlock;
+
+    while (myInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE);
+
+    APTR myData;
+
+    if (myData = myInfo->ei_MachineCheck)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_DataAccess)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_InstructionAccess)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Alignment)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Program)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_FPUnavailable)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Decrementer)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_SystemCall)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Trace)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_PerfMon)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_IABR)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Interrupt)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    FreeVec68K(PowerPCBase, xlock);
+
     return;
 }
 
@@ -1361,9 +1432,60 @@ PPCFUNCTION VOID myModifyFPExc(struct PrivatePPCBase* PowerPCBase, ULONG fpflags
 *
 *********************************************************************************************/
 
+
+
+
 PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG time)
 {
-    return 0;
+    struct WaitTime myWait;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemWaitList);
+
+    PowerPCBase->pp_FlagWait = -1;
+
+    ULONG value2 = 60000000;
+    ULONG value1 = TimeCalc(value2, PowerPCBase->pp_BusClock, 4000000); //Magic
+
+    ULONG value3 = time / value2;
+    value2 = value3 * value2;
+    value2 = time - value2;
+
+    value2 = TimeCalc(value2, PowerPCBase->pp_BusClock, 4000000);  //Magic
+
+    FinalCalc(value3, value1, value2, (struct WaitTime*)&myWait);  //Magic
+
+    myWait.wt_Task = PowerPCBase->pp_ThisPPCProc;
+    myWait.wt_Node.ln_Pri = 0;
+    myWait.wt_Node.ln_Type = NT_UNKNOWN;
+    myWait.wt_Node.ln_Name = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
+
+    myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_WaitTime, (struct Node*)&myWait);
+
+    PowerPCBase->pp_FlagWait = 0;
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemWaitList);
+
+    ULONG recvdsig = myWaitPPC(PowerPCBase, signals | SIGF_WAIT);
+
+    PowerPCBase->pp_FlagWait = -1;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    myRemovePPC(PowerPCBase, (struct Node*)&myWait); //different in asm source
+
+    PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigRecvd &= ~SIGF_WAIT; //also different
+
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    PowerPCBase->pp_FlagWait = 0;
+
+    recvdsig &= ~SIGF_WAIT;
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return recvdsig;
 }
 
 /********************************************************************************************
