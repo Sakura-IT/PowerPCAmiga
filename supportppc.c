@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma pack(push,2)
 #include <exec/exec.h>
 #include <powerpc/tasksPPC.h>
 #include <powerpc/powerpc.h>
@@ -25,6 +26,7 @@
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
+#pragma pack(pop)
 
 /********************************************************************************************
 *

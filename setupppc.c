@@ -18,12 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma pack(push,2)
 #include <exec/types.h>
 #include <proto/powerpc.h>
 #include <powerpc/semaphoresPPC.h>
 #include "libstructs.h"
 #include "constants.h"
 #include "internalsppc.h"
+#pragma pack(pop)
 
 /********************************************************************************************
 *
