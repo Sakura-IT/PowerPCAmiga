@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma pack(push, 2)
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <powerpc/powerpc.h>
@@ -29,7 +28,6 @@
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
-#pragma pack(pop)
 
 
 /********************************************************************************************
@@ -1475,9 +1473,14 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
-    myRemovePPC(PowerPCBase, (struct Node*)&myWait); //different in asm source
-
-    PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigRecvd &= ~SIGF_WAIT; //also different
+    if (!((PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigRecvd | recvdsig) & SIGF_WAIT))
+    {
+        myRemovePPC(PowerPCBase, (struct Node*)&myWait);
+    }
+    else
+    {
+        PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigRecvd &= ~SIGF_WAIT;
+    }
 
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
