@@ -27,6 +27,11 @@
 #define NEGSIZE                 TOTAL_FUNCS*6
 #define MSGLEN                  192
 
+#define CMP_DESTGREATER         -1
+#define CMP_DESTLESS            1
+#define CMP_EQUAL               0
+
+
 #define OPCODE_NOP              0x60000000
 #define OPCODE_BRANCH           0x4C000000  //only for backward jump
 

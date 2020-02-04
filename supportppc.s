@@ -23,7 +23,7 @@
 #********************************************************************************************
 
 .global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
-.global     _TimeCalc, _FinalCalc, _RunCPP
+.global     _FinalCalc, _Calculator, _RunCPP
 
 #********************************************************************************************
 
@@ -266,22 +266,7 @@ _SetFPExc:
 #
 #********************************************************************************************
 
-_TimeCalc:
-        mflr    r7
-        mr      r8,r5
-        mr      r5,r4
-		mr      r6,r3
-		mulhw	r3,r5,r6
-		mullw	r4,r5,r6
-
-        mr      r5,r8
-
-		bl      .Calculator
-
-        mtlr    r7
-		blr
-
-.Calculator:	
+_Calculator:
         li      r9,32
         mtctr   r9
         li      r6,0
@@ -319,16 +304,7 @@ _TimeCalc:
 #********************************************************************************************
 
 _FinalCalc:
-        mr      r8,r6
-        mr      r6,r4
-        mr      r7,r5
-.TimeLoop:	
-        mftbu   r4
-        mftbl   r5
-        mftbu   r0
-        cmplw   r0,r4
-        bne+    .TimeLoop
-
+        mfctr   r9
         mtctr   r3
         mr.     r3,r3
         beq-    .TimeCalced
@@ -344,6 +320,7 @@ _FinalCalc:
 
         stw     r4,WAITTIME_UPPER(r8)
         stw     r5,WAITTIME_LOWER(r8)
+        mfctr   r9
         blr
 
 #********************************************************************************************

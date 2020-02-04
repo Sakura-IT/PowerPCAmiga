@@ -306,6 +306,11 @@ ULONG                       wt_TimeLower;
 struct TaskPPC*             wt_Task;
 };
 
+struct UInt64 {
+ULONG                       ui_High;
+ULONG                       ui_Low;
+};
+
 struct NewTask {
 struct TaskPPC              nt_Task;
 struct Message*             nt_StartMsg;

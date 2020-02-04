@@ -93,6 +93,11 @@ void setBAT3(ULONG ibatl, ULONG ibatu, ULONG dbatl, ULONG dbatu)
 
 void mSync(void)                          = "\tsync\n\tisync\n";
 
+void mulInt64(struct UInt64* myint64, ULONG value1, ULONG value2)
+        ="\tmullw\tr6,r4,r5\n\
+          \tstw\tr6,4(r3)\n\
+          \tmulhw\tr6,r4,r5\n\
+          \tstw\tr6,0(r3)\n";
 
 void mvfrBAT0(struct BATArray*)
         ="\tmfibatu\tr4,0\n\
@@ -313,6 +318,6 @@ VOID SwapStack(ULONG oldspupper, ULONG newspupper);
 APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize);
 VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, APTR memoryBlock, ULONG byteSize);
 VOID SetFPExc(VOID);
-ULONG TimeCalc(ULONG value1, ULONG value2, ULONG value3);
-VOID FinalCalc(ULONG value1, ULONG value2, ULONG value3, struct WaitTime* myWait);
+VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, struct WaitTime* myWait);
+ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
 

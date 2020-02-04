@@ -1432,12 +1432,11 @@ PPCFUNCTION VOID myModifyFPExc(struct PrivatePPCBase* PowerPCBase, ULONG fpflags
 *
 *********************************************************************************************/
 
-
-
-
 PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG time)
 {
+    struct UInt64 myInt64;
     struct WaitTime myWait;
+    ULONG value1, value2, counter, tbu, tbl, recvdsig;
     struct DebugArgs args;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
@@ -1445,16 +1444,29 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 
     PowerPCBase->pp_FlagWait = -1;
 
-    ULONG value2 = 60000000;
-    ULONG value1 = TimeCalc(value2, PowerPCBase->pp_BusClock, 4000000); //Magic
+    value2 = 60000000;
 
-    ULONG value3 = time / value2;
-    value2 = value3 * value2;
+    mulInt64((struct UInt64*)&myInt64, PowerPCBase->pp_BusClock, value2);
+    value1 = Calculator(myInt64.ui_High, myInt64.ui_Low, 4000000);            //Magic
+
+    counter = time / value2;
+    value2 = counter * value2;
     value2 = time - value2;
 
-    value2 = TimeCalc(value2, PowerPCBase->pp_BusClock, 4000000);  //Magic
+    mulInt64((struct UInt64*)&myInt64, PowerPCBase->pp_BusClock, value2);
+    value2 = Calculator(myInt64.ui_High, myInt64.ui_Low, 4000000);            //Magic
 
-    FinalCalc(value3, value1, value2, (struct WaitTime*)&myWait);  //Magic
+    while (1)
+    {
+        tbu = getTBU();
+        tbl = getTBL();
+        if (tbu == getTBU())
+        {
+            break;
+        }
+    }
+
+    FinalCalc(counter, tbu, tbl, value1, value2, (struct WaitTime*)&myWait);  //Magic
 
     myWait.wt_Task = PowerPCBase->pp_ThisPPCProc;
     myWait.wt_Node.ln_Pri = 0;
@@ -1467,7 +1479,7 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemWaitList);
 
-    ULONG recvdsig = myWaitPPC(PowerPCBase, signals | SIGF_WAIT);
+    recvdsig = myWaitPPC(PowerPCBase, signals | SIGF_WAIT);
 
     PowerPCBase->pp_FlagWait = -1;
 
@@ -1936,8 +1948,36 @@ PPCFUNCTION VOID myPutXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID myGetSysTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* timeval)
+PPCFUNCTION VOID  myGetSysTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* timeval)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    struct UInt64 myInt64;
+    ULONG tbu, tbl, secs, micros, temp;
+
+    while (1)
+    {
+        tbu = getTBU();
+        tbl = getTBL();
+        if (tbu == getTBU())
+        {
+            break;
+        }
+    }
+    ULONG busClockMod = PowerPCBase->pp_BusClock >> 2;
+
+    secs = Calculator(tbu, tbl, busClockMod);
+    timeval->tv_secs = secs;
+
+    temp = secs * busClockMod;
+    temp = tbl - temp;
+
+    mulInt64((struct UInt64*)&myInt64, 1000000, temp);
+
+    micros = Calculator(myInt64.ui_High, myInt64.ui_Low, busClockMod);
+
+    timeval->tv_micro = micros;
+
     return;
 }
 
@@ -1949,6 +1989,16 @@ PPCFUNCTION VOID myGetSysTimePPC(struct PrivatePPCBase* PowerPCBase, struct time
 
 PPCFUNCTION VOID myAddTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* dest, struct timeval* source)
 {
+    ULONG timeSecs = 0;
+    LONG timeMicro = dest->tv_micro + source->tv_micro;
+    if (1000000 < timeMicro)
+    {
+        timeSecs = 1;
+        timeMicro -= 1000000;
+    }
+    dest->tv_secs = dest->tv_secs + source->tv_secs + timeSecs;
+    dest->tv_micro = timeMicro;
+
     return;
 }
 
@@ -1960,6 +2010,16 @@ PPCFUNCTION VOID myAddTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
 
 PPCFUNCTION VOID mySubTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* dest, struct timeval* source)
 {
+    ULONG timeSecs = 0;
+    LONG timeMicro = dest->tv_micro + source->tv_micro;
+    if (timeMicro < 0)
+    {
+        timeSecs = 1;
+        timeMicro += 1000000;
+    }
+    dest->tv_secs = dest->tv_secs - source->tv_secs - timeSecs;
+    dest->tv_micro = timeMicro;
+
     return;
 }
 
@@ -1971,7 +2031,29 @@ PPCFUNCTION VOID mySubTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
 
 PPCFUNCTION LONG myCmpTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* dest, struct timeval* source)
 {
-    return 0;
+    if (dest->tv_secs < source->tv_secs)
+    {
+        return CMP_DESTLESS;
+    }
+    else if (dest->tv_secs > source->tv_secs)
+    {
+        return CMP_DESTGREATER;
+    }
+    else
+    {
+        if (dest->tv_micro < source->tv_micro)
+        {
+            return CMP_DESTLESS;
+        }
+        else if (dest->tv_micro < source->tv_micro)
+        {
+            return CMP_DESTGREATER;
+        }
+        else
+        {
+            return CMP_EQUAL;
+        }
+    }
 }
 
 /********************************************************************************************
