@@ -1991,7 +1991,7 @@ PPCFUNCTION VOID myAddTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
 {
     ULONG timeSecs = 0;
     LONG timeMicro = dest->tv_micro + source->tv_micro;
-    if (1000000 < timeMicro)
+    if (1000000 <= timeMicro)
     {
         timeSecs = 1;
         timeMicro -= 1000000;
@@ -2045,7 +2045,7 @@ PPCFUNCTION LONG myCmpTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
         {
             return CMP_DESTLESS;
         }
-        else if (dest->tv_micro < source->tv_micro)
+        else if (dest->tv_micro > source->tv_micro)
         {
             return CMP_DESTGREATER;
         }
