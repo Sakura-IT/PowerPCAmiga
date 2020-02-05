@@ -31,6 +31,8 @@
 #define CMP_DESTLESS            1
 #define CMP_EQUAL               0
 
+#define EXCATTR_TIMEDREMOVAL    0x80101007
+#define EXCF_DECREMENTER  		1<<9
 
 #define OPCODE_NOP              0x60000000
 #define OPCODE_BRANCH           0x4C000000  //only for backward jump

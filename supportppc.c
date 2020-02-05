@@ -862,6 +862,84 @@ PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
+PPCFUNCTION VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* myInfo)
+{
+    APTR myData;
+
+    if (myData = myInfo->ei_MachineCheck)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_DataAccess)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_InstructionAccess)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Alignment)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Program)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_FPUnavailable)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Decrementer)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_SystemCall)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Trace)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_PerfMon)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_IABR)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    if (myData = myInfo->ei_Interrupt)
+    {
+        FreeVec68K(PowerPCBase,myData);
+    }
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag)
+{
+    myCopyMemPPC(PowerPCBase, (APTR)&excInfo, (APTR)newData, sizeof(struct ExcData));
+    currExc = (struct Node*)newData;
+    newData->ed_ExcID = flag;
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+    myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyExc, (struct Node*)newData);
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
     // go asm start

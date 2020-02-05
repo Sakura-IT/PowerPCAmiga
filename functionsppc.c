@@ -1185,7 +1185,195 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
 
 PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
-    return NULL;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    struct ExcInfo* excInfo;
+    ULONG value;
+    APTR excdata;
+
+    if (!(excInfo = AllocVec68K(PowerPCBase, sizeof(struct ExcInfo), MEMF_PUBLIC | MEMF_CLEAR)))
+    {
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }
+
+    if (!(value = myGetTagDataPPC(PowerPCBase, EXCATTR_CODE, 0, taglist)))
+    {
+        FreeVec68K(PowerPCBase, excInfo);
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }
+    excInfo->ei_ExcData.ed_Code = (APTR)value;
+    value = myGetTagDataPPC(PowerPCBase, EXCATTR_FLAGS, 0, taglist);
+    if (!(value & (EXCF_SMALLCONTEXT | EXCF_LARGECONTEXT)))
+    {
+        FreeVec68K(PowerPCBase, excInfo);
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }           
+    if (!(value & (EXCF_GLOBAL | EXCF_LOCAL)))
+    {
+        FreeVec68K(PowerPCBase, excInfo);
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }
+    if (value & EXCF_GLOBAL)
+    {
+        excInfo->ei_ExcData.ed_Task = (struct TaskPPC*)myGetTagDataPPC(PowerPCBase, EXCATTR_TASK, 0, taglist);
+    }
+    else
+    {
+        excInfo->ei_ExcData.ed_Task = PowerPCBase->pp_ThisPPCProc;
+    }
+    excInfo->ei_ExcData.ed_Flags = value;
+    excInfo->ei_ExcData.ed_Data = myGetTagDataPPC(PowerPCBase, EXCATTR_DATA, 0, taglist);
+    excInfo->ei_ExcData.ed_Node.ln_Name = (APTR)myGetTagDataPPC(PowerPCBase, EXCATTR_NAME, 0, taglist);
+    excInfo->ei_ExcData.ed_Node.ln_Pri = (BYTE)myGetTagDataPPC(PowerPCBase, EXCATTR_PRI, 0, taglist);
+    excInfo->ei_ExcData.ed_Node.ln_Type = NT_INTERRUPT;
+    excInfo->ei_ExcData.ed_RemovalTime = myGetTagDataPPC(PowerPCBase, EXCATTR_TIMEDREMOVAL, 0, taglist);
+    value = myGetTagDataPPC(PowerPCBase, EXCATTR_EXCID, 0, taglist);
+    excInfo->ei_ExcData.ed_ExcID = value;
+
+    if (!(value))
+    {
+        FreeVec68K(PowerPCBase, excInfo);
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }
+
+    ULONG flag = 0;
+
+    while (1)
+    {
+        struct ExcData* newData;
+
+        if (value & EXCF_MCHECK)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_MachineCheck, EXCF_MCHECK);
+        }
+        if (value & EXCF_DACCESS)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_DataAccess, EXCF_DACCESS);
+        }
+        if (value & EXCF_IACCESS)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_InstructionAccess, EXCF_IACCESS);
+        }
+        if (value & EXCF_INTERRUPT)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Interrupt, EXCF_INTERRUPT);
+        }
+        if (value & EXCF_ALIGN)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Alignment, EXCF_ALIGN);
+        }
+        if (value & EXCF_PROGRAM)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Program, EXCF_PROGRAM);
+        }
+        if (value & EXCF_FPUN)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_FPUnavailable, EXCF_FPUN);
+        }
+        if (value & EXCF_DECREMENTER)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Decrementer, EXCF_DECREMENTER);
+        }
+        if (value & EXCF_SC)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_SystemCall, EXCF_SC);
+        }
+        if (value & EXCF_TRACE)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Trace, EXCF_TRACE);
+        }
+        if (value & EXCF_PERFMON)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_PerfMon, EXCF_PERFMON);
+        }
+        if (value & EXCF_IABR)
+        {
+            if (!(newData = AllocVec68K(PowerPCBase, sizeof(struct ExcData), MEMF_PUBLIC)))
+            {
+                flag = 1;
+                break;
+            }
+            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_IABR, EXCF_IABR);
+        }
+        break;
+    }
+
+    if (flag)
+    {
+        FreeAllExcMem(PowerPCBase, excInfo);
+        FreeVec68K(PowerPCBase, excInfo);
+        printDebug(PowerPCBase, (struct DebugArgs*)&args);
+        return NULL;
+    }
+
+    CauseDECInterrupt(PowerPCBase);
+
+    while (!(excInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE));
+
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    return excInfo;
 }
 
 /********************************************************************************************
@@ -1215,56 +1403,8 @@ PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
 
     while (myInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE);
 
-    APTR myData;
+    FreeAllExcMem(PowerPCBase, myInfo);
 
-    if (myData = myInfo->ei_MachineCheck)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_DataAccess)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_InstructionAccess)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_Alignment)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_Program)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_FPUnavailable)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_Decrementer)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_SystemCall)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_Trace)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_PerfMon)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_IABR)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
-    if (myData = myInfo->ei_Interrupt)
-    {
-        FreeVec68K(PowerPCBase,myData);
-    }
     FreeVec68K(PowerPCBase, xlock);
 
     return;

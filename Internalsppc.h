@@ -320,4 +320,6 @@ VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHead
 VOID SetFPExc(VOID);
 VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, struct WaitTime* myWait);
 ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
+VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
+VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag);
 
