@@ -256,6 +256,79 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
 PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* PPCtask)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    ULONG ownFlag = 0;
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+    if ((!(PPCtask)) || (PPCtask == myTask))
+    {
+        ownFlag = 1;
+        PPCtask = myTask;
+    }
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    struct SnoopData* currSnoop = (struct SnoopData*)PowerPCBase->pp_Snoop.mlh_Head;
+    struct SnoopData* nextSnoop;
+
+    while (nextSnoop = (struct SnoopData*)currSnoop->sd_Node.ln_Succ)
+    {
+        if (currSnoop->sd_Type == SNOOP_EXIT)
+        {
+            ULONG tempR2 = getR2();
+            ULONG (*runSnoop)(__reg("r2") ULONG, __reg("r3") struct TaskPPC*) = currSnoop->sd_Code;
+            runSnoop(currSnoop->sd_Data, PPCtask);
+            storeR2(tempR2);
+        }
+        currSnoop = nextSnoop;
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    if (PPCtask->tp_Msgport)
+    {
+        FreeVec68K(PowerPCBase, PPCtask->tp_Msgport->mp_Semaphore.ssppc_reserved);
+        FreeVec68K(PowerPCBase, PPCtask->tp_Msgport);
+    }
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+
+    if (PPCtask->tp_TaskPtr)
+    {
+        myRemovePPC(PowerPCBase, (struct Node*)PPCtask->tp_TaskPtr);
+    }
+
+    PowerPCBase->pp_NumAllTasks -= 1;
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+
+    struct MsgPort* mirrorPort;
+    struct NewTask* PPCNewtask = (struct NewTask*)PPCtask;
+
+    if (mirrorPort = PPCNewtask->nt_MirrorPort)
+    {
+        struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
+        myFrame->mf_Identifier = ID_END;
+        myFrame->mf_MirrorPort = mirrorPort;
+        SendMsgFramePPC(PowerPCBase, myFrame);
+    }
+
+    if (ownFlag)
+    {
+        PPCtask->tp_Task.tc_State = TS_REMOVED;
+        PowerPCBase->pp_FlagReschedule = -1;
+        CauseDECInterrupt(PowerPCBase);
+        while(1);  //Warning 208
+    }
+    else
+    {
+        while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+        myRemovePPC(PowerPCBase, (struct Node*)PPCtask);
+        myAddTailPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_RemovedTasks, (struct Node*)PPCtask);
+        PPCtask->tp_Task.tc_State = TS_REMOVED;
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+    }
     return;
 }
 
@@ -2223,6 +2296,43 @@ PPCFUNCTION struct MsgPortPPC* mySetReplyPortPPC(struct PrivatePPCBase* PowerPCB
 
 PPCFUNCTION ULONG mySnoopTask(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    ULONG value;
+
+    struct SnoopData* mySnoop = AllocVec68K(PowerPCBase, sizeof(struct SnoopData), MEMF_PUBLIC | MEMF_CLEAR);
+
+    if (mySnoop)
+    {
+        if (value = myGetTagDataPPC(PowerPCBase, SNOOP_CODE, 0, taglist))
+        {
+            mySnoop->sd_Code = (APTR)value;
+            mySnoop->sd_Data = myGetTagDataPPC(PowerPCBase, SNOOP_DATA, 0, taglist);
+            if(!(mySnoop->sd_Type = myGetTagDataPPC(PowerPCBase, SNOOP_TYPE, 0, taglist)))
+            {
+                FreeVec68K(PowerPCBase, mySnoop);
+                printDebug(PowerPCBase, (struct DebugArgs*)&args);
+                return 0;
+            }
+            myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+            myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Snoop, (struct Node*)mySnoop);
+
+            myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+            printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+            return (ULONG)mySnoop;
+
+        }
+        else
+        {
+            FreeVec68K(PowerPCBase, mySnoop);
+        }
+    }
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     return 0;
 }
 
@@ -2234,6 +2344,20 @@ PPCFUNCTION ULONG mySnoopTask(struct PrivatePPCBase* PowerPCBase, struct TagItem
 
 PPCFUNCTION VOID myEndSnoopTask(struct PrivatePPCBase* PowerPCBase, ULONG id)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    if (id)
+    {
+        myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+        myRemovePPC(PowerPCBase, (struct Node*)id);
+
+        myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+        FreeVec68K(PowerPCBase, (APTR)id);
+    }
+
     return;
 }
 

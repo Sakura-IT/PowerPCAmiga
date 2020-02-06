@@ -311,6 +311,13 @@ ULONG                       ui_High;
 ULONG                       ui_Low;
 };
 
+struct SnoopData {
+struct Node                 sd_Node;
+APTR                        sd_Code;
+ULONG                       sd_Data;
+ULONG                       sd_Type;
+};
+
 struct NewTask {
 struct TaskPPC              nt_Task;
 struct Message*             nt_StartMsg;
