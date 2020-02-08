@@ -31,6 +31,9 @@
 #define CMP_DESTLESS            1
 #define CMP_EQUAL               0
 
+#define GETINFO_L2STATE         0x8010200A
+#define GETINFO_L2SIZE          0x8010200C
+
 #define EXCATTR_TIMEDREMOVAL    0x80101007
 #define EXCF_DECREMENTER  		1<<9
 

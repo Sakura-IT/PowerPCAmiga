@@ -1808,6 +1808,115 @@ PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* t
     struct DebugArgs args;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
+	struct TagItem* myTagItem = NULL;
+
+    struct TagItemPtr tagPtr;
+    tagPtr.tip_TagItem = taglist;
+
+	while (myTagItem = myNextTagItemPPC(PowerPCBase, (struct TagItem**)&tagPtr))
+    {
+        if ((myTagItem->ti_Tag & 0xffffe000) == GETINFO_TAGS)
+		{
+            switch (myTagItem->ti_Tag)
+            {
+                case GETINFO_CPU:
+                {
+                    if(PowerPCBase->pp_DeviceID == DEVICE_MPC8343E)
+                    {
+                        myTagItem->ti_Data = CPUF_603E;
+                    }
+                    else
+                    {
+                        myTagItem->ti_Data = 0;
+                    }
+                    break;
+                }
+                case GETINFO_PVR:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_CPUInfo;
+                    break;
+                }
+                case GETINFO_ICACHE:
+                case GETINFO_DCACHE:
+                {
+                    ULONG shift;
+                    if (myTagItem->ti_Tag == GETINFO_DCACHE)
+                    {
+                        shift = 12;
+                    }
+                    else
+                    {
+                        shift = 13;
+                    }
+                    ULONG state = (PowerPCBase->pp_CPUHID0 >> shift) & 0x7;
+                    switch (state)
+                    {
+                       case 4:
+                       {
+                           myTagItem->ti_Data = CACHEF_ON_UNLOCKED;
+                           break;
+                       }
+                       case 5:
+                       {
+                           myTagItem->ti_Data = CACHEF_ON_LOCKED;
+                           break;
+                       }
+                       case 0:
+                       {
+                           myTagItem->ti_Data = CACHEF_OFF_UNLOCKED;
+                           break;
+                       }
+                       default:
+                       {
+                           myTagItem->ti_Data = CACHEF_OFF_LOCKED;
+                           break;
+                       }
+                    }
+                    break;
+                }
+                case GETINFO_PAGETABLE:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_CPUSDR1 & 0xffff0000;
+                    break;
+                }
+                case GETINFO_TABLESIZE:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_PageTableSize;
+                    break;
+                }
+                case GETINFO_BUSCLOCK:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_BusClock;
+                    break;
+                }
+                case GETINFO_CPUCLOCK:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_CPUSpeed;
+                    break;
+                }
+                case GETINFO_CPULOAD:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_CPULoad;
+                    break;
+                }
+                case GETINFO_SYSTEMLOAD:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_SystemLoad;
+                    break;
+                }
+                case GETINFO_L2STATE:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_L2State;
+                    break;
+                }
+                case GETINFO_L2SIZE:
+                {
+                    myTagItem->ti_Data = PowerPCBase->pp_L2Size;
+                    break;
+                }
+            }
+		}
+    }
     return;
 }
 

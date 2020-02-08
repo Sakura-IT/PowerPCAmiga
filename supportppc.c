@@ -925,7 +925,7 @@ PPCFUNCTION VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInf
 
 PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag)
 {
-    myCopyMemPPC(PowerPCBase, (APTR)&excInfo, (APTR)newData, sizeof(struct ExcData));
+    myCopyMemPPC(PowerPCBase, (APTR)excInfo, (APTR)newData, sizeof(struct ExcData));
     currExc = (struct Node*)newData;
     newData->ed_ExcID = flag;
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
