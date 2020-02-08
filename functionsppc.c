@@ -1712,6 +1712,49 @@ PPCFUNCTION ULONG mySetHardware(struct PrivatePPCBase* PowerPCBase, ULONG flags,
 
 PPCFUNCTION VOID myModifyFPExc(struct PrivatePPCBase* PowerPCBase, ULONG fpflags)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    if (fpflags & FPF_EN_OVERFLOW)
+    {
+        FPE_Enable(1);
+    }
+    if (fpflags & FPF_DIS_OVERFLOW)
+    {
+        FPE_Disable(1);
+    }
+    if (fpflags & FPF_EN_UNDERFLOW)
+    {
+        FPE_Enable(2);
+    }
+    if (fpflags & FPF_DIS_UNDERFLOW)
+    {
+        FPE_Disable(2);
+    }
+    if (fpflags & FPF_EN_ZERODIVIDE)
+    {
+        FPE_Enable(4);
+    }
+    if (fpflags & FPF_DIS_ZERODIVIDE)
+    {
+        FPE_Disable(4);
+    }
+    if (fpflags & FPF_EN_INEXACT)
+    {
+        FPE_Enable(8);
+    }
+    if (fpflags & FPF_DIS_INEXACT)
+    {
+        FPE_Disable(8);
+    }
+    if (fpflags & FPF_EN_INVALID)
+    {
+        FPE_Enable(16);
+    }
+    if (fpflags & FPF_DIS_INVALID)
+    {
+        FPE_Disable(16);
+    }
     return;
 }
 

@@ -23,7 +23,7 @@
 #********************************************************************************************
 
 .global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
-.global     _FinalCalc, _Calculator, _RunCPP
+.global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _RunCPP
 
 #********************************************************************************************
 
@@ -321,6 +321,88 @@ _FinalCalc:
         stw     r4,WAITTIME_UPPER(r8)
         stw     r5,WAITTIME_LOWER(r8)
         mfctr   r9
+        blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_FPE_Enable:
+        andi.	r0,r3,1
+        bnel-	.Bit0
+        rlwinm.	r0,r3,31,31,31
+        bnel-	.Bit1
+        rlwinm.	r0,r3,30,31,31
+        bnel-	.Bit2
+        rlwinm.	r0,r3,29,31,31
+        bnel-	.Bit3
+        rlwinm.	r0,r3,28,31,31
+        bnel-	.Bit4
+        blr
+
+.Bit0:  mtfsb0	3
+        mtfsb1	25
+        blr
+
+.Bit1:  mtfsb0	4
+        mtfsb1	26
+        blr
+
+.Bit2:  mtfsb0	5
+        mtfsb1	27
+        blr
+
+.Bit3:  mtfsb0	6
+        mtfsb1	28
+        blr
+
+.Bit4:  mtfsb0	7
+        mtfsb0	8
+        mtfsb0	9
+        mtfsb0	10
+        mtfsb0	11
+        mtfsb0	12
+        mtfsb0	21
+        mtfsb0	22
+        mtfsb0	23
+        mtfsb1	24
+        blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+
+_FPE_Disable:
+        andi.	r0,r3,1
+        bnel-	.Bit_0
+        rlwinm.	r0,r3,31,31,31
+        bnel-	.Bit_1
+        rlwinm.	r0,r3,30,31,31
+        bnel-	.Bit_2
+        rlwinm.	r0,r3,29,31,31
+        bnel-	.Bit_3
+        rlwinm.	r0,r3,28,31,31
+        bnel-	.Bit_4
+        blr
+
+.Bit_0: mtfsb0	25
+        blr
+
+.Bit_1: mtfsb0	26
+        blr
+
+.Bit_2: mtfsb0	27
+        blr
+
+.Bit_3: mtfsb0	28
+        blr
+
+.Bit_4: mtfsb0	24
         blr
 
 #********************************************************************************************

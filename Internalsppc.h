@@ -323,5 +323,7 @@ VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, 
 ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
 VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
 VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag);
+VOID FPE_Enable(ULONG value);
+VOID FPE_Disable(ULONG value);
 VOID RunCPP(VOID);
 
