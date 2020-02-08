@@ -330,6 +330,7 @@ _FinalCalc:
 #********************************************************************************************
 
 _FPE_Enable:
+        mflr    r4
         andi.	r0,r3,1
         bnel-	.Bit0
         rlwinm.	r0,r3,31,31,31
@@ -340,6 +341,7 @@ _FPE_Enable:
         bnel-	.Bit3
         rlwinm.	r0,r3,28,31,31
         bnel-	.Bit4
+        mtlr    r4
         blr
 
 .Bit0:  mtfsb0	3
@@ -378,6 +380,7 @@ _FPE_Enable:
 
 
 _FPE_Disable:
+        mflr    r4
         andi.	r0,r3,1
         bnel-	.Bit_0
         rlwinm.	r0,r3,31,31,31
@@ -388,6 +391,7 @@ _FPE_Disable:
         bnel-	.Bit_3
         rlwinm.	r0,r3,28,31,31
         bnel-	.Bit_4
+        mtlr    r4
         blr
 
 .Bit_0: mtfsb0	25
