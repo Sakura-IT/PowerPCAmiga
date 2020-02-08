@@ -307,6 +307,7 @@ VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID SystemStart(struct PrivatePPCBase* PowerPCBase);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
 void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
+void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 STRPTR GetName(void);
@@ -322,4 +323,5 @@ VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, 
 ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
 VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
 VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag);
+VOID RunCPP(VOID);
 

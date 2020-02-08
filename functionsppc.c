@@ -132,6 +132,82 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 
 PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    ULONG recvdSigs, signals;
+    ULONG sigMask = SIGF_DOS;
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    while (1)
+    {
+        recvdSigs = myWaitPPC(PowerPCBase, myTask->tp_Task.tc_SigAlloc & 0xfffff100);
+        if (recvdSigs & sigMask)
+        {
+            if (signals = recvdSigs & ~sigMask)
+            {
+                while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+                myTask->tp_Task.tc_SigRecvd |= signals;
+                FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            }
+            struct MsgFrame* myFrame;
+            while (myFrame = (struct MsgFrame*)myGetMsgPPC(PowerPCBase, myTask->tp_Msgport))
+            {
+                switch (myFrame->mf_Identifier)
+                {
+                    case ID_DNLL:
+                    {
+                        ULONG value = myFrame->mf_PPCArgs.PP_Regs[0];
+                        FreeMsgFramePPC(PowerPCBase, myFrame);
+                        return (LONG)value;
+                    }
+                    case ID_END:
+                    {
+                        KillTask(PowerPCBase, myFrame);
+                        break;
+                    }
+                    case ID_TPPC:
+                    {   RunCPP(); //go asm start
+                        break;
+                    }
+                    case ID_DONE:
+                    {
+                        struct NewTask* myNewTask = (struct NewTask*)myTask;
+                        if (!(myNewTask->nt_MirrorPort))
+                        {
+                            myNewTask->nt_MirrorPort = myFrame->mf_MirrorPort;
+                            myNewTask->nt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
+                        }
+
+                        while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+                        myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Arg[0];
+                        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+                        myCopyMemPPC(PowerPCBase, (APTR)&myFrame->mf_PPCArgs, (APTR)PPStruct, sizeof(struct PPCArgs));
+                        FreeMsgFramePPC(PowerPCBase, myFrame);
+                        return PPERR_SUCCESS;
+                    }
+                    default:
+                    {
+                        storeR0(ERR_EFIF);
+                        HaltTask();
+                        break;
+                    }
+                }
+            }
+
+        }
+        else
+        {
+            struct NewTask* myNewTask = (struct NewTask*)myTask;
+            struct MsgPort* mirrorPort;
+            if ((signals = recvdSigs & ~sigMask) && (mirrorPort = myNewTask->nt_MirrorPort))
+            {
+                mySignal68K(PowerPCBase, mirrorPort->mp_SigTask, signals);
+            }
+        }
+    }
     return 0;
 }
 

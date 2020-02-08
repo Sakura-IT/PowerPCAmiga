@@ -970,12 +970,12 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
                 {
                     case ID_TPPC:
                     {
-                               //go asm start
+                        RunCPP();       //go asm start
                         break;
                     }
                     case ID_END:
                     {
-                               //go kill ppc
+                        KillTask(PowerPCBase, myFrame);
                         break;
                     }
                     default:
@@ -995,6 +995,54 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
     }
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+
 /********************************************************************************************/
 
+{
+    FreeMsgFramePPC(PowerPCBase,myFrame);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    struct SnoopData* currSnoop = (struct SnoopData*)PowerPCBase->pp_Snoop.mlh_Head;
+    struct SnoopData* nextSnoop;
+
+    struct TaskPPC* PPCtask = PowerPCBase->pp_ThisPPCProc;
+
+    while (nextSnoop = (struct SnoopData*)currSnoop->sd_Node.ln_Succ)
+    {
+        if (currSnoop->sd_Type == SNOOP_EXIT)
+        {
+            ULONG tempR2 = getR2();
+            ULONG (*runSnoop)(__reg("r2") ULONG, __reg("r3") struct TaskPPC*) = currSnoop->sd_Code;
+            runSnoop(currSnoop->sd_Data, PPCtask);
+            storeR2(tempR2);
+        }
+        currSnoop = nextSnoop;
+    }
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+
+    if (PPCtask->tp_TaskPtr)
+    {
+        myRemovePPC(PowerPCBase, (struct Node*)PPCtask->tp_TaskPtr);
+    }
+
+    PowerPCBase->pp_NumAllTasks -= 1;
+
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+
+    PPCtask->tp_Task.tc_State = TS_REMOVED;
+    PowerPCBase->pp_FlagReschedule = -1;
+    CauseDECInterrupt(PowerPCBase);
+    while(1);  //Warning 208
+}
 
