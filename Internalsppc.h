@@ -77,7 +77,9 @@ ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
-ULONG StateL2(void)                       = "\tmfl2cr\tr3\n";
+ULONG getL2State(void)                    = "\tmfl2cr\tr3\n";
+void  setL2State(ULONG value)             = "\tmtl2cr\tr3\n";
+void  sync(void)                          = "\tsync\n";
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";
@@ -310,6 +312,7 @@ void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+VOID FlushDCache(struct PrivatePPCBase* PowerPCBase);
 STRPTR GetName(void);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
 ULONG DoAlign(struct iframe* iframe, ULONG SRR0);

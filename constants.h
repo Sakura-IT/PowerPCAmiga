@@ -52,6 +52,13 @@
 #define NT_XMSG68K              102
 #define NT_XMSGPPC              103
 
+#define CACHE_L2CACHEON         12
+#define CACHE_L2CACHEOFF        13
+#define CACHE_L2WTON            14
+#define CACHE_L2WTOFF           15
+#define CACHE_TOGGLEDFLUSH      16
+#define CACHELINE_SIZE          32
+
 #define ERR_ESEM                0x4553454D
 #define ERR_EFIF                0x45464946
 #define ERR_ESNC                0x45534E43

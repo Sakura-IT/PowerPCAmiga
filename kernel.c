@@ -38,7 +38,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
     PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
     PowerPCBase->pp_CPUSDR1 = getSDR1();
     PowerPCBase->pp_CPUHID0 = getHID0();
-    PowerPCBase->pp_L2State = StateL2();
+    PowerPCBase->pp_L2State = getL2State();
 
     switch (iframe->if_ExceptionVector)
     {

@@ -1323,6 +1323,146 @@ PPCFUNCTION VOID mySignal68K(struct PrivatePPCBase* PowerPCBase, struct Task* ta
 
 PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR start, ULONG length)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    ULONG value, key;
+
+    switch (flags)
+    {
+        case CACHE_DCACHEOFF:
+        {
+            if (!(PowerPCBase->pp_CacheDState))
+            {
+                FlushDCache(PowerPCBase);
+
+                key = mySuper(PowerPCBase);
+                value = getHID0();
+                value &= ~HID0_DCE;
+                setHID0(value);
+                PowerPCBase->pp_CacheDState = -1;
+                myUser(PowerPCBase, key);
+            }
+            break;
+        }
+        case CACHE_DCACHEON:
+        {
+            PowerPCBase->pp_CacheDState = 0;
+            key = mySuper(PowerPCBase);
+            value = getHID0();
+            value |= HID0_DCE;
+            setHID0(value);
+            myUser(PowerPCBase, key);
+
+            break;
+        }
+        case CACHE_DCACHELOCK:
+        {
+            if ((start) && (length) && !(PowerPCBase->pp_CacheDLockState))
+            {
+                FlushDCache(PowerPCBase);
+                ULONG iterations = (ULONG)start + length;
+                ULONG mask = -32;
+                start = (APTR)((ULONG)start & mask);
+                ULONG* mem = (ULONG*)start;
+                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    value = mem[0];
+                    mem += CACHELINE_SIZE;
+                }
+
+                key = mySuper(PowerPCBase);
+                value = getHID0();
+                value |= HID0_DLOCK;
+                setHID0(value);
+                PowerPCBase->pp_CacheDLockState = -1;
+                myUser(PowerPCBase, key);
+            }
+            break;
+        }
+        case CACHE_DCACHEUNLOCK:
+        {
+            PowerPCBase->pp_CacheDLockState = 0;
+            key = mySuper(PowerPCBase);
+            value = getHID0();
+            value &= ~HID0_DLOCK;
+            setHID0(value);
+            myUser(PowerPCBase, key);
+            break;
+        }
+        case CACHE_DCACHEFLUSH:
+        {
+            if (!(PowerPCBase->pp_CacheDState) && !(PowerPCBase->pp_CacheDLockState))
+            {
+                if ((start) && (length))
+                {
+                    ULONG iterations = (ULONG)start + length;
+                    ULONG mask = -32;
+                    start = (APTR)((ULONG)start & mask);
+                    ULONG mem = (ULONG)start;
+                    iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        dFlush(mem);
+                        mem += CACHELINE_SIZE;
+                    }
+                    sync();
+                }
+                else                
+                {
+                    FlushDCache(PowerPCBase);
+                }
+            }
+            break;
+        }
+        case CACHE_ICACHEOFF:
+        {
+            break;
+        }
+        case CACHE_ICACHEON:
+        {
+            break;
+        }
+        case CACHE_ICACHELOCK:
+        {
+            break;
+        }
+        case CACHE_ICACHEUNLOCK:
+        {
+            break;
+        }
+        case CACHE_ICACHEINV:
+        {
+            break;
+        }
+        case CACHE_DCACHEINV:
+        {
+            break;
+        }
+        case  CACHE_L2CACHEON:
+        {
+            break;
+        }
+        case CACHE_L2CACHEOFF:
+        {
+            break;
+        }
+        case CACHE_L2WTON:
+        {
+            break;
+        }
+        case CACHE_L2WTOFF:
+        {
+            break;
+        }
+        case CACHE_TOGGLEDFLUSH:
+        {
+            break;
+        }
+    }
     return;
 }
 
