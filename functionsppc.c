@@ -2685,7 +2685,77 @@ PPCFUNCTION LONG mySetNiceValue(struct PrivatePPCBase* PowerPCBase, struct TaskP
 
 PPCFUNCTION LONG myTrySemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, ULONG timeout)
 {
-    return 0;
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    LONG status;
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    while (!(LockMutexPPC((volatile ULONG)SemaphorePPC->ssppc_reserved)));
+
+    if (!(SemaphorePPC->ssppc_SS.ss_QueueCount += 1))
+    {
+        SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)myTask;
+        FreeMutexPPC((ULONG)SemaphorePPC->ssppc_reserved);
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        status = ATTEMPT_SUCCESS;
+    }
+    else
+    {
+        if (SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)
+        {
+            FreeMutexPPC((ULONG)SemaphorePPC->ssppc_reserved);
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            status = ATTEMPT_SUCCESS;
+        }
+        else
+        {
+            struct SemWait semWait;
+            semWait.sw_Task = myTask;
+            myTask->tp_Task.tc_SigRecvd &= ~SIGF_SINGLE;
+            myAddTailPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue, (struct Node*)&semWait);
+
+            FreeMutexPPC((ULONG)SemaphorePPC->ssppc_reserved);
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+            ULONG signal = myWaitTime(PowerPCBase, SIGF_SINGLE, timeout);
+
+            while (1)
+            {
+                while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+                if (!((volatile)SemaphorePPC->ssppc_lock))
+                {
+                    break;
+                }
+                FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+            }
+
+            ULONG sigMask = signal | myTask->tp_Task.tc_SigRecvd;
+            sigMask &= ~SIGF_SINGLE;
+            myTask->tp_Task.tc_SigRecvd = sigMask;
+
+            if (!(signal & SIGF_SINGLE))
+            {
+                myRemovePPC(PowerPCBase, (struct Node*)&semWait);
+            }
+
+            FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+            if (signal & SIGF_SINGLE)
+            {
+                status = ATTEMPT_SUCCESS;
+            }
+            else
+            {
+                SemaphorePPC->ssppc_SS.ss_NestCount += 1;
+                status = ATTEMPT_FAILURE;
+            }
+        }
+    }
+    return status;
 }
 
 /********************************************************************************************
