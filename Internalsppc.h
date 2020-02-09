@@ -64,7 +64,7 @@ void  setMSR(ULONG value)                 = "\tsync\n\tmtmsr\tr3\n\tisync\n\tsyn
 ULONG getMSR(void)                        = "\tmfmsr\tr3\n";
 ULONG getHID0(void)                       = "\tmfspr\tr3,1008\n";
 ULONG getHID1(void)                       = "\tmfspr\tr3,1009\n";
-void  setHID0(ULONG)                      = "\tsync\n\tmtspr\t1008,r3\n\tsync\n";
+void  setHID0(ULONG)                      = "\tsync\n\tmtspr\t1008,r3\n\tsync\n\tisync\n";
 void  setDEC(LONG value)                  = "\tmtdec\tr3\n";
 ULONG getDEC(void)                        = "\tmfdec\tr3\n";
 ULONG getTBU(void)                        = "\tmftbu\tr3\n";
@@ -77,9 +77,13 @@ ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltTask(void)                      = "\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
+void  iInval(ULONG address)               = "\ticbi\tr0,r3\n";
+void  dInval(ULONG address)               = "\tdcbi\tr0,r3\n";
 ULONG getL2State(void)                    = "\tmfl2cr\tr3\n";
-void  setL2State(ULONG value)             = "\tmtl2cr\tr3\n";
+void  setL2State(ULONG value)             = "\tmtl2cr\tr3\n\tsync\n";
 void  sync(void)                          = "\tsync\n";
+void  isync(void)                         = "\tisync\n";
+void  loadWord(ULONG)                     = "\tlwz\tr3,0(r3)\n"; //to bypass optimizations
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";
@@ -328,5 +332,9 @@ VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
 VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag);
 VOID FPE_Enable(ULONG value);
 VOID FPE_Disable(ULONG value);
+VOID EnablePPC(VOID);
+VOID DisablePPC(VOID);
 VOID RunCPP(VOID);
+VOID FlushICache(VOID);
+
 

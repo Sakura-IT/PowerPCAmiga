@@ -189,7 +189,7 @@ struct MsgPortPPC*          pp_CurrentPort;
 UBYTE                       pp_ExternalInt;
 UBYTE                       pp_EnAltivec;
 UBYTE                       pp_ExceptionMode;
-UBYTE                       pp_CacheDoDFlushAll;
+UBYTE                       pp_CacheDisDFlushAll;
 UBYTE                       pp_CacheDState;
 UBYTE                       pp_CacheDLockState;
 UBYTE                       pp_FlagReschedule;

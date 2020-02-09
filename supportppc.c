@@ -129,6 +129,43 @@ PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 
 PPCFUNCTION VOID FlushDCache(struct PrivatePPCBase* PowerPCBase)
 {
+    ULONG key = mySuper(PowerPCBase);
+    ULONG cacheSize;
+
+    DisablePPC();
+
+    if (PowerPCBase->pp_CacheDisDFlushAll)
+    {
+        cacheSize = 0;
+    }
+    else
+    {
+        cacheSize = PowerPCBase->pp_CurrentL2Size;
+    }
+
+    cacheSize = (cacheSize >> 5) + CACHE_L1SIZE;
+    ULONG mem = ((PowerPCBase->pp_PPCMemSize - 0x400000) + PowerPCBase->pp_PPCMemBase);
+
+    ULONG mem2 = mem;
+
+    for (int i = 0; i < cacheSize; i++)
+    {
+        loadWord(mem);
+        mem += CACHELINE_SIZE;
+    }
+
+    for (int i = 0; i < cacheSize; i++)
+    {
+        dFlush(mem2);
+        mem2 += CACHELINE_SIZE;
+    }
+
+    setDEC(PowerPCBase->pp_Quantum);
+
+    EnablePPC();
+
+    myUser(PowerPCBase, key);
+
     return;
 }
 

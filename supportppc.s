@@ -23,7 +23,7 @@
 #********************************************************************************************
 
 .global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
-.global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _RunCPP
+.global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _FlushICache, _RunCPP
 
 #********************************************************************************************
 
@@ -408,6 +408,27 @@ _FPE_Disable:
 
 .Bit_4: mtfsb0	24
         blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_FlushICache:
+        b       .Mojo1					#Some L1 mojo
+
+.Mojo2: mfspr   r0,HID0
+        ori     r0,r0,HID0_ICFI
+        mtspr   HID0,r0
+        xori    r0,r0,HID0_ICFI
+        mtspr   HID0,r0
+        sync
+        b       .Mojo3
+
+.Mojo1: b       .Mojo2
+
+.Mojo3: blr
 
 #********************************************************************************************
 

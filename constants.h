@@ -58,6 +58,7 @@
 #define CACHE_L2WTOFF           15
 #define CACHE_TOGGLEDFLUSH      16
 #define CACHELINE_SIZE          32
+#define CACHE_L1SIZE            0x400
 
 #define ERR_ESEM                0x4553454D
 #define ERR_EFIF                0x45464946
@@ -168,6 +169,44 @@
 #define OFFSET_SYSMEM           0x400000
 #define OFFSET_PCIMEM           0x60000000
 #define VECTOR_TABLE_DEFAULT    0xfff00000
+
+//Bit defines for the L2CR register
+
+#define L2CR_L2E                0x80000000      /* bit 0 - enable */
+#define L2CR_L2PE               0x40000000      /* bit 1 - data parity */
+#define L2CR_L2SIZ_2M           0x00000000      /* bits 2-3 2 MB; MPC7400 ONLY! */
+#define L2CR_L2SIZ_1M           0x30000000      /* bits 2-3 1MB */
+#define L2CR_L2SIZ_HM           0x20000000      /* bits 2-3 512K */
+#define L2CR_L2SIZ_QM           0x10000000      /* bits 2-3 256K; MPC750 ONLY */
+#define L2CR_L2CLK_1            0x02000000      /* bits 4-6 Clock Ratio div 1 */
+#define L2CR_L2CLK_1_5          0x04000000      /* bits 4-6 Clock Ratio div 1.5 */
+#define L2CR_L2CLK_2            0x08000000      /* bits 4-6 Clock Ratio div 2 */
+#define L2CR_L2CLK_2_5          0x0a000000      /* bits 4-6 Clock Ratio div 2.5 */
+#define L2CR_L2CLK_3            0x0c000000      /* bits 4-6 Clock Ratio div 3 */
+#define L2CR_L2CLK_4            0x0e000000      /* bits 4-6 Clock Ratio div 4 */
+#define L2CR_L2RAM_BURST        0x01000000      /* bits 7-8 burst SRAM */
+#define L2CR_DO                 0x00400000      /* bit 9 Disable caching of instr. in L2 (Not 7450) */
+#define L2CR_L2I                0x00200000      /* bit 10 Global invalidate bit */
+#define L2CR_L2IO               0x00100000      /* bit 11 L2 Instruction only (disables data cache) */
+#define L2CR_L2WT               0x00080000      /* bit 12 write-through */
+#define L2CR_TS                 0x00040000      /* bit 13 Test support on */
+#define L2CR_L2DO               0x00010000      /* bit 15 L2 Data only (disables instruction cache) */
+#define L2CR_L2HWF              0x00000800      /* bit 20 L2 Hardware Flush (not 7400/750) */
+#define L2CR_L2OH_5             0x00000000      /* bits 14-15 Output Hold time = 0.5ns */
+#define L2CR_L2OH_1             0x00010000      /* bits 14-15 Output Hold time = 1.0ns */
+#define L2CR_L2OH_INV           0x00020000      /* bits 14-15 Output Hold time = 1.0ns */
+#define L2CR_L2IP               0x00000001
+
+#define L2_ADR_INCR             0x100
+#define L2_SIZE_2M              0x2000
+#define L2_SIZE_1M              0x1000
+#define L2_SIZE_HM              0x800
+#define L2_SIZE_QM              0x400
+
+#define L2_SIZE_1M_U            0x0010
+#define L2_SIZE_2M_U            0x0020
+
+//Bit defines for the HID0 register
 
 #define HID0_TBEN               0x04000000
 #define HID0_NHR                0x00010000

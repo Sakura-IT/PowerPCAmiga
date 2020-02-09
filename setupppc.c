@@ -563,7 +563,7 @@ __section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initDa
     PowerPCBase->pp_LowActivityPri = 6000;
     PowerPCBase->pp_EnAlignExc = initData->id_Environment1 >> 8;
     PowerPCBase->pp_EnDAccessExc = initData->id_Environment2 >> 8;
-    PowerPCBase->pp_CacheDoDFlushAll = initData->id_Environment2 >> 24;
+    PowerPCBase->pp_CacheDisDFlushAll = initData->id_Environment2 >> 24;
     PowerPCBase->pp_DebugLevel = initData->id_Environment1 >> 16;
     PowerPCBase->pp_CPUInfo = getPVR();
     PowerPCBase->pp_PageTableSize = myZP->zp_PageTableSize;
