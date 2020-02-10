@@ -3491,9 +3491,148 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 *
 *********************************************************************************************/
 
-PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR formatstring, APTR datastream, void (*putchproc)(), APTR putchdata)
+
+ULONG getNum(STRPTR formatstring) //WIP need also return formatstring (make a struct)
 {
-    return NULL;
+    ULONG result = 0;
+    while (1)
+    {
+        char myChar = formatstring[0];
+        formatstring += 1;
+        if ((myChar >= '0') && (myChar <= '9'))
+        {
+            result = result * 10;
+            myChar -= 0x48;
+            result = result + myChar;
+        }
+        else
+        {
+            formatstring -= 1;
+            break;
+        }
+    }
+    return result;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR formatstring, APTR datastream, APTR (*putchproc)(), APTR putchdata)
+{
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    if (putchproc == (APTR)1)
+    {
+        return PowerPCBase;   //emulate real WarpOS where r3 is not changed (and so is PowerPCBase)
+    }
+
+    char currChar = formatstring[0];
+
+    formatstring += 1;
+
+    while (currChar)
+    {
+        if (currChar == '%')
+        {
+            currChar = formatstring[0];
+            ULONG flag = 0;
+            if (currChar == '-')        //flag->left align
+            {
+                flag |= 1;
+                formatstring += 1;
+            }
+            currChar = formatstring[0];
+            if (currChar == '0')        //flag->prepends zeros
+            {
+                flag |= 2;
+            }
+            ULONG prependNum  = getNum(formatstring);
+            ULONG truncateNum = 0;
+            currChar = formatstring[0];
+            if (currChar == '.')        //precision
+            {
+                formatstring += 1;
+                truncateNum = getNum(formatstring);
+            }
+            currChar = formatstring[0];
+            if (currChar == 'l')        //length->long
+            {
+                flag |= 4;
+                formatstring += 1;
+            }
+            currChar = formatstring[0];
+
+            switch (currChar)
+            {
+                case 'd':    //type->signed decimal number
+                case 'D':
+                {
+                    break;
+                }
+                case 'x':    //type->hexidecimal number
+                case 'X':
+                {
+                    break;
+                }
+                case 's':    //type->null-terminated string
+                {
+                    break;
+                }
+                case 'b':    //type->bcd string
+                {
+                    break;
+                }
+                case 'u':    //type->unsigned decimal number
+                case 'U':
+                {
+                    break;
+                }
+                case 'c':    //type->char
+                {
+                    break;
+                }
+                default:
+                {
+                    if (!(putchproc))
+                    {
+                        STRPTR myData = (STRPTR)putchdata;
+                        myData[0] = currChar;
+                        putchdata = (APTR)((ULONG)putchdata + 1);
+                    }
+                    else
+                    {
+                        putchdata = putchproc(putchdata, currChar);
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (!(putchproc))
+            {
+                STRPTR myData = (STRPTR)putchdata;
+                myData[0] = currChar;
+                putchdata = (APTR)((ULONG)putchdata + 1);
+            }
+            else
+            {
+                putchdata = putchproc(putchdata, currChar);
+            }
+        }
+    }
+
+    if (!(putchproc))
+    {
+        STRPTR myData = (STRPTR)putchdata;  //weird shit here. Looks like copy pasted asm code
+        myData[0] = currChar;               //as the manipulations of putchdata are lost
+        putchdata = (APTR)((ULONG)putchdata + 1);
+    }
+    else
+    {
+        putchdata = putchproc(putchdata, currChar);
+    }
+
+    return datastream;
 }
 
 /********************************************************************************************
