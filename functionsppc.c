@@ -3492,17 +3492,19 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 *********************************************************************************************/
 
 
-ULONG getNum(STRPTR formatstring) //WIP need also return formatstring (make a struct)
+PPCFUNCTION VOID getNum(struct RDFData* rdfData) //WIP need also return formatstring (make a struct)
 {
     ULONG result = 0;
+    STRPTR formatstring = rdfData->rd_FormatString;
+
     while (1)
     {
-        char myChar = formatstring[0];
+        UBYTE myChar = formatstring[0];
         formatstring += 1;
         if ((myChar >= '0') && (myChar <= '9'))
         {
             result = result * 10;
-            myChar -= 0x48;
+            myChar -= '0';
             result = result + myChar;
         }
         else
@@ -3511,7 +3513,9 @@ ULONG getNum(STRPTR formatstring) //WIP need also return formatstring (make a st
             break;
         }
     }
-    return result;
+    rdfData->rd_Result = result;
+    rdfData->rd_FormatString = formatstring;
+    return;
 }
 
 /********************************************************************************************/
@@ -3520,13 +3524,16 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
 {
     struct DebugArgs args;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    struct RDFData rdfData;
 
     if (putchproc == (APTR)1)
     {
         return PowerPCBase;   //emulate real WarpOS where r3 is not changed (and so is PowerPCBase)
     }
 
-    char currChar = formatstring[0];
+    rdfData.rd_DataStream = datastream;
+
+    UBYTE currChar = formatstring[0];
 
     formatstring += 1;
 
@@ -3546,13 +3553,19 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
             {
                 flag |= 2;
             }
-            ULONG prependNum  = getNum(formatstring);
+            rdfData.rd_FormatString = formatstring;
+            getNum(&rdfData);
+            ULONG prependNum = rdfData.rd_Result;
+            formatstring = rdfData.rd_FormatString;
             ULONG truncateNum = 0;
             currChar = formatstring[0];
             if (currChar == '.')        //precision
             {
                 formatstring += 1;
-                truncateNum = getNum(formatstring);
+                rdfData.rd_FormatString = formatstring;
+                getNum(&rdfData);
+                truncateNum = rdfData.rd_Result;
+                formatstring = rdfData.rd_FormatString;
             }
             currChar = formatstring[0];
             if (currChar == 'l')        //length->long
@@ -3632,7 +3645,7 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
         putchdata = putchproc(putchdata, currChar);
     }
 
-    return datastream;
+    return rdfData.rd_DataStream;
 }
 
 /********************************************************************************************

@@ -320,6 +320,13 @@ ULONG                       sd_Data;
 ULONG                       sd_Type;
 };
 
+struct RDFData {
+APTR                        rd_DataStream;
+ULONG                       rd_Buffer[4];
+STRPTR                      rd_FormatString;
+ULONG                       rd_Result;
+};
+
 struct NewTask {
 struct TaskPPC              nt_Task;
 struct Message*             nt_StartMsg;
