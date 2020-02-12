@@ -3522,7 +3522,7 @@ PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
 {
     ULONG* mem = (ULONG*)rdfData->rd_DataStream;
     LONG value = mem[0];
-    mem = (ULONG*)((ULONG)mem + 2);
+    mem = (ULONG*)((ULONG)mem + 4);
     rdfData->rd_DataStream = (APTR)mem;
     return value;
 }
