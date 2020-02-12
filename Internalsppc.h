@@ -336,5 +336,5 @@ VOID EnablePPC(VOID);
 VOID DisablePPC(VOID);
 VOID RunCPP(VOID);
 VOID FlushICache(VOID);
-
+ULONG* GetDecTable(VOID);
 

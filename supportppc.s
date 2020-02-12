@@ -24,6 +24,7 @@
 
 .global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
 .global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _FlushICache, _RunCPP
+.global     _GetDecTable
 
 #********************************************************************************************
 
@@ -92,9 +93,27 @@ _GetName:
        .byte  "Kryten\0\0"
 
 .skipName:
-      mflr      r3
-      mtlr      r4
-      blr
+       mflr      r3
+       mtlr      r4
+       blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_GetDecTable:
+       mflr      r4
+       bl        .skipTable
+
+       .long     0x3b9aca00,0x05f5e100,0x00989680,0x000f4240,0x000186a0
+       .long     0x00002710,0x000003e8,0x00000064,0x0000000a,0x00000000
+
+.skipTable:
+       mflr      r3
+       mtlr      r4
+       blr
 
 #********************************************************************************************
 #

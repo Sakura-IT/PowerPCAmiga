@@ -3492,7 +3492,7 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 *********************************************************************************************/
 
 
-PPCFUNCTION VOID getNum(struct RDFData* rdfData) //WIP need also return formatstring (make a struct)
+PPCFUNCTION VOID getNum(struct RDFData* rdfData)
 {
     ULONG result = 0;
     STRPTR formatstring = rdfData->rd_FormatString;
@@ -3518,6 +3518,97 @@ PPCFUNCTION VOID getNum(struct RDFData* rdfData) //WIP need also return formatst
     return;
 }
 
+PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
+{
+    ULONG* mem = (ULONG*)rdfData->rd_DataStream;
+    LONG value = mem[0];
+    mem = (ULONG*)((ULONG)mem + 2);
+    rdfData->rd_DataStream = (APTR)mem;
+    return value;
+}
+
+PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
+{
+    WORD value;
+    if (flag & 4)
+    {
+        AdjustParamInt(rdfData);
+    }
+    else
+    {
+        UWORD* mem = (UWORD*)rdfData->rd_DataStream;
+        value = mem[0];
+        mem = (UWORD*)((ULONG)mem + 2);
+        rdfData->rd_DataStream = (APTR)mem;
+    }
+    return (LONG)value;
+}
+
+PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
+{
+    ULONG pointer = rdfData->rd_BufPointer;
+    STRPTR buff = (STRPTR)&rdfData->rd_Buffer;
+    if ((sign) && (value < 0))
+    {
+        buff[pointer] = '-';
+        pointer += 1;
+        value = -value;
+    }
+    ULONG* myTable = GetDecTable();
+    ULONG tableValue;
+    ULONG cmpnumber = '0';
+    ULONG number = cmpnumber;
+    {
+        while (tableValue = myTable[0])
+        {
+            while (tableValue < value)
+            {
+               value -= tableValue;
+               number += 1;
+            }
+            if (number != cmpnumber)
+            {
+               cmpnumber = 0;
+               buff[pointer] = (UBYTE)number;
+               pointer += 1;
+            }
+            myTable += 1;
+        }
+    }
+    buff[pointer] = (UBYTE)(value + '0');
+    pointer += 1;
+    rdfData->rd_BufPointer = pointer;
+    return;
+}
+
+PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
+{
+    ULONG pointer = rdfData->rd_BufPointer;
+    STRPTR buff = (STRPTR)&rdfData->rd_Buffer;
+    LONG iterations, currNibble;
+
+    if (value)
+    {
+        if (flag & 4)
+        {
+            iterations = 8;
+        }
+        else
+        {
+            iterations = 4;
+            value = value >> 16;
+        }
+        currNibble = value; //wip
+
+
+
+
+    }
+    buff[pointer] = (UBYTE)(value + '0');
+    pointer += 1;
+    rdfData->rd_BufPointer = pointer;
+    return;
+}
 /********************************************************************************************/
 
 PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR formatstring, APTR datastream, APTR (*putchproc)(), APTR putchdata)
@@ -3541,6 +3632,7 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
     {
         if (currChar == '%')
         {
+            rdfData.rd_BufPointer = 0;
             currChar = formatstring[0];
             ULONG flag = 0;
             if (currChar == '-')        //flag->left align
@@ -3580,11 +3672,13 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
                 case 'd':    //type->signed decimal number
                 case 'D':
                 {
-                    break;
+                    MakeDecimal(&rdfData, TRUE, AdjustParam(&rdfData, flag));
+                    break; //do FmtOutput
                 }
                 case 'x':    //type->hexidecimal number
                 case 'X':
                 {
+                    MakeHex(&rdfData, flag, AdjustParam(&rdfData, flag));
                     break;
                 }
                 case 's':    //type->null-terminated string
@@ -3598,6 +3692,7 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
                 case 'u':    //type->unsigned decimal number
                 case 'U':
                 {
+                    MakeDecimal(&rdfData, FALSE, AdjustParam(&rdfData, flag));
                     break;
                 }
                 case 'c':    //type->char
