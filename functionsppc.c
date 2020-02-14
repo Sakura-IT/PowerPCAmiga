@@ -1800,13 +1800,9 @@ PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
 
 PPCFUNCTION ULONG mySuper(struct PrivatePPCBase* PowerPCBase)
 {
-    ULONG result;
+    ULONG result = -1;
 
-    storeR0(-1);
-
-    getPVR();
-
-    result = getR0();
+    result = getCPUState(result, SUPERKEY);
 
     return result;
 }
@@ -3596,9 +3592,9 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
         else
         {
             iterations = 4;
-            value = value >> 16;
+            value = roll(value, 16);
         }
-        currNibble = value; //wip
+        currNibble = roll(value, 4) & 0xf; //wip
 
 
 

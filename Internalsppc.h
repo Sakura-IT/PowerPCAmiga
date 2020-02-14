@@ -84,6 +84,8 @@ void  setL2State(ULONG value)             = "\tmtl2cr\tr3\n\tsync\n";
 void  sync(void)                          = "\tsync\n";
 void  isync(void)                         = "\tisync\n";
 void  loadWord(ULONG)                     = "\tlwz\tr3,0(r3)\n"; //to bypass optimizations
+ULONG getCPUState(ULONG res, ULONG key)   = "\tmfpvr\tr4\n";
+ULONG roll(ULONG value, ULONG shift)      = "\trlwinm\tr3,r3,r4,0,31\n";
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";

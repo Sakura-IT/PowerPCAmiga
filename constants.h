@@ -26,6 +26,8 @@
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
 #define MSGLEN                  192
+#define SUPERKEY                0xABADBEEF
+
 
 #define CMP_DESTGREATER         -1
 #define CMP_DESTLESS            1

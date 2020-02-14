@@ -184,7 +184,6 @@ ULONG                       pp_AlignmentExcHigh;
 ULONG                       pp_AlignmentExcLow;
 ULONG                       pp_DataExcHigh;
 ULONG                       pp_DataExcLow;
-APTR                        pp_SuperAddress;
 struct MsgPortPPC*          pp_CurrentPort;
 UBYTE                       pp_ExternalInt;
 UBYTE                       pp_EnAltivec;

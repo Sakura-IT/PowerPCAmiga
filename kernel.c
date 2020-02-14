@@ -233,12 +233,12 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             break;
         }
         case VEC_PROGRAM:
-        {                
-            if (PowerPCBase->pp_SuperAddress == iframe->if_Context.ec_UPC.ec_PC)
+        {
+            if (iframe->if_Context.ec_GPR[4] == SUPERKEY)
             {
                 iframe->if_Context.ec_UPC.ec_SRR0  += 4;
                 iframe->if_Context.ec_SRR1         &= ~PSL_PR;
-                iframe->if_Context.ec_GPR[0]        = 0;            //Set SuperKey
+                iframe->if_Context.ec_GPR[3]        = 0;            //Set SuperKey
             }
             else
             {
