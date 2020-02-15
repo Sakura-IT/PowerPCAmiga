@@ -43,6 +43,8 @@ VOID __SendMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-880(r3)\n\
 VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\tmtlr\tr0\n\tblrl";
 #define libFreeMsgFramePPC(msgframe) __FreeMsgFramePPC(PowerPCBase, (msgframe))
 
+#define _LVOInsertPPC       -402
+#define _LVOFindNamePPC     -444
 #define _LVOSystemStart     -892
 #define _LVOStartTask       -898
 
@@ -312,7 +314,7 @@ VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
 VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
-VOID SystemStart(struct PrivatePPCBase* PowerPCBase);
+VOID SystemStart(struct PrivatePPCBase* PowerPCBase, ULONG lowerlimit, ULONG upperlimit);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
 void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
@@ -336,6 +338,8 @@ VOID FPE_Enable(ULONG value);
 VOID FPE_Disable(ULONG value);
 VOID EnablePPC(VOID);
 VOID DisablePPC(VOID);
+VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase);
+VOID PermitPPC(struct PrivatePPCBase* PowerPCBase);
 VOID RunCPP(VOID);
 VOID FlushICache(VOID);
 ULONG* GetDecTable(VOID);

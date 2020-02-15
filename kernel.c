@@ -129,7 +129,21 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 lastExc->ed_Flags &= ~(1<EXCB_ACTIVE);
             }
 
-            HandleMsgs(PowerPCBase);
+            if (PowerPCBase->pp_LowerLimit)
+            {
+                 ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
+                 if (PowerPCBase->pp_LowerLimit <= currAddress < PowerPCBase->pp_UpperLimit)
+                 {
+                     PowerPCBase->pp_Quantum = 0x1000;
+                     break;
+                 }
+            }
+
+            if ((PowerPCBase->pp_Mutex) || (PowerPCBase->pp_FlagForbid))
+            {
+                PowerPCBase->pp_Quantum = 0x1000;
+                break;
+            }
 
             struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
 
@@ -140,6 +154,8 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     break;
                 }
             }
+
+            HandleMsgs(PowerPCBase);
 
             ULONG mask;
 
@@ -298,12 +314,6 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 
 PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
 {
-    if (PowerPCBase->pp_Mutex)
-    {
-        PowerPCBase->pp_Quantum = 0x1000;
-        return;
-    }
-
     struct MsgFrame* currMsg = (struct MsgFrame*)PowerPCBase->pp_MsgQueue.mlh_Head;
     struct MsgFrame* nxtMsg;
     while (nxtMsg = (struct MsgFrame*)currMsg->mf_Message.mn_Node.ln_Succ)

@@ -918,7 +918,7 @@ PPCFUNCTION struct Node* myRemTailPPC(struct PrivatePPCBase* PowerPCBase, struct
 
 PPCFUNCTION VOID myEnqueuePPC(struct PrivatePPCBase* PowerPCBase, struct List* list, struct Node* node)
 {
-	LONG myPrio = (LONG)node->ln_Pri;
+    LONG myPrio = (LONG)node->ln_Pri;
 	struct Node* nextNode = list->lh_Head;
 
 	while(nextNode->ln_Succ)

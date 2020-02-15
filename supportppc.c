@@ -205,6 +205,32 @@ PPCFUNCTION VOID EnablePPC(VOID)
 *
 *********************************************************************************************/
 
+PPCFUNCTION VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase)
+{
+    PowerPCBase->pp_FlagForbid = 1;
+
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID PermitPPC(struct PrivatePPCBase* PowerPCBase)
+{
+    PowerPCBase->pp_FlagForbid = 0;
+
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 {
 	ULONG key;
@@ -867,9 +893,14 @@ PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase, ULONG lowerlimit, ULONG upperlimit)
 {
+    ForbidPPC(PowerPCBase);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name = GetName();
+    PowerPCBase->pp_LowerLimit = lowerlimit;
+    PowerPCBase->pp_UpperLimit = upperlimit;
+    PermitPPC(PowerPCBase);
+
     struct TaskPPC* myTask;
     APTR myPool;
     struct MemList* myMem;
