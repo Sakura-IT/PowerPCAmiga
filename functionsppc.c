@@ -3581,7 +3581,8 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
 {
     ULONG pointer = rdfData->rd_BufPointer;
     STRPTR buff = (STRPTR)&rdfData->rd_Buffer;
-    LONG iterations, currNibble;
+    ULONG iterations, currNibble;
+    ULONG mySwitch = 0;
 
     if (value)
     {
@@ -3594,17 +3595,34 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
             iterations = 4;
             value = roll(value, 16);
         }
-        currNibble = roll(value, 4) & 0xf; //wip
-
-
-
-
+        for (int i = 0; i < iterations; i++)
+        {
+            currNibble = roll(value, 4) & 0xf; //wip
+            if ((currNibble) || (mySwitch))
+            {
+                mySwitch = -1;
+                if (currNibble > 9)
+                {
+                    currNibble += 55;
+                }
+                else
+                {
+                    currNibble += 48;
+                }
+                buff[pointer] = currNibble;
+                pointer += 1;
+            }
+        }
+        return;
     }
     buff[pointer] = (UBYTE)(value + '0');
     pointer += 1;
     rdfData->rd_BufPointer = pointer;
     return;
 }
+
+//PPCFUNCTION VOID PerformPad(struct RDFData* rdfData, ULONG flag, STRPTR putchdata)
+
 /********************************************************************************************/
 
 PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR formatstring, APTR datastream, APTR (*putchproc)(), APTR putchdata)
@@ -3693,6 +3711,9 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
                 }
                 case 'c':    //type->char
                 {
+                    STRPTR buff = (STRPTR)&rdfData.rd_Buffer;
+                    buff[rdfData.rd_BufPointer] = AdjustParam(&rdfData, flag);
+                    rdfData.rd_BufPointer += 1;
                     break;
                 }
                 default:
