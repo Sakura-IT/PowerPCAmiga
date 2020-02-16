@@ -168,7 +168,7 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
                         break;
                     }
                     case ID_TPPC:
-                    {   RunCPP(); //go asm start
+                    {   SetupRunPPC(PowerPCBase, myFrame);
                         break;
                     }
                     case ID_DONE:

@@ -1004,9 +1004,103 @@ PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* 
 *
 *********************************************************************************************/
 
+PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+{
+    mySetCache(PowerPCBase, CACHE_ICACHEINV, 0, 0);
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+    myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Signals;
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    ULONG myCode = (ULONG)myFrame->mf_PPCArgs.PP_Code + myFrame->mf_PPCArgs.PP_Offset;
+    if (myFrame->mf_PPCArgs.PP_Offset)
+    {
+        myCode = *((ULONG*)(myCode + 2));
+    }
+
+    struct SnoopData* currSnoop = (struct SnoopData*)PowerPCBase->pp_Snoop.mlh_Head;
+    struct SnoopData* nextSnoop;
+
+    while (nextSnoop = (struct SnoopData*)currSnoop->sd_Node.ln_Succ)
+    {
+        if (currSnoop->sd_Type == SNOOP_START)
+        {
+            ULONG (*runSnoop)(__reg("r2") ULONG, __reg("r3") struct TaskPPC*,
+            __reg("r4") ULONG, __reg("r5") struct Task*,
+            __reg("r6") ULONG) = currSnoop->sd_Code;
+            ULONG tempR2 = getR2();
+            runSnoop(currSnoop->sd_Data, myTask, myCode, (struct Task*)myFrame->mf_Arg[2], CREATOR_68K);
+            storeR2(tempR2);
+        }
+        currSnoop = nextSnoop;
+    }
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+    if ((myFrame->mf_PPCArgs.PP_Stack) && (myFrame->mf_PPCArgs.PP_StackSize))
+    {
+        mySetCache(PowerPCBase, CACHE_DCACHEINV, myFrame->mf_PPCArgs.PP_Stack, myFrame->mf_PPCArgs.PP_StackSize);
+    }
+
+    struct iframe storeFrame;
+
+    RunCPP(PowerPCBase, myCode, (struct iframe*)&storeFrame, myFrame->mf_PPCArgs.PP_Stack, myFrame->mf_PPCArgs.PP_StackSize);
+
+    struct MsgFrame* newFrame = CreateMsgFramePPC(PowerPCBase);
+
+    newFrame->mf_Identifier = ID_FPPC;
+    newFrame->mf_Message.mn_Length = MSGLEN;
+    newFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
+
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+    newFrame->mf_Arg[0] = myTask->tp_Task.tc_SigAlloc;
+    newFrame->mf_Arg[2] = myTask->tp_Task.tc_SigRecvd & 0xfffff000;
+    myTask->tp_Task.tc_SigRecvd &= 0xfff;
+
+    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+    newFrame->mf_Message.mn_ReplyPort = myFrame->mf_Message.mn_ReplyPort;
+    newFrame->mf_PPCTask = myTask;
+
+    newFrame->mf_PPCArgs.PP_Regs[12] = storeFrame.if_Context.ec_GPR[2];
+    newFrame->mf_PPCArgs.PP_Regs[0] = storeFrame.if_Context.ec_GPR[3];
+    newFrame->mf_PPCArgs.PP_Regs[1] = storeFrame.if_Context.ec_GPR[4];
+    newFrame->mf_PPCArgs.PP_Regs[8] = storeFrame.if_Context.ec_GPR[5];
+    newFrame->mf_PPCArgs.PP_Regs[9] = storeFrame.if_Context.ec_GPR[6];
+    newFrame->mf_PPCArgs.PP_Regs[2] = storeFrame.if_Context.ec_GPR[22];
+    newFrame->mf_PPCArgs.PP_Regs[3] = storeFrame.if_Context.ec_GPR[23];
+    newFrame->mf_PPCArgs.PP_Regs[4] = storeFrame.if_Context.ec_GPR[24];
+    newFrame->mf_PPCArgs.PP_Regs[5] = storeFrame.if_Context.ec_GPR[25];
+    newFrame->mf_PPCArgs.PP_Regs[6] = storeFrame.if_Context.ec_GPR[26];
+    newFrame->mf_PPCArgs.PP_Regs[7] = storeFrame.if_Context.ec_GPR[27];
+    newFrame->mf_PPCArgs.PP_Regs[10] = storeFrame.if_Context.ec_GPR[28];
+    newFrame->mf_PPCArgs.PP_Regs[11] = storeFrame.if_Context.ec_GPR[29];
+    newFrame->mf_PPCArgs.PP_Regs[13] = storeFrame.if_Context.ec_GPR[30];
+    newFrame->mf_PPCArgs.PP_Regs[14] = storeFrame.if_Context.ec_GPR[31];
+
+    newFrame->mf_PPCArgs.PP_FRegs[0] = storeFrame.if_Context.ec_FPR[1];
+    newFrame->mf_PPCArgs.PP_FRegs[1] = storeFrame.if_Context.ec_FPR[2];
+    newFrame->mf_PPCArgs.PP_FRegs[2] = storeFrame.if_Context.ec_FPR[3];
+    newFrame->mf_PPCArgs.PP_FRegs[3] = storeFrame.if_Context.ec_FPR[4];
+    newFrame->mf_PPCArgs.PP_FRegs[4] = storeFrame.if_Context.ec_FPR[5];
+    newFrame->mf_PPCArgs.PP_FRegs[5] = storeFrame.if_Context.ec_FPR[6];
+    newFrame->mf_PPCArgs.PP_FRegs[6] = storeFrame.if_Context.ec_FPR[7];
+    newFrame->mf_PPCArgs.PP_FRegs[7] = storeFrame.if_Context.ec_FPR[8];
+
+    FreeMsgFramePPC(PowerPCBase, myFrame);
+    SendMsgFramePPC(PowerPCBase, newFrame);
+
+    return;
+}
+
+
 PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
-    // go asm start
+    SetupRunPPC(PowerPCBase, myFrame);
+
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
     struct PrivateTask* myPTask = (struct PrivateTask*)myTask;
     struct MsgFrame* newFrame;
@@ -1034,7 +1128,7 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
                 {
                     case ID_TPPC:
                     {
-                        RunCPP();       //go asm start
+                        SetupRunPPC(PowerPCBase, myFrame);
                         break;
                     }
                     case ID_END:
@@ -1058,6 +1152,7 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
         }
     }
 }
+
 /********************************************************************************************
 *
 *

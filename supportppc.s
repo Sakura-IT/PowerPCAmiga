@@ -73,7 +73,7 @@ _FreeMutexPPC:
 
 #********************************************************************************************
 #
-#    Entry point for dispatching tasks. Jumped to from kernel using rfi.
+#    Entry point for dispatching tasks. r3 = PowerPCBase, r4 = code, r5 = frame, r6 = StackArgs, r7 = StackArgSize
 #
 #********************************************************************************************
 
