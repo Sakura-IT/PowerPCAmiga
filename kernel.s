@@ -40,7 +40,7 @@ _ExcCommon:
         isync					                           #Also reenable FPU
         sync
 
-        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs
+        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
 
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
         la      r4,IF_GAP(r1)                              #iFrame
@@ -207,6 +207,38 @@ _StoreFrame:
         mfdbatl r0,3
         stwu    r0,4(r3)
 
+        mfsr    r0,0
+        stwu    r0,4(r3)
+        mfsr    r0,1
+        stwu    r0,4(r3)
+        mfsr    r0,2
+        stwu    r0,4(r3)
+        mfsr    r0,3
+        stwu    r0,4(r3)
+        mfsr    r0,4
+        stwu    r0,4(r3)
+        mfsr    r0,5
+        stwu    r0,4(r3)
+        mfsr    r0,6
+        stwu    r0,4(r3)
+        mfsr    r0,7
+        stwu    r0,4(r3)
+        mfsr    r0,8
+        stwu    r0,4(r3)
+        mfsr    r0,9
+        stwu    r0,4(r3)
+        mfsr    r0,10
+        stwu    r0,4(r3)
+        mfsr    r0,11
+        stwu    r0,4(r3)
+        mfsr    r0,12
+        stwu    r0,4(r3)
+        mfsr    r0,13
+        stwu    r0,4(r3)
+        mfsr    r0,14
+        stwu    r0,4(r3)
+        mfsr    r0,15
+        stwu    r0,4(r3)
         blr
 
 #********************************************************************************************
@@ -326,6 +358,39 @@ _LoadFrame:
         mtdbatu 3,r3
         lwzu    r3,4(r31)
         mtdbatl 3,r3
+
+        lwzu    r3,4(r31)
+        mtsr    0,r3
+        lwzu    r3,4(r31)
+        mtsr    1,r3
+        lwzu    r3,4(r31)
+        mtsr    2,r3
+        lwzu    r3,4(r31)
+        mtsr    3,r3
+        lwzu    r3,4(r31)
+        mtsr    4,r3
+        lwzu    r3,4(r31)
+        mtsr    5,r3
+        lwzu    r3,4(r31)
+        mtsr    6,r3
+        lwzu    r3,4(r31)
+        mtsr    7,r3
+        lwzu    r3,4(r31)
+        mtsr    8,r3
+        lwzu    r3,4(r31)
+        mtsr    9,r3
+        lwzu    r3,4(r31)
+        mtsr    10,r3
+        lwzu    r3,4(r31)
+        mtsr    11,r3
+        lwzu    r3,4(r31)
+        mtsr    12,r3
+        lwzu    r3,4(r31)
+        mtsr    13,r3
+        lwzu    r3,4(r31)
+        mtsr    14,r3
+        lwzu    r3,4(r31)
+        mtsr    15,r3
 
         mr      r31,r0
         blr

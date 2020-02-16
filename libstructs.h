@@ -241,6 +241,7 @@ ULONG                       if_VRSAVE;
 ULONG                       if_Pad;         //16 bit alignment for FP regs
 struct EXCContext           if_Context;
 struct BATArray             if_BATs[4];
+ULONG                       if_Segments[16];
 DOUBLE                      if_AlignStore;
 ULONG                       if_ExceptionVector;
 };

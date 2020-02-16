@@ -47,7 +47,8 @@
 .set IF_CONTEXT_GPR,            IF_CONTEXT+40
 .set IF_CONTEXT_FPR,            IF_CONTEXT+40+128
 .set IF_BATS,                   IF_CONTEXT+40+128+256
-.set IF_ALIGNSTORE,             IF_BATS+64
+.set IF_SEGMENTS,               IF_CONTEXT+40+128+256+64
+.set IF_ALIGNSTORE,             IF_SEGMENTS+64
 .set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
 .set IF_SIZE,                   IF_EXCEPTIONVECTOR+4
 
