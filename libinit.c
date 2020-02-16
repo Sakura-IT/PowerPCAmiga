@@ -912,6 +912,7 @@ static const APTR LibVectors[] =
     (APTR)FreeMsgFramePPC,
     (APTR)SystemStart,
     (APTR)StartTask,             //Should not be jumped to, just a holder for the address
+    (APTR)EndTask,
 
     (APTR) -1
 };

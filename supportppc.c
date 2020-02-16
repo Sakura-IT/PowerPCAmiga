@@ -773,21 +773,19 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task)
 {
-    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
-
     ULONG key = mySuper(PowerPCBase);
 
-    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 0));
-    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 16));
-    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 32));
-    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 48));
+    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 0));
+    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 16));
+    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 32));
+    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 48));
 
-    MoveToBAT(CHMMU_BAT0, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
-    MoveToBAT(CHMMU_BAT1, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
-    MoveToBAT(CHMMU_BAT2, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
-    MoveToBAT(CHMMU_BAT3, (struct BATArray*)&PowerPCBase->pp_StoredBATs);
+    MoveToBAT(CHMMU_BAT0, (struct BATArray*)&PowerPCBase->pp_StoredBATs[0]);
+    MoveToBAT(CHMMU_BAT1, (struct BATArray*)&PowerPCBase->pp_StoredBATs[1]);
+    MoveToBAT(CHMMU_BAT2, (struct BATArray*)&PowerPCBase->pp_StoredBATs[2]);
+    MoveToBAT(CHMMU_BAT3, (struct BATArray*)&PowerPCBase->pp_StoredBATs[3]);
 
     myUser(PowerPCBase, key);
 
@@ -800,10 +798,8 @@ PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task)
 {
-    struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
-
     ULONG key = mySuper(PowerPCBase);
 
     MoveToBAT(CHMMU_BAT0, (struct BATArray*)&PowerPCBase->pp_StoredBATs[0]);
@@ -811,10 +807,10 @@ PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase)
     MoveToBAT(CHMMU_BAT2, (struct BATArray*)&PowerPCBase->pp_StoredBATs[2]);
     MoveToBAT(CHMMU_BAT3, (struct BATArray*)&PowerPCBase->pp_StoredBATs[3]);
 
-    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 0));
-    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 16));
-    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 32));
-    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)myTask->tp_BATStorage) + 64));
+    MoveFromBAT(CHMMU_BAT0, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 0));
+    MoveFromBAT(CHMMU_BAT1, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 16));
+    MoveFromBAT(CHMMU_BAT2, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 32));
+    MoveFromBAT(CHMMU_BAT3, (struct BATArray*)(((ULONG)task->tp_BATStorage) + 64));
 
     myUser(PowerPCBase, key);
 }
@@ -1062,6 +1058,23 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
         }
     }
 }
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID EndTask(VOID)
+{
+    struct PPCZeroPage *myZP = 0;
+    ULONG key = mySuper(NULL);             //Super does not use PowerPCBase
+    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
+    myUser(PowerPCBase, key);
+
+    myDeleteTaskPPC(PowerPCBase, NULL);
+
+    return;
+}
 
 /********************************************************************************************
 *
@@ -1070,9 +1083,6 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
 *********************************************************************************************/
 
 PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
-
-/********************************************************************************************/
-
 {
     FreeMsgFramePPC(PowerPCBase,myFrame);
 
@@ -1113,4 +1123,4 @@ PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* m
     CauseDECInterrupt(PowerPCBase);
     while(1);  //Warning 208
 }
-
+/********************************************************************************************/

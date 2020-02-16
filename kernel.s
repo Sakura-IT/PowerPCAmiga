@@ -70,14 +70,19 @@ _ExcCommon:
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
-        mfspr   r0,HID0                                    #Flush instruction cache
-        mr      r3,r0
+        b       .Mojo1                                     #Some L1 mojo
+
+.Mojo2: mfspr   r0,HID0
         ori     r0,r0,HID0_ICFI
         mtspr   HID0,r0
-        mtspr   HID0,r3
+        xori    r0,r0,HID0_ICFI
+        mtspr   HID0,r0
         sync
+        b       .Mojo3
 
-        lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
+.Mojo1: b       .Mojo2
+
+.Mojo3: lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
         lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
 

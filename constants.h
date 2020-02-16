@@ -22,12 +22,11 @@
 
 #define PPC_VECLEN              3           //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49
-#define NUM_OF_PPC_FUNCS        101
+#define NUM_OF_PPC_FUNCS        102
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
 #define MSGLEN                  192
 #define SUPERKEY                0xABADBEEF
-
 
 #define CMP_DESTGREATER         -1
 #define CMP_DESTLESS            1
@@ -35,6 +34,8 @@
 
 #define GETINFO_L2STATE         0x8010200A
 #define GETINFO_L2SIZE          0x8010200C
+
+#define TASKATTR_PRIVATE        0x80100011
 
 #define EXCATTR_TIMEDREMOVAL    0x80101007
 #define EXCF_DECREMENTER  		1<<9
@@ -50,6 +51,7 @@
 #define TS_ATOMIC               8
 
 #define SIGF_WAIT               1<<10
+#define SYS_SIGALLOC            0x0000FFFF
 
 #define NT_XMSG68K              102
 #define NT_XMSGPPC              103

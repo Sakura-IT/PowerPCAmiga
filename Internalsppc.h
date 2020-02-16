@@ -47,6 +47,7 @@ VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\
 #define _LVOFindNamePPC     -444
 #define _LVOSystemStart     -892
 #define _LVOStartTask       -898
+#define _LVOEndTask         -904
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -108,16 +109,6 @@ void mulInt64(struct UInt64* myint64, ULONG value1, ULONG value2)
           \tstw\tr6,4(r3)\n\
           \tmulhw\tr6,r4,r5\n\
           \tstw\tr6,0(r3)\n";
-
-void mvfrBAT0(struct BATArray*)
-        ="\tmfibatu\tr4,0\n\
-          \tstw\tr4,0(r3)\n\
-          \tmfibatl\tr4,0\n\
-          \tstw\tr4,4(r3)\n\
-          \tmfdbatu\tr4,0\n\
-          \tstw\tr4,8(r3)\n\
-          \tmfdbatl\tr4,0\n\
-          \tstw\tr4,12(r3)\n";
 
 void mvfrBAT0(struct BATArray*)
         ="\tmfibatu\tr4,0\n\
@@ -301,8 +292,8 @@ VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock);
 LONG LockMutexPPC(ULONG mutex);
 VOID FreeMutexPPC(ULONG mutex);
 ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal);
-VOID GetBATs(struct PrivatePPCBase* PowerPCBase);
-VOID StoreBATs(struct PrivatePPCBase* PowerPCBase);
+VOID GetBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task);
+VOID StoreBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task);
 VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray);
 VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray);
 struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
@@ -322,6 +313,9 @@ void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe,
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID FlushDCache(struct PrivatePPCBase* PowerPCBase);
 STRPTR GetName(void);
+VOID EndTask(VOID);
+ULONG GetLen(STRPTR string);
+STRPTR CopyStr(APTR source, APTR dest);
 ULONG SmallExcHandler(struct ExcData* data, struct iframe* iframe);
 ULONG DoAlign(struct iframe* iframe, ULONG SRR0);
 ULONG DoDataStore(struct iframe* iframe, ULONG SRR0, struct DataMsg* data);

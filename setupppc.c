@@ -598,6 +598,16 @@ __section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initDa
     PowerPCBase->pp_StdQuantum = quantum;
     PowerPCBase->pp_BusClock = busclock;
 
+    mvfrBAT0(&PowerPCBase->pp_ExceptionBATs[0]);
+    mvfrBAT1(&PowerPCBase->pp_ExceptionBATs[1]);
+    mvfrBAT2(&PowerPCBase->pp_ExceptionBATs[2]);
+    mvfrBAT3(&PowerPCBase->pp_ExceptionBATs[3]);
+
+    mvfrBAT0(&PowerPCBase->pp_SystemBATs[0]);
+    mvfrBAT1(&PowerPCBase->pp_SystemBATs[1]);
+    mvfrBAT2(&PowerPCBase->pp_SystemBATs[2]);
+    mvfrBAT3(&PowerPCBase->pp_SystemBATs[3]);
+
     setupCaches(PowerPCBase);
 
     myZP->zp_Status = STATUS_READY;

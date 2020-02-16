@@ -321,6 +321,291 @@ PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 
 PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
+    struct DebugArgs args;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    ULONG value, memStack, myCode;
+    APTR memBATStorage, memName;
+
+    struct TaskPPC* newTask;
+    struct MemList* memBATml;
+    struct MemList* memNameml;
+    struct MemList* memStackml;
+    struct MemList* memFrameml;
+
+    struct iframe* memFrame;
+    struct MsgPortPPC* memPort;
+    struct TaskPtr* taskPtr;
+
+    struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
+    currTask->tp_Flags |= TASKPPCF_CHOWN;
+
+    if (myCode = myGetTagDataPPC(PowerPCBase, TASKATTR_CODE, 0, taglist))
+    {
+        if (newTask = AllocVec68K(PowerPCBase, sizeof(struct TaskPPC), MEMF_PUBLIC | MEMF_CLEAR))
+        {
+            newTask->tp_Link.tl_Task = newTask;
+            newTask->tp_Link.tl_Sig = 0xfff;
+            myNewListPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry);
+            newTask->tp_Task.tc_Node.ln_Type = NT_PPCTASK;
+            newTask->tp_Task.tc_Flags = TF_PROCTIME;
+            newTask->tp_PowerPCBase = PowerPCBase;
+
+            if (memBATStorage = AllocVec68K(PowerPCBase, sizeof(struct BATArray) * 4, MEMF_PUBLIC | MEMF_CLEAR))
+            {
+                newTask->tp_BATStorage = memBATStorage;
+                if (memBATml = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC | MEMF_CLEAR))
+                {
+                    memBATml->ml_NumEntries = 1;
+                    memBATml->ml_ME[0].me_Un.meu_Addr = memBATStorage;
+                    memBATml->ml_ME[0].me_Length = sizeof(struct BATArray) * 4;
+                    myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memBATml);
+
+                    if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_NAME, 0, taglist))
+                    {
+                        ULONG nameSize = GetLen((STRPTR)value) + 1;
+                        if (memName = AllocVec68K(PowerPCBase, nameSize, MEMF_PUBLIC | MEMF_CLEAR))
+                        {
+                            if (memNameml = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC | MEMF_CLEAR))
+                            {
+                                memNameml->ml_NumEntries = 1;
+                                memNameml->ml_ME[0].me_Un.meu_Addr = memName;
+                                memNameml->ml_ME[0].me_Length = nameSize;
+                                myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memNameml);
+
+                                CopyStr((APTR)value, (APTR)memName);
+
+                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_SYSTEM, 0, taglist))
+                                {
+                                    newTask->tp_Flags = TASKPPCF_SYSTEM;
+                                }
+
+                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_ATOMIC, 0, taglist))
+                                {
+                                    newTask->tp_Flags |= TASKPPCF_ATOMIC;
+                                }
+
+                                myNewListPPC(PowerPCBase, (struct List*)&newTask->tp_TaskPools);
+
+                                newTask->tp_Task.tc_Node.ln_Pri = myGetTagDataPPC(PowerPCBase, TASKATTR_PRI, 0, taglist);
+
+                                value = myGetTagDataPPC(PowerPCBase, TASKATTR_NICE, 0, taglist);
+
+                                if (value < -20)
+                                {
+                                    value = -20;
+                                }
+                                else if (value > 20)
+                                {
+                                    value = 20;
+                                }
+
+                                newTask->tp_Nice = value;
+
+                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_MOTHERPRI, 0, taglist))
+                                {
+                                    newTask->tp_Task.tc_Node.ln_Pri = currTask->tp_Task.tc_Node.ln_Pri;
+                                    newTask->tp_Nice = currTask->tp_Nice;
+                                }
+
+                                value = myGetTagDataPPC(PowerPCBase, TASKATTR_STACKSIZE, 0x10000, taglist);
+
+                                if (value < 0x10000)
+                                {
+                                    value = 0x10000;
+                                }
+
+                                newTask->tp_StackSize = value;
+
+                                if (memStack = (ULONG)AllocVec68K(PowerPCBase, value, MEMF_PUBLIC | MEMF_CLEAR))
+                                {
+                                    ULONG SPointer = memStack + value;
+                                    newTask->tp_Task.tc_SPLower = (APTR)memStack;
+                                    newTask->tp_Task.tc_SPUpper = (APTR)SPointer;
+                                    SPointer = (SPointer - 56) & -32;
+                                    newTask->tp_Task.tc_SPReg = (APTR)SPointer;
+
+                                    if (memStackml = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC | MEMF_CLEAR))
+                                    {
+                                        memStackml->ml_NumEntries = 1;
+                                        memStackml->ml_ME[0].me_Un.meu_Addr = (APTR)memStack;
+                                        memStackml->ml_ME[0].me_Length = value;
+                                        myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memStackml);
+
+                                        if (memFrame = AllocVec68K(PowerPCBase, sizeof(struct iframe), MEMF_PUBLIC | MEMF_CLEAR))
+                                        {
+                                            newTask->tp_ContextMem = memFrame;
+                                            memFrame->if_Context.ec_GPR[1] = SPointer;
+                                            if (memFrameml = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC | MEMF_CLEAR))
+                                            {
+                                                memFrameml->ml_NumEntries = 1;
+                                                memFrameml->ml_ME[0].me_Un.meu_Addr = (APTR)memFrame;
+                                                memFrameml->ml_ME[0].me_Length = sizeof(struct iframe);
+                                                myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memFrameml);
+
+                                                memFrame->if_Context.ec_UPC.ec_SRR0 = myCode;
+                                                memFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+                                                memFrame->if_Context.ec_GPR[2] = getR2();
+
+                                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_BAT, 0, taglist))
+                                                {
+                                                    myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_StoredBATs, &memFrame->if_BATs, sizeof(struct BATArray) * 4);  //Not working
+                                                }
+                                                else
+                                                {
+                                                    myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_SystemBATs, &memFrame->if_BATs, sizeof(struct BATArray) * 4);
+                                                }
+
+                                                ULONG key = mySuper(PowerPCBase);
+
+                                                for (int i = 0; i < 16; i++)
+                                                {
+                                                    memFrame->if_Segments[i] = getSRIn(i * 4096);
+                                                }
+
+                                                myUser(PowerPCBase, key);
+
+                                                ULONG defvalue = *((ULONG*)((ULONG)PowerPCBase - _LVOEndTask + 2));
+
+                                                memFrame->if_Context.ec_LR = myGetTagDataPPC(PowerPCBase, TASKATTR_EXITCODE, defvalue, taglist);
+
+                                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_PRIVATE, 0, taglist))
+                                                {
+                                                    memFrame->if_Context.ec_GPR[13] = value | 1;
+                                                }
+                                                else
+                                                {
+                                                    memFrame->if_Context.ec_GPR[13] = (ULONG)PowerPCBase->pp_ThisPPCProc;
+                                                }
+
+                                                if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_INHERITR2, 0, taglist))
+                                                {
+                                                    memFrame->if_Context.ec_GPR[2] = getR2();
+                                                }
+                                                else
+                                                {
+                                                    memFrame->if_Context.ec_GPR[2] = myGetTagDataPPC(PowerPCBase, TASKATTR_R2, 0, taglist);
+                                                }
+
+                                                memFrame->if_Context.ec_GPR[3] = myGetTagDataPPC(PowerPCBase, TASKATTR_R3, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[4] = myGetTagDataPPC(PowerPCBase, TASKATTR_R4, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[5] = myGetTagDataPPC(PowerPCBase, TASKATTR_R5, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[6] = myGetTagDataPPC(PowerPCBase, TASKATTR_R6, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[7] = myGetTagDataPPC(PowerPCBase, TASKATTR_R7, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[8] = myGetTagDataPPC(PowerPCBase, TASKATTR_R8, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[9] = myGetTagDataPPC(PowerPCBase, TASKATTR_R9, 0, taglist);
+                                                memFrame->if_Context.ec_GPR[10] = myGetTagDataPPC(PowerPCBase, TASKATTR_R10, 0, taglist);
+
+                                                if (memPort = AllocVec68K(PowerPCBase, sizeof(struct MsgPortPPC), MEMF_PUBLIC | MEMF_CLEAR))
+                                                {
+                                                    myNewListPPC(PowerPCBase, (struct List*)&memPort->mp_IntMsg);
+                                                    myNewListPPC(PowerPCBase, (struct List*)&memPort->mp_Port.mp_MsgList);
+
+                                                    newTask->tp_Task.tc_SigAlloc = SYS_SIGALLOC;
+
+                                                    memPort->mp_Port.mp_SigBit = SIGB_DOS;
+
+                                                    if (myInitSemaphorePPC(PowerPCBase, &memPort->mp_Semaphore) == -1)
+                                                    {
+
+                                                        memPort->mp_Port.mp_SigTask = newTask;
+                                                        memPort->mp_Port.mp_Flags = PA_SIGNAL;
+                                                        memPort->mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
+                                                        newTask->tp_Msgport = memPort;
+
+                                                        newTask->tp_PoolMem = myGetTagDataPPC(PowerPCBase, TASKATTR_NOTIFYMSG, 0, taglist);
+
+                                                        if (newTask->tp_MessageRIP = AllocVec68K(PowerPCBase, 928, MEMF_PUBLIC | MEMF_CLEAR))
+                                                        {
+                                                            if (taskPtr = AllocVec68K(PowerPCBase, sizeof(struct TaskPtr), MEMF_PUBLIC | MEMF_CLEAR))
+                                                            {
+                                                                taskPtr->tptr_Task = newTask;
+                                                                newTask->tp_TaskPtr = taskPtr;
+                                                                taskPtr->tptr_Node.ln_Name = newTask->tp_Task.tc_Node.ln_Name;
+
+                                                                myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+                                                                myAddTailPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_AllTasks, (struct Node*)taskPtr);
+                                                                PowerPCBase->pp_NumAllTasks += 1;
+                                                                myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
+
+                                                                while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+
+                                                                if (newTask->tp_Flags & TASKPPCF_SYSTEM)
+                                                                {
+                                                                    PowerPCBase->pp_IdSysTasks += 1;
+                                                                    newTask->tp_Id = PowerPCBase->pp_IdSysTasks;
+
+                                                                }
+                                                                else
+                                                                {
+                                                                    PowerPCBase->pp_IdUsrTasks += 1;
+                                                                    newTask->tp_Id = PowerPCBase->pp_IdUsrTasks;
+                                                                }
+
+                                                                newTask->tp_Quantum = PowerPCBase->pp_StdQuantum;
+                                                                newTask->tp_Task.tc_State = TS_READY;
+                                                                newTask->tp_Desired = 0; //from NICE table TBI
+
+                                                                InsertOnPri(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyTasks, newTask);
+
+                                                                PowerPCBase->pp_FlagReschedule = -1;
+
+                                                                FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+                                                                myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+                                                                struct SnoopData* currSnoop = (struct SnoopData*)PowerPCBase->pp_Snoop.mlh_Head;
+                                                                struct SnoopData* nextSnoop;
+
+                                                                while (nextSnoop = (struct SnoopData*)currSnoop->sd_Node.ln_Succ)
+                                                                {
+                                                                    if (currSnoop->sd_Type == SNOOP_START)
+                                                                    {
+                                                                        ULONG (*runSnoop)(__reg("r2") ULONG, __reg("r3") struct TaskPPC*,
+                                                                                          __reg("r4") ULONG, __reg("r5") struct TaskPPC*,
+                                                                                          __reg("r6") ULONG) = currSnoop->sd_Code;
+                                                                        ULONG tempR2 = getR2();
+                                                                        runSnoop(currSnoop->sd_Data, newTask, myCode, currTask, CREATOR_PPC);
+                                                                        storeR2(tempR2);
+                                                                    }
+                                                                    currSnoop = nextSnoop;
+                                                                }
+                                                                myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+
+                                                                CauseDECInterrupt(PowerPCBase);
+
+                                                                currTask->tp_Flags &= ~TASKPPCF_CHOWN;
+
+                                                                printDebug(PowerPCBase, (struct DebugArgs*)&args);
+                                                                return newTask;
+                                                            }
+                                                            FreeVec68K(PowerPCBase, newTask->tp_MessageRIP);
+                                                        }
+                                                        FreeVec68K(PowerPCBase, memPort->mp_Semaphore.ssppc_reserved);
+                                                    }
+                                                    FreeVec68K(PowerPCBase, memPort);
+                                                }
+                                                FreeVec68K(PowerPCBase, memFrameml);
+                                            }
+                                            FreeVec68K(PowerPCBase, memFrame);
+                                        }
+                                        FreeVec68K(PowerPCBase, memStackml);
+                                    }
+                                    FreeVec68K(PowerPCBase, (APTR)memStack);
+                                }
+                                FreeVec68K(PowerPCBase, memNameml);
+                            }
+                            FreeVec68K(PowerPCBase, memName);
+                        }
+                    }
+                    FreeVec68K(PowerPCBase, memBATml);
+                }
+                FreeVec68K(PowerPCBase, memBATStorage);
+            }
+            FreeVec68K(PowerPCBase, newTask);
+        }
+    }
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
     return NULL;
 }
 
@@ -2132,13 +2417,13 @@ PPCFUNCTION VOID myChangeMMU(struct PrivatePPCBase* PowerPCBase, ULONG mode)
         case CHMMU_STANDARD:
         {
             myTask->tp_Flags &= ~MMUF_BAT;
-            GetBATs(PowerPCBase);
+            GetBATs(PowerPCBase, myTask);
             break;
         }
         case CHMMU_BAT:
         {
             myTask->tp_Flags |= MMUF_BAT;
-            StoreBATs(PowerPCBase);
+            StoreBATs(PowerPCBase, myTask);
             break;
         }
     }
