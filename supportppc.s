@@ -90,7 +90,7 @@ _RunCPP:
         stwu    r4,8(r3)
         stwu    r5,4(r3)
         stwu    r6,4(r3)
-        stwu    r7,8(r3)
+        stwu    r7,4(r3)
         stwu    r8,4(r3)
         stwu    r9,4(r3)
         stwu    r10,4(r3)
@@ -215,7 +215,7 @@ _RunCPP:
         mr      r21,r0
 
         lwz     r15,PP_FLAGS(r14)
-        rlwinm. r15,r15,(32-PPB_LINEAR),31,31
+        rlwinm. r16,r15,(32-PPB_LINEAR),31,31
         beq     .notLinear
 
         mr      r5,r22
