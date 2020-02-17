@@ -52,6 +52,15 @@
 .set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
 .set IF_SIZE,                   IF_EXCEPTIONVECTOR+4
 
+.set PP_FLAGS,                  8
+.set PP_STACK,                  12
+.set PP_STACKSIZE,              16
+.set PP_REGS,                   20
+.set PP_FREGS,                  80
+
+.set PPB_LINEAR,                1
+.set PPB_THROW,                 2
+
 .set WAITTIME_UPPER,            14                #Align with struct WaitTime in libstructs.h
 .set WAITTIME_LOWER,            18
 

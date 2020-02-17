@@ -334,7 +334,7 @@ VOID EnablePPC(VOID);
 VOID DisablePPC(VOID);
 VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase);
 VOID PermitPPC(struct PrivatePPCBase* PowerPCBase);
-VOID RunCPP(struct PrivatePPCBase* PowerPCBase, ULONG Code, struct iframe* frame, APTR Stack, ULONG StackSize);
+VOID RunCPP(struct iframe* frame, ULONG Code, APTR args);
 VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 VOID FlushICache(VOID);
 ULONG* GetDecTable(VOID);

@@ -1044,9 +1044,11 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
         mySetCache(PowerPCBase, CACHE_DCACHEINV, myFrame->mf_PPCArgs.PP_Stack, myFrame->mf_PPCArgs.PP_StackSize);
     }
 
+    myTask->tp_Task.tc_SigAlloc = myFrame->mf_Arg[1];
+
     struct iframe storeFrame;
 
-    RunCPP(PowerPCBase, myCode, (struct iframe*)&storeFrame, myFrame->mf_PPCArgs.PP_Stack, myFrame->mf_PPCArgs.PP_StackSize);
+    RunCPP((struct iframe*)&storeFrame, myCode, &myFrame->mf_PPCArgs);
 
     struct MsgFrame* newFrame = CreateMsgFramePPC(PowerPCBase);
 
@@ -1065,30 +1067,7 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
     newFrame->mf_Message.mn_ReplyPort = myFrame->mf_Message.mn_ReplyPort;
     newFrame->mf_PPCTask = myTask;
 
-    newFrame->mf_PPCArgs.PP_Regs[12] = storeFrame.if_Context.ec_GPR[2];
-    newFrame->mf_PPCArgs.PP_Regs[0] = storeFrame.if_Context.ec_GPR[3];
-    newFrame->mf_PPCArgs.PP_Regs[1] = storeFrame.if_Context.ec_GPR[4];
-    newFrame->mf_PPCArgs.PP_Regs[8] = storeFrame.if_Context.ec_GPR[5];
-    newFrame->mf_PPCArgs.PP_Regs[9] = storeFrame.if_Context.ec_GPR[6];
-    newFrame->mf_PPCArgs.PP_Regs[2] = storeFrame.if_Context.ec_GPR[22];
-    newFrame->mf_PPCArgs.PP_Regs[3] = storeFrame.if_Context.ec_GPR[23];
-    newFrame->mf_PPCArgs.PP_Regs[4] = storeFrame.if_Context.ec_GPR[24];
-    newFrame->mf_PPCArgs.PP_Regs[5] = storeFrame.if_Context.ec_GPR[25];
-    newFrame->mf_PPCArgs.PP_Regs[6] = storeFrame.if_Context.ec_GPR[26];
-    newFrame->mf_PPCArgs.PP_Regs[7] = storeFrame.if_Context.ec_GPR[27];
-    newFrame->mf_PPCArgs.PP_Regs[10] = storeFrame.if_Context.ec_GPR[28];
-    newFrame->mf_PPCArgs.PP_Regs[11] = storeFrame.if_Context.ec_GPR[29];
-    newFrame->mf_PPCArgs.PP_Regs[13] = storeFrame.if_Context.ec_GPR[30];
-    newFrame->mf_PPCArgs.PP_Regs[14] = storeFrame.if_Context.ec_GPR[31];
-
-    newFrame->mf_PPCArgs.PP_FRegs[0] = storeFrame.if_Context.ec_FPR[1];
-    newFrame->mf_PPCArgs.PP_FRegs[1] = storeFrame.if_Context.ec_FPR[2];
-    newFrame->mf_PPCArgs.PP_FRegs[2] = storeFrame.if_Context.ec_FPR[3];
-    newFrame->mf_PPCArgs.PP_FRegs[3] = storeFrame.if_Context.ec_FPR[4];
-    newFrame->mf_PPCArgs.PP_FRegs[4] = storeFrame.if_Context.ec_FPR[5];
-    newFrame->mf_PPCArgs.PP_FRegs[5] = storeFrame.if_Context.ec_FPR[6];
-    newFrame->mf_PPCArgs.PP_FRegs[6] = storeFrame.if_Context.ec_FPR[7];
-    newFrame->mf_PPCArgs.PP_FRegs[7] = storeFrame.if_Context.ec_FPR[8];
+    myCopyMemPPC(PowerPCBase, &myFrame->mf_PPCArgs.PP_Regs, &newFrame->mf_PPCArgs.PP_Regs, (15*4) + (8*8));
 
     FreeMsgFramePPC(PowerPCBase, myFrame);
     SendMsgFramePPC(PowerPCBase, newFrame);

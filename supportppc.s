@@ -73,11 +73,285 @@ _FreeMutexPPC:
 
 #********************************************************************************************
 #
-#    Entry point for dispatching tasks. r3 = PowerPCBase, r4 = code, r5 = frame, r6 = StackArgs, r7 = StackArgSize
+#    Entry point for dispatching tasks. r3 = iframe, r4 = code, r5 = args
 #
 #********************************************************************************************
 
 _RunCPP:
+        stwu    r1,-256(r1)
+        stw     r3,200(r1)
+
+        stw     r3,IF_CONTEXT_GPR+12(r3)
+        la      r3,IF_CONTEXT_GPR(r3)
+        stw     r0,0(r3)
+        mflr    r0
+        stwu    r0,4(r3)        #using spot r1 for lr
+        stwu    r2,4(r3)
+        stwu    r4,8(r3)
+        stwu    r5,4(r3)
+        stwu    r6,4(r3)
+        stwu    r7,8(r3)
+        stwu    r8,4(r3)
+        stwu    r9,4(r3)
+        stwu    r10,4(r3)
+        stwu    r11,4(r3)
+        stwu    r12,4(r3)
+        stwu    r13,4(r3)
+        stwu    r14,4(r3)
+        stwu    r15,4(r3)
+        stwu    r16,4(r3)
+        stwu    r17,4(r3)
+        stwu    r18,4(r3)
+        stwu    r19,4(r3)
+        stwu    r20,4(r3)
+        stwu    r21,4(r3)
+        stwu    r22,4(r3)
+        stwu    r23,4(r3)
+        stwu    r24,4(r3)
+        stwu    r25,4(r3)
+        stwu    r26,4(r3)
+        stwu    r27,4(r3)
+        stwu    r28,4(r3)
+        stwu    r29,4(r3)
+        stwu    r30,4(r3)
+        stwu    r31,4(r3)
+
+        stfdu   f0,4(r3)
+        stfdu   f1,8(r3)
+        stfdu   f2,8(r3)
+        stfdu   f3,8(r3)
+        stfdu   f4,8(r3)
+        stfdu   f5,8(r3)
+        stfdu   f6,8(r3)
+        stfdu   f7,8(r3)
+        stfdu   f8,8(r3)
+        stfdu   f9,8(r3)
+        stfdu   f10,8(r3)
+        stfdu   f11,8(r3)
+        stfdu   f12,8(r3)
+        stfdu   f13,8(r3)
+        stfdu   f14,8(r3)
+        stfdu   f15,8(r3)
+        stfdu   f16,8(r3)
+        stfdu   f17,8(r3)
+        stfdu   f18,8(r3)
+        stfdu   f19,8(r3)
+        stfdu   f20,8(r3)
+        stfdu   f21,8(r3)
+        stfdu   f22,8(r3)
+        stfdu   f23,8(r3)
+        stfdu   f24,8(r3)
+        stfdu   f25,8(r3)
+        stfdu   f26,8(r3)
+        stfdu   f27,8(r3)
+        stfdu   f28,8(r3)
+        stfdu   f29,8(r3)
+        stfdu   f30,8(r3)
+        stfdu   f31,8(r3)
+
+        lwz     r7,PP_STACK(r5)
+        lwz     r8,PP_STACKSIZE(r5)
+
+        mr.     r7,r7
+        beq     .noStack
+
+        mr.     r8,r8
+        beq    .noStack
+
+        mr      r9,r1
+        sub     r1,r1,r8
+        subi    r10,r1,1
+        subi    r11,r7,1
+
+.copyStack:
+        lbzu    r12,1(r11)
+        stbu    r12,1(r10)
+        subi    r8,r8,1
+        mr.     r8,r8
+        bne     .copyStack
+
+        subi    r1,r1,24
+        stw     r9,0(r1)
+        b       .doneStack
+
+.noStack:
+        stwu    r1,-68(r1)
+.doneStack:
+        mr      r14,r5
+        mtlr    r4
+
+        lwz	    r2,PP_REGS+12*4(r14)
+        lwz	    r3,PP_REGS+0*4(r14)
+        lwz	    r4,PP_REGS+1*4(r14)
+        lwz	    r5,PP_REGS+8*4(r14)
+        lwz	    r6,PP_REGS+9*4(r14)
+        lwz	    r22,PP_REGS+2*4(r14)
+        lwz	    r23,PP_REGS+3*4(r14)
+        lwz	    r24,PP_REGS+4*4(r14)
+        lwz	    r25,PP_REGS+5*4(r14)
+        lwz	    r26,PP_REGS+6*4(r14)
+        lwz	    r27,PP_REGS+7*4(r14)
+        lwz	    r28,PP_REGS+10*4(r14)
+        lwz	    r29,PP_REGS+11*4(r14)
+        lwz	    r30,PP_REGS+13*4(r14)
+        lwz	    r31,PP_REGS+14*4(r14)
+        lfd	    f1,PP_FREGS+0*8(r14)
+        lfd	    f2,PP_FREGS+1*8(r14)
+        lfd	    f3,PP_FREGS+2*8(r14)
+        lfd	    f4,PP_FREGS+3*8(r14)
+        lfd	    f5,PP_FREGS+4*8(r14)
+        lfd	    f6,PP_FREGS+5*8(r14)
+        lfd	    f7,PP_FREGS+6*8(r14)
+        lfd	    f8,PP_FREGS+7*8(r14)
+
+        li      r0,0
+        mr      r7,r0
+        mr      r8,r0
+        mr      r9,r0
+        mr      r10,r0
+        mr      r11,r0
+        mr      r12,r0
+        mr      r20,r0
+        mr      r21,r0
+
+        lwz     r15,PP_FLAGS(r14)
+        rlwinm. r15,r15,(32-PPB_LINEAR),31,31
+        beq     .notLinear
+
+        mr      r5,r22
+        mr      r6,r23
+        mr      r7,r24
+        mr      r8,r25
+        mr      r9,r26
+        mr      r10,r27
+
+.notLinear:
+
+        mr      r14,r0
+        mr      r16,r0
+        mr      r17,r0
+        mr      r18,r0
+        mr      r19,r0
+
+        rlwinm. r15,r15,(32-PPB_THROW),31,31
+        mr      r15,r0
+        loadreg r0,'WARP'
+        beq     .noThrow
+
+        trap
+
+.noThrow:
+        blrl
+
+        lwz     r1,0(r1)
+        lwz     r14,200(r1)         #frame
+        lwz     r15,5*4(r14)        #args
+        lwz     r16,PP_FLAGS(r15)
+
+        rlwinm. r16,r16,(32-PPB_LINEAR),31,31
+        beq     .notLinear2
+
+        mr      r22,r5
+        mr      r23,r6
+        mr      r24,r7
+        mr      r25,r8
+        mr      r26,r9
+        mr      r27,r10
+
+.notLinear2:
+        stw     r2,PP_REGS+12*4(r15)
+        stw     r3,PP_REGS+0*4(r15)
+        stw     r4,PP_REGS+1*4(r15)
+        stw     r5,PP_REGS+8*4(r15)
+        stw     r6,PP_REGS+9*4(r15)
+        stw     r22,PP_REGS+2*4(r15)
+        stw     r23,PP_REGS+3*4(r15)
+        stw     r24,PP_REGS+4*4(r15)
+        stw     r25,PP_REGS+5*4(r15)
+        stw     r26,PP_REGS+6*4(r15)
+        stw     r27,PP_REGS+7*4(r15)
+        stw     r28,PP_REGS+10*4(r15)
+        stw     r29,PP_REGS+11*4(r15)
+        stw     r30,PP_REGS+13*4(r15)
+        stw     r31,PP_REGS+14*4(r15)
+        stfd    f1,PP_FREGS+0*8(r15)
+        stfd    f2,PP_FREGS+1*8(r15)
+        stfd    f3,PP_FREGS+2*8(r15)
+        stfd    f4,PP_FREGS+3*8(r15)
+        stfd    f5,PP_FREGS+4*8(r15)
+        stfd    f6,PP_FREGS+5*8(r15)
+        stfd    f7,PP_FREGS+6*8(r15)
+        stfd    f8,PP_FREGS+7*8(r15)
+
+        mr      r3,r14
+        lwz     r0,0(r3)
+        lwzu    r14,4(r3)
+        mtlr    r14
+        lwzu    r2,4(r3)
+        lwzu    r4,8(r3)
+        lwzu    r5,4(r3)
+        lwzu    r6,4(r3)
+        lwzu    r7,4(r3)
+        lwzu    r8,4(r3)
+        lwzu    r9,4(r3)
+        lwzu    r10,4(r3)
+        lwzu    r11,4(r3)
+        lwzu    r12,4(r3)
+        lwzu    r13,4(r3)
+        lwzu    r14,4(r3)
+        lwzu    r15,4(r3)
+        lwzu    r16,4(r3)
+        lwzu    r17,4(r3)
+        lwzu    r18,4(r3)
+        lwzu    r19,4(r3)
+        lwzu    r20,4(r3)
+        lwzu    r21,4(r3)
+        lwzu    r22,4(r3)
+        lwzu    r23,4(r3)
+        lwzu    r24,4(r3)
+        lwzu    r25,4(r3)
+        lwzu    r26,4(r3)
+        lwzu    r27,4(r3)
+        lwzu    r28,4(r3)
+        lwzu    r29,4(r3)
+        lwzu    r30,4(r3)
+        lwzu    r31,4(r3)
+
+        lfdu    f0,4(r3)
+        lfdu    f1,8(r3)
+        lfdu    f2,8(r3)
+        lfdu    f3,8(r3)
+        lfdu    f4,8(r3)
+        lfdu    f5,8(r3)
+        lfdu    f6,8(r3)
+        lfdu    f7,8(r3)
+        lfdu    f8,8(r3)
+        lfdu    f9,8(r3)
+        lfdu    f10,8(r3)
+        lfdu    f11,8(r3)
+        lfdu    f12,8(r3)
+        lfdu    f13,8(r3)
+        lfdu    f14,8(r3)
+        lfdu    f15,8(r3)
+        lfdu    f16,8(r3)
+        lfdu    f17,8(r3)
+        lfdu    f18,8(r3)
+        lfdu    f19,8(r3)
+        lfdu    f20,8(r3)
+        lfdu    f21,8(r3)
+        lfdu    f22,8(r3)
+        lfdu    f23,8(r3)
+        lfdu    f24,8(r3)
+        lfdu    f25,8(r3)
+        lfdu    f26,8(r3)
+        lfdu    f27,8(r3)
+        lfdu    f28,8(r3)
+        lfdu    f29,8(r3)
+        lfdu    f30,8(r3)
+        lfdu    f31,8(r3)
+
+        lwz     r3,200(r1)
+        lwz     r1,0(r1)
         blr
 
 #********************************************************************************************
