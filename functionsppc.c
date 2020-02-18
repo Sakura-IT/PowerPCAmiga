@@ -960,16 +960,15 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 					}
 					else
 					{
-						struct SemaphoreMessage* mySemMsg = (struct SemaphoreMessage*)myWait;
-						SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)mySemMsg->ssm_Semaphore;
-						mySemMsg->ssm_Semaphore = (struct SignalSemaphore*)SemaphorePPC;
+						SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)myWait->sw_Semaphore;
+						myWait->sw_Semaphore = SemaphorePPC;
 						SemaphorePPC->ssppc_SS.ss_NestCount += 1;
-						myReplyMsgPPC(PowerPCBase, (struct Message*)mySemMsg);
+						myReplyMsgPPC(PowerPCBase, (struct Message*)myWait);
 
                         myWait = (struct SemWait*)SemaphorePPC->ssppc_SS.ss_WaitQueue.mlh_Head;
                         struct SemWait* nxtWait;
 
-                        while (nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ)
+                        while (nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ)
                         {
                             if (!(myWait->sw_Task))
                             {
@@ -977,21 +976,20 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                                 {
                                     break;
                                 }
-                                struct Node* predWait = myWait->sw_Node.ln_Pred;
-                                predWait->ln_Succ = (struct Node*)nxtWait;
-                                nxtWait->sw_Node.ln_Pred = predWait;
+                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
+                                predWait->mln_Succ = (struct MinNode*)nxtWait;
+                                nxtWait->sw_Node.mln_Pred = predWait;
 
                                 SemaphorePPC->ssppc_SS.ss_NestCount += 2;
-						        mySemMsg = (struct SemaphoreMessage*)myWait;
-                                mySemMsg->ssm_Semaphore = (struct SignalSemaphore*)SemaphorePPC;
+                                myWait->sw_Semaphore = SemaphorePPC;
 
-                                myReplyMsgPPC(PowerPCBase, (struct Message*)mySemMsg);
+                                myReplyMsgPPC(PowerPCBase, (struct Message*)myWait);
                             }
                             else if (myWait->sw_Task == (struct TaskPPC*)SemaphorePPC->ssppc_SS.ss_Owner)
                             {
-                                struct Node* predWait = myWait->sw_Node.ln_Pred;
-                                predWait->ln_Succ = (struct Node*)nxtWait;
-                                nxtWait->sw_Node.ln_Pred = predWait;
+                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
+                                predWait->mln_Succ = (struct MinNode*)nxtWait;
+                                nxtWait->sw_Node.mln_Pred = predWait;
 
                                 SemaphorePPC->ssppc_SS.ss_NestCount += 1;
 						        mySignalPPC(PowerPCBase, myWait->sw_Task, SIGF_SINGLE);
@@ -1004,7 +1002,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 				}
 				else
 				{
-                    struct SemWait* nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
+                    struct SemWait* nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
                     do
                     {
                         SemaphorePPC->ssppc_SS.ss_NestCount += 1;
@@ -1014,11 +1012,10 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                         }
                         else
                         {
-                            struct SemaphoreMessage* mySemMsg = (struct SemaphoreMessage*)myWait;
-                            mySemMsg->ssm_Semaphore = (struct SignalSemaphore*)SemaphorePPC;
-                            mySemMsg->ssm_Message.mn_ReplyPort = 0;  //wrong
+                            myWait->sw_Semaphore = SemaphorePPC;
+                            myWait->sw_Task = 0;
 
-                            myReplyMsgPPC(PowerPCBase, (struct Message*)mySemMsg);
+                            myReplyMsgPPC(PowerPCBase, (struct Message*)myWait);
                         }
                         if (!(nxtWait))
                         {
@@ -1029,17 +1026,17 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
                         {
                             if ((ULONG)myWait->sw_Task & SM_SHARED)
                             {
-                                struct Node* predWait = myWait->sw_Node.ln_Pred;
-                                predWait->ln_Succ = (struct Node*)nxtWait;
-                                nxtWait->sw_Node.ln_Pred = predWait;
+                                struct MinNode* predWait = myWait->sw_Node.mln_Pred;
+                                predWait->mln_Succ = (struct MinNode*)nxtWait;
+                                nxtWait->sw_Node.mln_Pred = predWait;
                                 myWait = nxtWait;
-                                nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
+                                nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
                                 break;
                             }
                             else
                             {
                                 myWait = nxtWait;
-                                nxtWait = (struct SemWait*)myWait->sw_Node.ln_Succ;
+                                nxtWait = (struct SemWait*)myWait->sw_Node.mln_Succ;
                             }
                         }
                     } while (1);

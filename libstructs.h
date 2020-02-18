@@ -256,9 +256,9 @@ struct MinList              ph_BlockList;
 };
 
 struct SemWait {
-struct Node                 sw_Node;
-UWORD                       sw_Pad;
+struct MinNode              sw_Node;
 struct TaskPPC*             sw_Task;
+ULONG                       sw_Pad[2];
 struct SignalSemaphorePPC*  sw_Semaphore;
 };
 
