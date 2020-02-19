@@ -402,7 +402,7 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
                 }
                 else
                 {
-                    struct MsgPortPPC* myPort = myTask->tp_Msgport; //WIP
+                    struct MsgPortPPC* myPort = myTask->tp_Msgport;
                     if (myPort->mp_Semaphore.ssppc_SS.ss_QueueCount == -1)
                     {
                         RemovePPC((struct Node*)currMsg);

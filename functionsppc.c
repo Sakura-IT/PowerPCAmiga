@@ -3903,7 +3903,52 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
     return;
 }
 
-//PPCFUNCTION VOID PerformPad(struct RDFData* rdfData, ULONG flag, STRPTR putchdata)
+PPCFUNCTION STRPTR PerformPad(struct RDFData* rdfData, ULONG flag, STRPTR putchdata, APTR (*putchproc)(), ULONG prependNum, ULONG truncateNum)
+{
+    UBYTE currChar;
+    UBYTE useChar;
+
+    if (flag & 2)
+    {
+        currChar = rdfData->rd_Buffer[rdfData->rd_BufPointer];
+        if (currChar == '-')
+        {
+            rdfData->rd_BufPointer += 1;
+            truncateNum -= 1;
+            if (putchproc)
+            {
+                putchdata = putchproc(putchdata, currChar);
+            }
+            else
+            {
+                putchdata[0] = currChar;
+                putchdata = (APTR)((ULONG)putchdata + 1);
+            }
+         }
+        useChar = '0';
+    }
+    else
+    {
+        useChar = ' ';
+    }
+    if (prependNum)
+    {
+        for (int i = 0; i < prependNum; i++)
+        {
+            if (putchproc)
+            {
+                putchdata = putchproc(putchdata, useChar);
+            }
+            else
+            {
+                putchdata[0] = useChar;
+                putchdata = (APTR)((ULONG)putchdata + 1);
+            }
+        }
+    }
+    return putchdata;
+}
+
 
 /********************************************************************************************/
 
