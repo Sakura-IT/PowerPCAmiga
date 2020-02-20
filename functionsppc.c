@@ -3770,15 +3770,14 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 *********************************************************************************************/
 
 
-PPCFUNCTION VOID getNum(struct RDFData* rdfData)
+PPCFUNCTION ULONG getNum(struct RDFData* rdfData)
 {
     ULONG result = 0;
-    STRPTR formatstring = rdfData->rd_FormatString;
 
     while (1)
     {
-        UBYTE myChar = formatstring[0];
-        formatstring += 1;
+        UBYTE myChar = rdfData->rd_FormatString[0];
+        rdfData->rd_FormatString += 1;
         if ((myChar >= '0') && (myChar <= '9'))
         {
             result = result * 10;
@@ -3787,13 +3786,11 @@ PPCFUNCTION VOID getNum(struct RDFData* rdfData)
         }
         else
         {
-            formatstring -= 1;
+            rdfData->rd_FormatString -= 1;
             break;
         }
     }
-    rdfData->rd_Result = result;
-    rdfData->rd_FormatString = formatstring;
-    return;
+    return result;
 }
 
 PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
@@ -3808,7 +3805,7 @@ PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
 PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
 {
     WORD value;
-    if (flag & 4)
+    if (flag & RDFF_LONG)
     {
         AdjustParamInt(rdfData);
     }
@@ -3824,12 +3821,10 @@ PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
 
 PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
 {
-    ULONG pointer = rdfData->rd_BufPointer;
-    STRPTR buff = (STRPTR)&rdfData->rd_Buffer;
     if ((sign) && (value < 0))
     {
-        buff[pointer] = '-';
-        pointer += 1;
+        rdfData->rd_BufPointer[0] = '-';
+        rdfData->rd_BufPointer += 1;
         value = -value;
     }
     ULONG* myTable = GetDecTable();
@@ -3847,28 +3842,25 @@ PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
             if (number != cmpnumber)
             {
                cmpnumber = 0;
-               buff[pointer] = (UBYTE)number;
-               pointer += 1;
+               rdfData->rd_BufPointer[0] = (UBYTE)number;
+               rdfData->rd_BufPointer += 1;
             }
             myTable += 1;
         }
     }
-    buff[pointer] = (UBYTE)(value + '0');
-    pointer += 1;
-    rdfData->rd_BufPointer = pointer;
+    rdfData->rd_BufPointer[0] = (UBYTE)(value + '0');
+    rdfData->rd_BufPointer += 1;
     return;
 }
 
 PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
 {
-    ULONG pointer = rdfData->rd_BufPointer;
-    STRPTR buff = (STRPTR)&rdfData->rd_Buffer;
     ULONG iterations, currNibble;
     ULONG mySwitch = 0;
 
     if (value)
     {
-        if (flag & 4)
+        if (flag & RDFF_LONG)
         {
             iterations = 8;
         }
@@ -3879,7 +3871,7 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
         }
         for (int i = 0; i < iterations; i++)
         {
-            currNibble = roll(value, 4) & 0xf; //wip
+            currNibble = roll(value, 4) & 0xf;
             if ((currNibble) || (mySwitch))
             {
                 mySwitch = -1;
@@ -3891,38 +3883,39 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
                 {
                     currNibble += 48;
                 }
-                buff[pointer] = currNibble;
-                pointer += 1;
+
+                rdfData->rd_BufPointer[0] = currNibble;
+                rdfData->rd_BufPointer += 1;
             }
         }
         return;
     }
-    buff[pointer] = (UBYTE)(value + '0');
-    pointer += 1;
-    rdfData->rd_BufPointer = pointer;
+    rdfData->rd_BufPointer[0] = (UBYTE)(value + '0');
+    rdfData->rd_BufPointer += 1;
     return;
 }
 
-PPCFUNCTION STRPTR PerformPad(struct RDFData* rdfData, ULONG flag, STRPTR putchdata, APTR (*putchproc)(), ULONG prependNum, ULONG truncateNum)
+PPCFUNCTION VOID PerformPad(struct RDFData* rdfData, ULONG flag, APTR (*putchproc)(), ULONG prependNum)
 {
     UBYTE currChar;
     UBYTE useChar;
 
-    if (flag & 2)
+    if (flag & RDFF_PREPEND)
     {
-        currChar = rdfData->rd_Buffer[rdfData->rd_BufPointer];
+        currChar = rdfData->rd_BufPointer[0];
         if (currChar == '-')
         {
             rdfData->rd_BufPointer += 1;
-            truncateNum -= 1;
+            rdfData->rd_TruncateNum -= 1;
             if (putchproc)
             {
-                putchdata = putchproc(putchdata, currChar);
+                rdfData->rd_PutChData = putchproc(rdfData->rd_PutChData , currChar);
             }
             else
             {
-                putchdata[0] = currChar;
-                putchdata = (APTR)((ULONG)putchdata + 1);
+                STRPTR myData = (STRPTR)rdfData->rd_PutChData;
+                myData[0] = currChar;
+                rdfData->rd_PutChData = (APTR)((ULONG)rdfData->rd_PutChData + 1);
             }
          }
         useChar = '0';
@@ -3937,16 +3930,17 @@ PPCFUNCTION STRPTR PerformPad(struct RDFData* rdfData, ULONG flag, STRPTR putchd
         {
             if (putchproc)
             {
-                putchdata = putchproc(putchdata, useChar);
+                rdfData->rd_PutChData  = putchproc(rdfData->rd_PutChData , useChar);
             }
             else
             {
-                putchdata[0] = useChar;
-                putchdata = (APTR)((ULONG)putchdata + 1);
+                STRPTR myData = (STRPTR)rdfData->rd_PutChData;
+                myData[0] = useChar;
+                rdfData->rd_PutChData = (APTR)((ULONG)rdfData->rd_PutChData + 1);
             }
         }
     }
-    return putchdata;
+    return;
 }
 
 
@@ -3964,49 +3958,44 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
     }
 
     rdfData.rd_DataStream = datastream;
+    rdfData.rd_PutChData = putchdata;
+    rdfData.rd_FormatString = formatstring;
 
-    UBYTE currChar = formatstring[0];
-
-    formatstring += 1;
+    UBYTE currChar = rdfData.rd_FormatString[0];
+    rdfData.rd_FormatString += 1;
 
     while (currChar)
     {
         if (currChar == '%')
         {
-            rdfData.rd_BufPointer = 0;
-            currChar = formatstring[0];
+            rdfData.rd_BufPointer = (STRPTR)&rdfData.rd_Buffer;
+            currChar = rdfData.rd_FormatString[0];
             ULONG flag = 0;
             if (currChar == '-')        //flag->left align
             {
-                flag |= 1;
-                formatstring += 1;
+                flag |= RDFF_JUSTIFY;
+                rdfData.rd_FormatString += 1;
             }
-            currChar = formatstring[0];
+            currChar = rdfData.rd_FormatString[0];
             if (currChar == '0')        //flag->prepends zeros
             {
-                flag |= 2;
+                flag |= RDFF_PREPEND;
             }
-            rdfData.rd_FormatString = formatstring;
-            getNum(&rdfData);
-            ULONG prependNum = rdfData.rd_Result;
-            formatstring = rdfData.rd_FormatString;
-            ULONG truncateNum = 0;
-            currChar = formatstring[0];
+            ULONG prependNum = getNum(&rdfData);
+            rdfData.rd_TruncateNum = 0;
+            currChar = rdfData.rd_FormatString[0];
             if (currChar == '.')        //precision
             {
-                formatstring += 1;
-                rdfData.rd_FormatString = formatstring;
-                getNum(&rdfData);
-                truncateNum = rdfData.rd_Result;
-                formatstring = rdfData.rd_FormatString;
+                rdfData.rd_FormatString += 1;
+                rdfData.rd_TruncateNum = getNum(&rdfData);
             }
-            currChar = formatstring[0];
+            currChar = rdfData.rd_FormatString[0];
             if (currChar == 'l')        //length->long
             {
-                flag |= 4;
-                formatstring += 1;
+                flag |= RDFF_LONG;
+                rdfData.rd_FormatString += 1;
             }
-            currChar = formatstring[0];
+            currChar = rdfData.rd_FormatString[0];
 
             switch (currChar)
             {
@@ -4038,8 +4027,7 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
                 }
                 case 'c':    //type->char
                 {
-                    STRPTR buff = (STRPTR)&rdfData.rd_Buffer;
-                    buff[rdfData.rd_BufPointer] = AdjustParam(&rdfData, flag);
+                    rdfData.rd_BufPointer[0] = AdjustParam(&rdfData, flag);
                     rdfData.rd_BufPointer += 1;
                     break;
                 }
@@ -4047,13 +4035,13 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
                 {
                     if (!(putchproc))
                     {
-                        STRPTR myData = (STRPTR)putchdata;
+                        STRPTR myData = (STRPTR)rdfData.rd_PutChData;
                         myData[0] = currChar;
-                        putchdata = (APTR)((ULONG)putchdata + 1);
+                        rdfData.rd_PutChData = (APTR)((ULONG)rdfData.rd_PutChData + 1);
                     }
                     else
                     {
-                        putchdata = putchproc(putchdata, currChar);
+                        rdfData.rd_PutChData = putchproc(rdfData.rd_PutChData, currChar);
                     }
                 }
             }
@@ -4062,26 +4050,26 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
         {
             if (!(putchproc))
             {
-                STRPTR myData = (STRPTR)putchdata;
+                STRPTR myData = (STRPTR)rdfData.rd_PutChData;
                 myData[0] = currChar;
-                putchdata = (APTR)((ULONG)putchdata + 1);
+                rdfData.rd_PutChData = (APTR)((ULONG)rdfData.rd_PutChData + 1);
             }
             else
             {
-                putchdata = putchproc(putchdata, currChar);
+                rdfData.rd_PutChData = putchproc(rdfData.rd_PutChData , currChar);
             }
         }
     }
 
     if (!(putchproc))
     {
-        STRPTR myData = (STRPTR)putchdata;  //weird shit here. Looks like copy pasted asm code
-        myData[0] = currChar;               //as the manipulations of putchdata are lost
-        putchdata = (APTR)((ULONG)putchdata + 1);
+        STRPTR myData = (STRPTR)rdfData.rd_PutChData;
+        myData[0] = currChar;
+        putchdata = (APTR)((ULONG)rdfData.rd_PutChData + 1);
     }
     else
     {
-        putchdata = putchproc(putchdata, currChar);
+        rdfData.rd_PutChData = putchproc(rdfData.rd_PutChData , currChar);
     }
 
     return rdfData.rd_DataStream;

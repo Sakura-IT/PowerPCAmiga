@@ -326,9 +326,10 @@ ULONG                       sd_Type;
 struct RDFData {
 APTR                        rd_DataStream;
 UBYTE                       rd_Buffer[16];
-ULONG                       rd_BufPointer;
+STRPTR                      rd_BufPointer;
 STRPTR                      rd_FormatString;
-ULONG                       rd_Result;
+ULONG                       rd_TruncateNum;
+APTR                        rd_PutChData;
 };
 
 struct NewTask {

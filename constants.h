@@ -28,6 +28,10 @@
 #define MSGLEN                  192
 #define SUPERKEY                0xABADBEEF
 
+#define RDFF_JUSTIFY            1
+#define RDFF_PREPEND            2
+#define RDFF_LONG               4
+
 #define CMP_DESTGREATER         -1
 #define CMP_DESTLESS            1
 #define CMP_EQUAL               0
