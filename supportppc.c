@@ -1197,4 +1197,194 @@ PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* m
     CauseDECInterrupt(PowerPCBase);
     while(1);  //Warning 208
 }
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION ULONG getNum(struct RDFData* rdfData)
+{
+    ULONG result = 0;
+
+    while (1)
+    {
+        UBYTE myChar = rdfData->rd_FormatString[0];
+        rdfData->rd_FormatString += 1;
+        if ((myChar >= '0') && (myChar <= '9'))
+        {
+            result = result * 10;
+            myChar -= '0';
+            result = result + myChar;
+        }
+        else
+        {
+            rdfData->rd_FormatString -= 1;
+            break;
+        }
+    }
+    return result;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
+{
+    ULONG* mem = (ULONG*)rdfData->rd_DataStream;
+    LONG value = mem[0];
+    mem = (ULONG*)((ULONG)mem + 4);
+    rdfData->rd_DataStream = (APTR)mem;
+    return value;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
+{
+    WORD value;
+    if (flag & RDFF_LONG)
+    {
+        AdjustParamInt(rdfData);
+    }
+    else
+    {
+        UWORD* mem = (UWORD*)rdfData->rd_DataStream;
+        value = mem[0];
+        mem = (UWORD*)((ULONG)mem + 2);
+        rdfData->rd_DataStream = (APTR)mem;
+    }
+    return (LONG)value;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
+{
+    if ((sign) && (value < 0))
+    {
+        rdfData->rd_BufPointer[0] = '-';
+        rdfData->rd_BufPointer += 1;
+        value = -value;
+    }
+    ULONG* myTable = GetDecTable();
+    ULONG tableValue;
+    ULONG cmpnumber = '0';
+    ULONG number = cmpnumber;
+    {
+        while (tableValue = myTable[0])
+        {
+            while (tableValue < value)
+            {
+               value -= tableValue;
+               number += 1;
+            }
+            if (number != cmpnumber)
+            {
+               cmpnumber = 0;
+               rdfData->rd_BufPointer[0] = (UBYTE)number;
+               rdfData->rd_BufPointer += 1;
+            }
+            myTable += 1;
+        }
+    }
+    rdfData->rd_BufPointer[0] = (UBYTE)(value + '0');
+    rdfData->rd_BufPointer += 1;
+    return;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
+{
+    ULONG iterations, currNibble;
+    ULONG mySwitch = 0;
+
+    if (value)
+    {
+        if (flag & RDFF_LONG)
+        {
+            iterations = 8;
+        }
+        else
+        {
+            iterations = 4;
+            value = roll(value, 16);
+        }
+        for (int i = 0; i < iterations; i++)
+        {
+            currNibble = roll(value, 4) & 0xf;
+            if ((currNibble) || (mySwitch))
+            {
+                mySwitch = -1;
+                if (currNibble > 9)
+                {
+                    currNibble += 55;
+                }
+                else
+                {
+                    currNibble += 48;
+                }
+
+                rdfData->rd_BufPointer[0] = currNibble;
+                rdfData->rd_BufPointer += 1;
+            }
+        }
+        return;
+    }
+    rdfData->rd_BufPointer[0] = (UBYTE)(value + '0');
+    rdfData->rd_BufPointer += 1;
+    return;
+}
+
+/********************************************************************************************/
+
+PPCFUNCTION VOID PerformPad(struct RDFData* rdfData, ULONG flag, APTR (*putchproc)(), LONG prependNum)
+{
+    UBYTE currChar;
+    UBYTE useChar;
+
+    if (flag & RDFF_PREPEND)
+    {
+        currChar = rdfData->rd_BufPointer[0];
+        if (currChar == '-')
+        {
+            rdfData->rd_BufPointer += 1;
+            rdfData->rd_TruncateNum -= 1;
+            if (putchproc)
+            {
+                rdfData->rd_PutChData = putchproc(rdfData->rd_PutChData, currChar);
+            }
+            else
+            {
+                STRPTR myData = (STRPTR)rdfData->rd_PutChData;
+                myData[0] = currChar;
+                rdfData->rd_PutChData = (APTR)((ULONG)rdfData->rd_PutChData + 1);
+            }
+         }
+        useChar = '0';
+    }
+    else
+    {
+        useChar = ' ';
+    }
+    if (prependNum)
+    {
+        for (int i = 0; i < prependNum; i++)
+        {
+            if (putchproc)
+            {
+                rdfData->rd_PutChData  = putchproc(rdfData->rd_PutChData, useChar);
+            }
+            else
+            {
+                STRPTR myData = (STRPTR)rdfData->rd_PutChData;
+                myData[0] = useChar;
+                rdfData->rd_PutChData = (APTR)((ULONG)rdfData->rd_PutChData + 1);
+            }
+        }
+    }
+    return;
+}
+
 /********************************************************************************************/

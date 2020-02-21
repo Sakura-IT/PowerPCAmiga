@@ -323,6 +323,12 @@ ULONG FinDataStore(ULONG value, struct iframe* iframe, ULONG SRR0, struct DataMs
 VOID SwapStack(ULONG oldspupper, ULONG newspupper);
 APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize);
 VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, APTR memoryBlock, ULONG byteSize);
+VOID PerformPad(struct RDFData* rdfData, ULONG flag, APTR (*putchproc)(), LONG prependNum);
+VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value);
+VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value);
+LONG AdjustParam(struct RDFData* rdfData, ULONG flag);
+LONG AdjustParamInt(struct RDFData* rdfData);
+ULONG getNum(struct RDFData* rdfData);
 VOID SetFPExc(VOID);
 VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, struct WaitTime* myWait);
 ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
