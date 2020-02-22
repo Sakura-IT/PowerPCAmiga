@@ -87,7 +87,7 @@ UWORD                   ic_gfxSubType;
 
 struct InitData {
 ULONG               id_Reserved;
-ULONG               id_Status;
+volatile ULONG      id_Status;
 ULONG               id_MemBase;
 ULONG               id_MemSize;
 ULONG               id_GfxMemBase;

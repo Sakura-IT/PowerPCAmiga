@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Dennis van der Boon
+// Copyright (c) 2019, 2020 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,8 @@
 #define VERSION     17
 #define REVISION    14
 
-#define LIBNAME "powerpctest.library"
-#define VSTRING "$VER: powerptestc.library 17.14 (27.10.19)\r\n"
+#define LIBNAME "powerpc.library"
+#define VSTRING "$VER: powerpc.library 17.14 (22.02.20)\r\n"
 
 #define VERPCI      13
 #define REVPCI      8
