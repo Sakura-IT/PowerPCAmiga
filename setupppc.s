@@ -49,8 +49,7 @@
 .SkipCom:	
         mflr	r3
         subi    r3,r3,4         #Points to initialization data
-        mr      r1,r3
-        subi    r1,r1,0x20      #0x3000 bytes of initial stack
+        subi    r1,r3,0x20      #0x3000 bytes of initial stack
 
         b   _setupPPC
 

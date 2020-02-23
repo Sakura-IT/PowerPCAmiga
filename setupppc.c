@@ -33,7 +33,7 @@
 *
 *********************************************************************************************/
 
-BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
+PPCSETUP BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, ULONG ppKey)
 {
     ULONG currSR, uPTE, lPTE, hash, mySDR, PTEG, tempPTEG, flag, checkPTEG;
 
@@ -96,7 +96,7 @@ BOOL setupTBL(ULONG startEffAddr, ULONG endEffAddr, ULONG physAddr, ULONG WIMG, 
 *
 *********************************************************************************************/
 
-void setupPT(void)
+PPCSETUP void setupPT(void)
 {
     struct PPCZeroPage *myZP = 0;
 
@@ -149,7 +149,7 @@ void setupPT(void)
 *
 *********************************************************************************************/
 
-void mmuSetup(struct InitData* initData)
+PPCSETUP void mmuSetup(struct InitData* initData)
 {
     ULONG leadZeros, ibatl, ibatu, dbatl, dbatu, batSize;
     ULONG startEffAddr, endEffAddr, physAddr, WIMG, ppKey;
@@ -319,7 +319,7 @@ void mmuSetup(struct InitData* initData)
 *
 *********************************************************************************************/
 
-void installExceptions(void)
+PPCSETUP void installExceptions(void)
 {
     UWORD excVector;
     ULONG ExcDataTable;
@@ -366,7 +366,7 @@ void installExceptions(void)
 *
 *********************************************************************************************/
 
-void killerFIFOs(struct InitData* initData)
+PPCSETUP void killerFIFOs(struct InitData* initData)
 {
     ULONG memBase  = initData->id_MemBase;
     ULONG memFIFO  = memBase + BASE_KMSG;
@@ -412,7 +412,7 @@ void killerFIFOs(struct InitData* initData)
 *
 *********************************************************************************************/
 
-void initSema(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
+PPCSETUP void initSema(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     NewListPPC((struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue);
     struct LibSema* libSema = (struct LibSema*)SemaphorePPC;
@@ -430,7 +430,7 @@ void initSema(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* Sem
 *
 *********************************************************************************************/
 
-void setupCaches(struct PrivatePPCBase* PowerPCBase)
+PPCSETUP void setupCaches(struct PrivatePPCBase* PowerPCBase)
 {
     ULONG value0 = getHID0();
     value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
@@ -480,7 +480,7 @@ void setupCaches(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-__section (".setupppc","acrx") __interrupt void setupPPC(struct InitData* initData)
+PPCSETUP __interrupt void setupPPC(struct InitData* initData)
 {
     ULONG mem = 0;
     ULONG copySrc = 0;

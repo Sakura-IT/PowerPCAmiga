@@ -64,6 +64,26 @@ int main (void)
 
 /********************************************************************************************
 *
+*	Our Resident struct.
+*
+*********************************************************************************************/
+
+static const struct Resident RomTag =
+{
+    RTC_MATCHWORD,
+    (struct Resident *) &RomTag,
+    (struct Resident *) &RomTag+1,
+    RTW_NEVER,
+    VERSION,
+    NT_LIBRARY,
+    LIB_PRIORITY,
+    LIBNAME,
+    VSTRING,
+    (APTR)&LibInit
+};
+
+/********************************************************************************************
+*
 *	Supported ATI cards and PPC chipsets
 *
 *********************************************************************************************/
@@ -204,7 +224,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
     struct Process *myProc;
-    struct Interrupt myInt;
     ULONG medflag   = 0;
     ULONG gfxisati  = 0;
     ULONG gfxnotv45 = 0;
@@ -640,17 +659,15 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     CacheClearU();
 
-//#if 0
 
-    myInt.is_Code = (APTR)&GortInt;
-    myInt.is_Data = NULL;
-    myInt.is_Node.ln_Pri = 100;
-    myInt.is_Node.ln_Name = "Gort\0";
-    myInt.is_Node.ln_Type = NT_INTERRUPT;
-    AddInterrupt(ppcdevice, (struct Interrupt*)&myInt);
+    struct Interrupt* myInt = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
+    myInt->is_Code = (APTR)&GortInt;
+    myInt->is_Data = NULL;
+    myInt->is_Node.ln_Pri = 100;
+    myInt->is_Node.ln_Name = "Gort\0";
+    myInt->is_Node.ln_Type = NT_INTERRUPT;
+    AddInterrupt(ppcdevice, myInt);
     SetInterrupt(ppcdevice);
-
-//endif
 
     if(!(myProc = CreateNewProcTags(
                            NP_Entry, (ULONG)&MasterControl,
@@ -689,18 +706,19 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
-//#if 0
+    struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (myBase->pp_DeviceID == DEVICE_MPC8343E)
     {
-        myInt.is_Code = (APTR)&ZenInt;
-        myInt.is_Data = NULL;
-        myInt.is_Node.ln_Pri = -50;
-        myInt.is_Node.ln_Name = "Zen\0";
-        myInt.is_Node.ln_Type = NT_INTERRUPT;
-        AddIntServer(INTB_VERTB, (struct Interrupt*)&myInt);
+        myInt2->is_Code = (APTR)&ZenInt;
+        myInt2->is_Data = NULL;
+        myInt2->is_Node.ln_Pri = -50;
+        myInt2->is_Node.ln_Name = "Zen\0";
+        myInt2->is_Node.ln_Type = NT_INTERRUPT;
+        AddIntServer(INTB_VERTB, myInt2);
     }
 
+#if 0
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
@@ -728,35 +746,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
     }
-
-//endif
-
-    PrintError(SysBase, "Test completed!"); //removeme
-
-    CleanUp(myConsts); //removeme
+#endif
 
     return PowerPCBase;
 }
-
-/********************************************************************************************
-*
-*	Our Resident struct.
-*
-*********************************************************************************************/
-
-static const struct Resident RomTag =
-{
-    RTC_MATCHWORD,
-    (struct Resident *) &RomTag,
-    (struct Resident *) &RomTag+1,
-    RTW_NEVER,
-    VERSION,
-    NT_LIBRARY,
-    LIB_PRIORITY,
-    LIBNAME,
-    VSTRING,
-    (APTR)&LibInit
-};
 
 /********************************************************************************************
 *

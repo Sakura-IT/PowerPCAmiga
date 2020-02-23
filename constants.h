@@ -129,6 +129,7 @@
 #define SIZE_KBASE              0xc0000
 #define SIZE_KFIFO              0x10000
 #define FIFO_OFFSET             0x380000
+#define FIFO_END                FIFO_OFFSET + (4 * SIZE_KFIFO)
 
 #define HW_CPUTYPE              11          //Private
 #define HW_SETDEBUGMODE         12          //Private

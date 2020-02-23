@@ -251,7 +251,7 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 
 		case DEVICE_MPC8343E:
 		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			msgFrame = *((ULONG*)(myFIFO->kf_MIOFT));
 			myFIFO->kf_MIOFT = (myFIFO->kf_MIOFT + 4) & 0xffff3fff;
 			break;
@@ -301,7 +301,7 @@ PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 
 		case DEVICE_MPC8343E:
 		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			if (myFIFO->kf_MIIPH != myFIFO->kf_MIIPT)
             {
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIPT));
@@ -354,7 +354,7 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 
 		case DEVICE_MPC8343E:
 		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
 			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
 			writememLongPPC(PowerPCBase->pp_BridgeConfig, IMMR_OMR0, (ULONG)msgFrame);
@@ -407,7 +407,7 @@ PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 
 		case DEVICE_MPC8343E:
 		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIIFH)) = (ULONG)msgFrame;
 			myFIFO->kf_MIIFH = (myFIFO->kf_MIIFH + 4) & 0xffff3fff;
 			break;

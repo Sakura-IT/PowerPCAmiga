@@ -164,6 +164,8 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
     struct CommandLineInterface* comLineInt;
     STRPTR cmndName;
 
+    illegal();
+
     struct MirrorTask* thisMirrorNode   = NULL;
     struct ExecBase* SysBase      = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct Task* thisTask         = SysBase->ThisTask;

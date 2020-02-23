@@ -44,6 +44,8 @@ PATCH68K APTR   patchAddTask   (__reg("a1") struct Task* myTask, __reg("a2") APT
                        __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase);
 PATCH68K void   patchRemTask   (__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase);
 
+struct PPCBase* LibInit(__reg("d0") struct PPCBase *ppcbase,
+              __reg("a0") BPTR seglist, __reg("a6") struct ExecBase* __sys);
 
 BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
 

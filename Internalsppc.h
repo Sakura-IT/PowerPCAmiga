@@ -25,6 +25,7 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
 #define PPCKERNEL __section ("kernel","acrx") __entry
+#define PPCSETUP __section (".setupppc","acrx") __entry
 
 #define _LVOAllocVec32      -54
 #define _LVOFreeVec32       -60

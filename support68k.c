@@ -36,6 +36,7 @@
 
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
 extern struct PPCBase* myPPCBase;
+
 APTR  RemSysTask;
 UBYTE powerlib[] = "powerpc.library\0";
 UBYTE ampname[]  = "AmigaAMP\0";
@@ -231,8 +232,8 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
         {
             if (myName = (char *)(ULONG)(myCLI->cli_CommandName << 2))
             {
-                BYTE offset = myName[0] - 4;
-                if (offset >= 0)
+                UBYTE offset = myName[0] - 3;
+                if (!(offset & 0x80))
                 {
                     myName += offset;
                 }
@@ -249,6 +250,7 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
         {
             if (testValue == *((ULONG*)myName))
             {
+                illegal(); //x
                 attributes |= MEMF_PPC;
                 return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
             }
@@ -348,6 +350,9 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
     {
         return -1;
     }
+
+    illegal();
+
     if (myLock = Open(name, MODE_OLDFILE))
     {
         if (myFIB = (struct FileInfoBlock*)AllocDosObject(DOS_FIB, NULL))
@@ -576,6 +581,8 @@ FUNC68K void MirrorTask(void)
     }
 }
 
+/********************************************************************************************/
+
 FUNC68K void MasterControl(void)
 {
 	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
@@ -609,6 +616,8 @@ FUNC68K void MasterControl(void)
 	while (1)
 	{
 		WaitPort(mcPort);
+
+        illegal();
 
 		while (myFrame = (struct MsgFrame*)GetMsg(mcPort))
 		{
@@ -716,15 +725,15 @@ FUNC68K void MasterControl(void)
 							PrintError(SysBase, "PPC crashed but could not output crash window");
 							break;
 						}
-						if(!(*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100)))))
+						if(!(*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100)))))
 						{
-							*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100))) = (ULONG)&msgPanic;
+							*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100))) = (ULONG)&msgPanic;
 						}
-                        ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100));
+                        ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100));
                         errorData[2] = ExcStrings[(errorData[2])];
 
-						VFPrintf(excWindow, (STRPTR)&CrashMessage, (LONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100)));
-						switch (*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x14c))))
+						VFPrintf(excWindow, (STRPTR)&CrashMessage, (LONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100)));
+						switch (*((ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x14c))))
 						{
 							case ERR_ESEM:
 							{
@@ -777,6 +786,8 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 	struct MsgFrame* myFrame;
 	ULONG flag = 0;
+
+    illegal();
 
 	switch (PowerPCBase->pp_DeviceID)
 	{
@@ -902,6 +913,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 
 FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
+
     struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
     struct Custom* custom = (struct Custom*)CUSTOMBASE;
 
@@ -909,10 +921,11 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 
 	if (!(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
 	{
-		struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+		struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 		if (myFIFO->kf_MIOPT != myFIFO->kf_MIOPH)
 		{
-			custom->intena = INTF_PORTS;
+			illegal();
+            custom->intena = INTF_PORTS;
 			GortInt(data, code);
 			custom->intena = INTF_SETCLR|INTF_INTEN|INTF_PORTS;
 		}
@@ -943,7 +956,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
             while (1)
             {                
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
@@ -1004,7 +1017,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
             *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
             myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
@@ -1052,7 +1065,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
             *((ULONG*)(myFIFO->kf_MIOFH)) = (ULONG)msgFrame;
             myFIFO->kf_MIOFH = (myFIFO->kf_MIOFH + 4) & 0xffff3fff;
@@ -1099,7 +1112,7 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
 
         case DEVICE_MPC8343E:
         {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_OFFSET));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
             if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
             {

@@ -656,7 +656,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
 PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
-    ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_OFFSET + 0x100));
+    ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100));
     errorData[0]  = (ULONG)PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
     errorData[1]  = (ULONG)PowerPCBase->pp_ThisPPCProc;
     errorData[2]  = iframe->if_Context.ec_ExcID;
