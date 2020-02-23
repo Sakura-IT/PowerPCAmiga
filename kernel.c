@@ -180,7 +180,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 
                 while (nxtWait = (struct WaitTime*)currWait->wt_Node.ln_Succ)
                 {
-                    if ((currWait->wt_TimeUpper > getTBU()) || (currWait->wt_TimeUpper == getTBU() && currWait->wt_TimeLower > getTBL()))
+                    if ((currWait->wt_TimeUpper > getTBU()) || ((currWait->wt_TimeUpper == getTBU()) && (currWait->wt_TimeLower > getTBL())))
                     {
                         if (currTask == currWait->wt_Task)
                         {

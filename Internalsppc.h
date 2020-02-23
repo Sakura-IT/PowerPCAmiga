@@ -79,7 +79,7 @@ void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
 ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
-void  HaltTask(void)                      = "\t.long\t0\n";
+void  HaltError(ULONG)                     = "\tmr\tr0,r3\n\t.long\t0\n";
 void  dFlush(ULONG address)               = "\tdcbf\tr0,r3\n";
 void  iInval(ULONG address)               = "\ticbi\tr0,r3\n";
 void  dInval(ULONG address)               = "\tdcbi\tr0,r3\n";
@@ -90,6 +90,7 @@ void  isync(void)                         = "\tisync\n";
 void  loadWord(ULONG)                     = "\tlwz\tr3,0(r3)\n"; //to bypass optimizations
 ULONG getCPUState(ULONG res, ULONG key)   = "\tmfpvr\tr4\n";
 ULONG roll(ULONG value, ULONG shift)      = "\trlwinm\tr3,r3,r4,0,31\n";
+void  TaskHalt(void)                      = ".l1:\tb\t.l1\n";
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";

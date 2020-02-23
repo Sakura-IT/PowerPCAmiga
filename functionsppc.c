@@ -59,8 +59,7 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	}
 	if (PPStruct->PP_Flags)
 	{
-		storeR0(ERR_ESNC);
-		HaltTask();
+		HaltError(ERR_ESNC);
 	}
 
 	PowerPCBase->pp_NumRun68k += 1;
@@ -190,8 +189,7 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
                     }
                     default:
                     {
-                        storeR0(ERR_EFIF);
-                        HaltTask();
+                        HaltError(ERR_EFIF);
                         break;
                     }
                 }
@@ -680,7 +678,7 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
         PPCtask->tp_Task.tc_State = TS_REMOVED;
         PowerPCBase->pp_FlagReschedule = -1;
         CauseDECInterrupt(PowerPCBase);
-        while(1);  //Warning 208
+        TaskHalt();
     }
     else
     {
@@ -924,8 +922,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 
 	if (SemaphorePPC->ssppc_SS.ss_NestCount < 0)
 	{
-		storeR0(ERR_ESEM);
-        HaltTask();
+        HaltError(ERR_ESEM);
 	}
 
 	if (SemaphorePPC->ssppc_SS.ss_NestCount > 0)

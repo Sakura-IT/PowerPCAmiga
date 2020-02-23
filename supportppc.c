@@ -694,16 +694,14 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 			}
 			else if (newChunk < currChunk->mc_Bytes + currChunk)
 			{
-			    storeR0(0x454d454d);    //EMEM
-                HaltTask();
+                HaltError(ERR_EMEM);
 			}
 			flag = 1;
 			break;
 		}
 		else if (currChunk->mc_Next == newChunk)
 		{
-			storeR0(0x454d454d);    //EMEM
-            HaltTask();
+            HaltError(ERR_EMEM);
 		}
 	currChunk = currChunk->mc_Next;
 	}
@@ -725,8 +723,7 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 	{
 		if ((ULONG)nextChunk < (ULONG)(newChunk) + newChunk->mc_Bytes)
 		{
-			storeR0(0x454d454d);    //EMEM
-            HaltTask();
+            HaltError(ERR_EMEM);
 		}
 		else if ((ULONG)nextChunk > (ULONG)(newChunk) + newChunk->mc_Bytes)
 		{
@@ -1195,7 +1192,7 @@ PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* m
     PPCtask->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_FlagReschedule = -1;
     CauseDECInterrupt(PowerPCBase);
-    while(1);  //Warning 208
+    TaskHalt();
 }
 
 /********************************************************************************************

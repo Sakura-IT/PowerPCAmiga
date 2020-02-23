@@ -273,10 +273,11 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
 /********************************************************************************************
 *
 *	Executable loading patches to load PPC (related) code to PPC memory
+*   (AUTODOCS ARE WRONG, called with d1, d2, d3 and not d1, a0, d0)
 *
 *********************************************************************************************/
 
-LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("a0") APTR buffer, __reg("d0") LONG length, __reg("a6") struct DosLibrary* DOSBase)
+LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("d2") APTR buffer, __reg("d3") LONG length, __reg("a6") struct DosLibrary* DOSBase)
 {
     LONG result;
 
@@ -307,7 +308,7 @@ APTR AllocFunc(__reg("d0") ULONG size, __reg("d1") ULONG flags, __reg("a6") stru
 
     if (!(myPPCBase->PPC_Flags & 0x4))
     {
-        if ((flags == MEMF_PUBLIC | MEMF_FAST) || (flags == MEMF_PUBLIC | MEMF_CHIP))
+        if ((flags == (MEMF_PUBLIC | MEMF_FAST)) || (flags == (MEMF_PUBLIC | MEMF_CHIP)))
         {
             SysBase->ThisTask->tc_Flags &= ~TF_PPC;
             memBlock = AllocMem(size, flags);
@@ -351,17 +352,15 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
         return -1;
     }
 
-    illegal();
-
     if (myLock = Open(name, MODE_OLDFILE))
     {
         if (myFIB = (struct FileInfoBlock*)AllocDosObject(DOS_FIB, NULL))
         {
             if (ExamineFH(myLock, myFIB))
             {
-                myProt = myFIB->fib_DiskKey;
+                myProt = myFIB->fib_Protection;
                 FreeDosObject(DOS_FIB, (APTR)myFIB);
-                if (myProt & 0x30000 == 0x20000)
+                if (myProt & 0x20000)
                 {
                     SysBase->ThisTask->tc_Flags &= ~TF_PPC;
                     Close(myLock);
@@ -389,7 +388,7 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                     }
                     else
                     {
-                        if (myProt & 0x30000 == 0x10000)
+                        if (myProt & 0x10000)
                         {
                             return mySeglist;
                         }
@@ -454,7 +453,7 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
 PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
 {
     BPTR (*LoadSeg_ptr)(__reg("d1") STRPTR, __reg("a6") struct DosLibrary*) = OldLoadSeg;
-#if 0                                           //Patch disabled for now
+#if 1                                           //Patch disabled for now
     BPTR mySegList;
 
     mySegList = myLoader(name);
@@ -473,7 +472,7 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
                      __reg("a6") struct DosLibrary* DOSBase)
 {
     BPTR (*NewLoadSeg_ptr)(__reg("d1") STRPTR, __reg("d2") struct TagItem*, __reg("a6") struct DosLibrary*) = OldNewLoadSeg;
-#if 0                                           //Patch disabled for now
+#if 1                                           //Patch disabled for now
     BPTR mySegList;
     if (tags)
     {
