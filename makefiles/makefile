@@ -3,7 +3,7 @@
 
 # paths are relative to the project directory (current directory during make)
 
-EXE    = bin/vbcc-classic/powerpctest.library
+EXE    = bin/vbcc-classic/powerpc.library
 OBJDIR = o/vbcc-classic/
 
 # compiler and linker
