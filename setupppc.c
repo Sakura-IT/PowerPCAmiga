@@ -508,7 +508,7 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
     ULONG* IdleTask = (ULONG*)OFFSET_SYSMEM;
     IdleTask[0] = OPCODE_NOP;
     IdleTask[1] = OPCODE_NOP;
-    IdleTask[2] = OPCODE_BRANCH - 12;
+    IdleTask[2] = OPCODE_BRANCH - 8;
 
     installExceptions();
 
@@ -615,8 +615,6 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
     setDEC(PowerPCBase->pp_StdQuantum);
     setSRR0((ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM);
     setSRR1(MACHINESTATE_DEFAULT);
-
-    while(1); //fake end
 
     return;
 }
