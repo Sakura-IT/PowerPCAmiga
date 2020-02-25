@@ -169,15 +169,15 @@ struct PPCBase *mymakeLibrary(struct InternalConsts *myConsts, ULONG funPointer)
 
     CopyMem((APTR)(funPointer+4), funMem, funSize);
 
-    if (!(baseMem = (char *)AllocVec((sizeof(struct PrivatePPCBase)) + (NEGSIZE), MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
+    if (!(baseMem = (char *)AllocVec((sizeof(struct PrivatePPCBase)) + (NEGSIZEALIGN), MEMF_PUBLIC|MEMF_PPC|MEMF_REVERSE|MEMF_CLEAR)))
     {
         return NULL;
     }
 
-    PowerPCBase = (struct PPCBase*)(baseMem + (NEGSIZE));
+    PowerPCBase = (struct PPCBase*)(baseMem + (NEGSIZEALIGN));
 
     PowerPCBase->PPC_LibNode.lib_PosSize = sizeof(struct PrivatePPCBase);
-    PowerPCBase->PPC_LibNode.lib_NegSize = NEGSIZE;
+    PowerPCBase->PPC_LibNode.lib_NegSize = NEGSIZEALIGN;
 
     baseMem = (UBYTE*)PowerPCBase;
 
@@ -632,8 +632,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     }
 
     myBase->pp_DeviceID                = ppcdevice->pd_DeviceID;
-    myBase->pp_MirrorList.mlh_Head     = (struct MinNode*)&myBase->pp_MirrorList.mlh_TailPred;
-    myBase->pp_MirrorList.mlh_TailPred = (struct MinNode*)&myBase->pp_MirrorList.mlh_Tail;
+    myBase->pp_MirrorList.mlh_Head     = (struct MinNode*)&myBase->pp_MirrorList.mlh_Tail;
+    myBase->pp_MirrorList.mlh_TailPred = (struct MinNode*)&myBase->pp_MirrorList.mlh_Head;
     myBase->pp_UtilityBase             = UtilityBase;
     myBase->pp_PPCMemBase              = (ULONG)myZeroPage;
 

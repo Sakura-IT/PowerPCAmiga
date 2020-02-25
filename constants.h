@@ -25,6 +25,7 @@
 #define NUM_OF_PPC_FUNCS        102
 #define TOTAL_FUNCS             (NUM_OF_68K_FUNCS+NUM_OF_PPC_FUNCS)
 #define NEGSIZE                 TOTAL_FUNCS*6
+#define NEGSIZEALIGN            (NEGSIZE + 3) & 4
 #define MSGLEN                  192
 #define SUPERKEY                0xABADBEEF
 
