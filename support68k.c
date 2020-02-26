@@ -118,10 +118,13 @@ void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase*
                 Enable();
                 DeleteMsgPort(currMir->mt_Port);
                 FreeVec(currMir);
+
+                break;
             }
+            currMir = nxtMir;
         }
     }
-        return;;
+    return;
 }
 
 PATCH68K void SysExitCode(void)
