@@ -162,8 +162,6 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
     struct CommandLineInterface* comLineInt;
     STRPTR cmndName;
 
-    illegal();
-
     struct ExecBase* SysBase      = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct Task* thisTask         = SysBase->ThisTask;
     struct Process* thisProc      = (struct Process*)thisTask;
@@ -326,11 +324,6 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
 
     ULONG Signals;
 
-    if (!(PPStruct->PP_Flags))
-    {
-        return (PPERR_ASYNCERR);
-    }
-
     struct MirrorTask* myMirror = (struct MirrorTask*)PowerPCBase->pp_MirrorList.mlh_Head;
     struct MirrorTask* nxtMirror;
 
@@ -354,6 +347,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                 while (1)
                 {
                     Signals = Wait((ULONG)thisTask->tc_SigAlloc & 0xfffff000);
+
                     if (Signals & (1 << (ULONG)myMirror->mt_Port->mp_SigBit))
                     {
                         break;
@@ -539,11 +533,9 @@ LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBa
 LIBFUNC68K APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG memsize, __reg("d1") ULONG attributes)
 {
 
-    ULONG oldmemblock;
+    ULONG oldmemblock, memblock;
     struct Task *myTask;
     struct ExecBase *SysBase;
-
-    ULONG memblock = 0;
 
     if (PowerPCBase)
     {
@@ -762,6 +754,7 @@ LIBFUNC68K void myPutXMsg(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg(
 {
     message->mn_Node.ln_Type = NT_XMSG68K;
     struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
+
     myFrame->mf_Message.mn_Node.ln_Type = NT_MESSAGE;
     myFrame->mf_Message.mn_Length = MSGLEN;
     myFrame->mf_Identifier = ID_XPPC;

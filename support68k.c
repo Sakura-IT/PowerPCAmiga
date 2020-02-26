@@ -305,6 +305,8 @@ LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("d2") APTR buffer, __reg("d3") 
     return result;
 }
 
+/********************************************************************************************/
+
 APTR AllocFunc(__reg("d0") ULONG size, __reg("d1") ULONG flags, __reg("a6") struct ExecBase* SysBase)
 {
     APTR memBlock;
@@ -320,7 +322,7 @@ APTR AllocFunc(__reg("d0") ULONG size, __reg("d1") ULONG flags, __reg("a6") stru
         }
     }
     SysBase->ThisTask->tc_Flags |= TF_PPC;
-    flags = (flags & MEMF_CLEAR) | MEMF_PUBLIC | MEMF_PPC;
+    flags = (flags & (MEMF_REVERSE | MEMF_CLEAR)) | MEMF_PUBLIC | MEMF_PPC;
     memBlock = AllocMem(size, flags);
     return memBlock;
 }
@@ -332,6 +334,7 @@ void FreeFunc(__reg("a1") APTR memory, __reg("d0") ULONG size, __reg("a6") struc
     return;
 }
 
+/********************************************************************************************/
 
 BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
 {
@@ -355,8 +358,11 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
         return -1;
     }
 
+    SysBase->ThisTask->tc_Flags &= ~TF_PPC;
+
     if (myLock = Open(name, MODE_OLDFILE))
     {
+        
         if (myFIB = (struct FileInfoBlock*)AllocDosObject(DOS_FIB, NULL))
         {
             if (ExamineFH(myLock, myFIB))
@@ -364,8 +370,7 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                 myProt = myFIB->fib_Protection;
                 FreeDosObject(DOS_FIB, (APTR)myFIB);
                 if (myProt & 0x20000)
-                {
-                    SysBase->ThisTask->tc_Flags &= ~TF_PPC;
+                {                    
                     Close(myLock);
                     return -1;
                 }
@@ -381,8 +386,8 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                     if (mySeglist < 0)
                     {
                         UnLoadSeg(!mySeglist);
-                        SysBase->ThisTask->tc_Flags &= ~TF_PPC;
                         SetProtection(name, myProt | 0x20000);
+                        SysBase->ThisTask->tc_Flags &= ~TF_PPC;
                         return -1;
                      }
                     else if (!(mySeglist))
@@ -398,9 +403,11 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                         BPTR testSeglist = mySeglist;
                         while (testSeglist)
                         {
-                            UBYTE* mySegData = (UBYTE*)(*((ULONG*)((testSeglist << 2) + 4)));
-                            LONG mySegSize  = (*((ULONG*)(testSeglist - 4)));
-                            testSeglist = (*((ULONG*)(testSeglist)));
+                            ULONG curPointer = (ULONG)testSeglist << 2;
+                            UBYTE* mySegData = (UBYTE*)(curPointer + 4);
+                            LONG mySegSize   = (*((ULONG*)(curPointer - 4)));
+                            testSeglist = (*((ULONG*)(curPointer)));
+
                             for (int i=mySegSize; i >= 0; i--)
                             {
                                 ULONG* myLongData = (ULONG*)mySegData;
@@ -443,8 +450,8 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
                             }
                         }
                         UnLoadSeg(mySeglist);
-                        SysBase->ThisTask->tc_Flags &= ~TF_PPC;
                         SetProtection(name, myProt | 0x20000);
+                        SysBase->ThisTask->tc_Flags &= ~TF_PPC;
                     }
                 }
             }
@@ -453,10 +460,12 @@ BPTR myLoader(STRPTR name) // -1 = try normal 0 = fail
     return -1;
 }
 
+/********************************************************************************************/
+
 PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrary* DOSBase)
 {
     BPTR (*LoadSeg_ptr)(__reg("d1") STRPTR, __reg("a6") struct DosLibrary*) = OldLoadSeg;
-#if 1                                           //Patch disabled for now
+
     BPTR mySegList;
 
     mySegList = myLoader(name);
@@ -466,16 +475,15 @@ PATCH68K BPTR patchLoadSeg(__reg("d1") STRPTR name, __reg("a6") struct DosLibrar
         return ((*LoadSeg_ptr)(name, DOSBase));
     }
     return mySegList;
-#else
-    return ((*LoadSeg_ptr)(name, DOSBase));
-#endif
 }
+
+/********************************************************************************************/
 
 PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagItem* tags,
                      __reg("a6") struct DosLibrary* DOSBase)
 {
     BPTR (*NewLoadSeg_ptr)(__reg("d1") STRPTR, __reg("d2") struct TagItem*, __reg("a6") struct DosLibrary*) = OldNewLoadSeg;
-#if 1                                           //Patch disabled for now
+
     BPTR mySegList;
     if (tags)
     {
@@ -488,10 +496,7 @@ PATCH68K BPTR patchNewLoadSeg(__reg("d1") STRPTR file, __reg("d2") struct TagIte
     {
         return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
     }
-    return mySegList;    
-#else
-    return ((*NewLoadSeg_ptr)(file, tags, DOSBase));
-#endif
+    return mySegList;
 }
 
 /********************************************************************************************
