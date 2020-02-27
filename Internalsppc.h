@@ -21,7 +21,8 @@
 
 #include <exec/types.h>
 
-void illegal(void) = "\t.long\t0\n";            //debug function
+void illegal(void) = "\t.long\t0\n";                //debug function
+VOID writeTest(ULONG, ULONG) ="\tstw\tr4,0(r3)\n"; // "
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
 #define PPCKERNEL __section ("kernel","acrx") __entry
@@ -34,7 +35,6 @@ void illegal(void) = "\t.long\t0\n";            //debug function
 #define _LVOAllocMem        -198
 #define _LVOStricmp         -162
 
-
 struct MsgFrame* __CreateMsgFramePPC(void *)="\tlwz\tr0,-868(r3)\n\tmtlr\tr0\n\tblrl";
 #define libCreateMsgFramePPC() __CreateMsgFramePPC(PowerPCBase)
 struct MsgFrame* __GetMsgFramePPC(void *)="\tlwz\tr0,-874(r3)\n\tmtlr\tr0\n\tblrl";
@@ -46,9 +46,9 @@ VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\
 
 #define _LVOInsertPPC       -402
 #define _LVOFindNamePPC     -444
-#define _LVOSystemStart     -892
-#define _LVOStartTask       -898
-#define _LVOEndTask         -904
+#define _LVOSystemStart     -894
+#define _LVOStartTask       -900
+#define _LVOEndTask         -906
 
 void        Reset  (void);
 ULONG   GetExcTable(void);
@@ -77,6 +77,7 @@ void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
 void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
 ULONG getR0(void)                         = "\tmr\tr3,r0\n";
+ULONG getR1(void)                         = "\tmr\tr3,r1\n";
 ULONG getR2(void)                         = "\tmr\tr3,r2\n";
 void  storeR2(ULONG value)                = "\tmr\tr2,r3\n";
 void  HaltError(ULONG)                     = "\tmr\tr0,r3\n\t.long\t0\n";

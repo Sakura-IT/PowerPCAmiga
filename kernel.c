@@ -59,6 +59,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                         CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcInterrupt);
                     }
                     struct MsgFrame* msgFrame;
+
                     while (msgFrame = libGetMsgFramePPC())
                     {
                         AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
@@ -558,7 +559,9 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
 PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* myFrame)
 {
     struct NewTask* newTask = (struct NewTask*)myFrame->mf_Arg[0];
+
     PowerPCBase->pp_IdUsrTasks += 1;
+
     newTask->nt_Task.tp_Id = PowerPCBase->pp_IdUsrTasks;
     newTask->nt_Task.tp_PowerPCBase = PowerPCBase;
     newTask->nt_Task.tp_Task.tc_Node.ln_Type = NT_PPCTASK;
@@ -567,12 +570,13 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_Task.tp_BATStorage = &newTask->nt_BatStore;
     newTask->nt_Task.tp_Link.tl_Task = newTask;
     newTask->nt_Task.tp_Link.tl_Sig = 0xfff;
+    newTask->nt_Task.tp_StackMem = (APTR)(myFrame->mf_Arg[0] + 2048);
     newTask->nt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
     newTask->nt_MirrorPort = myFrame->mf_MirrorPort;
     newTask->nt_Task.tp_Task.tc_Node.ln_Name = (APTR)&newTask->nt_Name;
     newTask->nt_Task.tp_StackSize = (ULONG)myFrame->mf_Message.mn_Node.ln_Name;
     newTask->nt_Task.tp_Task.tc_SPLower = newTask->nt_Task.tp_StackMem;
-    newTask->nt_Task.tp_Task.tc_SPUpper = (APTR)((ULONG)myFrame->mf_Arg[0] + 2048 + newTask->nt_Task.tp_StackSize);
+    newTask->nt_Task.tp_Task.tc_SPUpper = (APTR)((ULONG)newTask->nt_Task.tp_StackMem + newTask->nt_Task.tp_StackSize);
     newTask->nt_Task.tp_Task.tc_SPReg   = (APTR)((ULONG)newTask->nt_Task.tp_Task.tc_SPUpper - 32);
 
     NewListPPC((struct List*)&newTask->nt_Task.tp_Task.tc_MemEntry);
@@ -586,6 +590,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
 
     PowerPCBase->pp_NumAllTasks += 1;
 
+    NewListPPC((struct List*)&newTask->nt_Task.tp_TaskPools);
     NewListPPC((struct List*)&newTask->nt_Port.mp_IntMsg);
     NewListPPC((struct List*)&newTask->nt_Port.mp_Port.mp_MsgList);
     newTask->nt_Port.mp_Port.mp_SigBit = SIGB_DOS;
@@ -600,7 +605,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_Task.tp_Msgport = &newTask->nt_Port;
 
     iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
-    iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)PowerPCBase - _LVOStartTask;
+    iframe->if_Context.ec_UPC.ec_SRR0 = *((ULONG*)((ULONG)PowerPCBase + 2 + _LVOStartTask));
     iframe->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.tp_Task.tc_SPReg;
     iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
     iframe->if_Context.ec_GPR[4] = (ULONG)myFrame;

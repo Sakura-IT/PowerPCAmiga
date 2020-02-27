@@ -227,9 +227,6 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
             stackMem +=4;
         }
 
-        newPPCTask->nt_Task.tp_TaskPools.lh_Head     = (struct Node*)&newPPCTask->nt_Task.tp_TaskPools.lh_Tail;
-        newPPCTask->nt_Task.tp_TaskPools.lh_TailPred = (struct Node*)&newPPCTask->nt_Task.tp_TaskPools.lh_Head;
-
         if (comLineInt = (struct CommandLineInterface*)((ULONG)(thisProc->pr_CLI <<2)))
         {
             if (!(cmndName = (STRPTR)((ULONG)(comLineInt->cli_CommandName <<2))))
