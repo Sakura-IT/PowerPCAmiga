@@ -941,11 +941,14 @@ ULONG doENV(struct InternalConsts* myConsts, UBYTE* envstring)
 
     res = GetVar((CONST_STRPTR)envstring, (STRPTR)&buffer, sizeof(ULONG), GVF_GLOBAL_ONLY);
 
-    if (res < 0)
+    if ((res < 0) || (res > 1))
     {
         buffer = 0;
     }
-
+    else
+    {
+        buffer = (buffer >> 24) & 0x7;
+    }
     return buffer;
 }
 
