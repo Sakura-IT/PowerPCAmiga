@@ -1677,6 +1677,7 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
             {
                 if ((start) && (length))
                 {
+                    key = mySuper(PowerPCBase);
                     ULONG iterations = (ULONG)start + length;
                     ULONG mask = -32;
                     start = (APTR)((ULONG)start & mask);
@@ -1689,6 +1690,7 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
                         mem += CACHELINE_SIZE;
                     }
                     sync();
+                    myUser(PowerPCBase, key);
                 }
                 else                
                 {
@@ -1735,6 +1737,7 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
         }
         case CACHE_ICACHEINV:
         {
+            key = mySuper(PowerPCBase);
             if ((start) && (length))
             {
                 ULONG iterations = (ULONG)start + length;
@@ -1754,12 +1757,17 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
             {
                 FlushICache();
             }
+            myUser(PowerPCBase, key);
             break;
         }
+    }
+    switch (flags) //To prevent SDA_BASE
+    {
         case CACHE_DCACHEINV:
         {
             if ((start) && (length))
             {
+                key = mySuper(PowerPCBase);
                 ULONG iterations = (ULONG)start + length;
                 ULONG mask = -32;
                 start = (APTR)((ULONG)start & mask);
@@ -1772,6 +1780,7 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
                     mem += CACHELINE_SIZE;
                 }
                 sync();
+                myUser(PowerPCBase, key);
             }
             break;
         }
