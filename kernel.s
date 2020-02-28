@@ -55,7 +55,7 @@ _ExcCommon:
         stw     r0,-8(r4)                                  #LR
         la      r3,IF_CONTEXT(r4)
 
-        bl      _StoreFrame                  #r0 and r3 are skipped in this routine and were saved above
+        bl      _StoreFrame                  #r0, r3 and r4 are skipped in this routine and were saved above
 
         la      r4,IF_GAP(r1)                              #iFrame
         lwz     r5,-4(r4)                                  #same as -4(r4)
@@ -85,7 +85,6 @@ _ExcCommon:
 .Mojo3: lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
         lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
-
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
         lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
 
@@ -117,8 +116,7 @@ _StoreFrame:
         lwz     r0,0(r1)
         stwu    r0,8(r3)                     #r1, skipped r0
         stwu    r2,4(r3)
-        stwu    r4,8(r3)                     #skipped r3. Need to be stored seperately
-        stwu    r5,4(r3)
+        stwu    r5,12(r3)                    #skipped r3 and r4. Need to be stored seperately
         stwu    r6,4(r3)
         stwu    r7,4(r3)
         stwu    r8,4(r3)
