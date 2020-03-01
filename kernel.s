@@ -33,15 +33,19 @@ _ExcCommon:
         b       ExcDStoreTLBMiss
 
         mtsprg2 r0                                         #LR; sprg3 = r0
-		
+
+        mfsrr0  r0
+        mtsprg0 r0
+        mfsrr1  r0
+        mtsprg1 r0
+
         mfmsr   r0
         ori     r0,r0,(PSL_IR|PSL_DR|PSL_FP)
-        mtmsr	r0				                           #Reenable MMU
-        isync					                           #Also reenable FPU
-        sync
+        mtmsr   r0			                               #Reenable MMU
+        sync                                               #Also reenable FPU
+        isync
 
         stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
-
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
         la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
@@ -94,9 +98,9 @@ _ExcCommon:
 
 _StoreFrame:
 
-        mfsrr0  r0
+        mfsprg0 r0
         stwu    r0,4(r3)
-        mfsrr1  r0
+        mfsprg1 r0
         stwu    r0,4(r3)
         mfdar   r0
         stwu    r0,4(r3)
