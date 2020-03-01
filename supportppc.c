@@ -354,11 +354,11 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 
 		case DEVICE_MPC8343E:
 		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
 			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
-			writememLongPPC(PowerPCBase->pp_BridgeConfig, IMMR_OMR0, (ULONG)msgFrame);
-			break;
+			writememLongPPC(IMMR_ADDR_DEFAULT, IMMR_OMR0, (ULONG)msgFrame);
+            break;
 		}
 
 		case DEVICE_MPC107:
@@ -1004,8 +1004,8 @@ PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* 
 PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
     mySetCache(PowerPCBase, CACHE_ICACHEINV, 0, 0);
-    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
+    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
     myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Signals;
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
@@ -1034,6 +1034,7 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
         }
         currSnoop = nextSnoop;
     }
+
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
     if ((myFrame->mf_PPCArgs.PP_Stack) && (myFrame->mf_PPCArgs.PP_StackSize))
