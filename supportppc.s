@@ -226,7 +226,6 @@ _RunCPP:
         mr      r10,r27
 
 .notLinear:
-
         mr      r14,r0
         mr      r16,r0
         mr      r17,r0
@@ -245,6 +244,7 @@ _RunCPP:
 
         lwz     r1,0(r1)
         lwz     r14,200(r1)         #frame
+        la      r14,IF_CONTEXT_GPR(r14)
         lwz     r15,5*4(r14)        #args
         lwz     r16,PP_FLAGS(r15)
 
