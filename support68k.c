@@ -253,7 +253,6 @@ PATCH68K APTR patchAllocMem(__reg("d0") ULONG byteSize, __reg("d1") ULONG attrib
         {
             if (testValue == *((ULONG*)myName))
             {
-                illegal(); //x
                 attributes |= MEMF_PPC;
                 return ((*AllocMem_ptr)(byteSize, attributes, SysBase));
             }
@@ -794,8 +793,6 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	struct MsgFrame* myFrame;
 	ULONG flag = 0;
 
-    illegal();
-
 	switch (PowerPCBase->pp_DeviceID)
 	{
 		case DEVICE_HARRIER:
@@ -810,7 +807,6 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		{
 			if(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I)
 			{
-				writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
 				flag = 1;
 			}
 		}
@@ -821,9 +817,8 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	}
 	if (flag)
 	{
-		do
+		while ((myFrame = GetMsgFrame(PowerPCBase)) != (APTR)-1)
 		{
-            myFrame = GetMsgFrame(PowerPCBase);
 			switch(myFrame->mf_Identifier)
 			{
 				case ID_T68K:
@@ -844,7 +839,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				}
 				case ID_FPPC:
 				{
-					struct MsgPort* replyPort = myFrame->mf_Message.mn_ReplyPort;
+                    struct MsgPort* replyPort = myFrame->mf_Message.mn_ReplyPort;
 					struct Task* sigTask = replyPort->mp_SigTask;
 					sigTask->tc_SigAlloc = myFrame->mf_Arg[0];
 					ReplyMsg(&myFrame->mf_Message);
@@ -905,9 +900,27 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				default:
 				{
 					PutMsg(PowerPCBase->pp_MasterControl, (struct Message*)myFrame);
+                    break;
 				}
 			}
-		} while ((LONG)myFrame != -1);
+		}
+
+        switch (PowerPCBase->pp_DeviceID)
+	    {
+		    case DEVICE_HARRIER:
+		    {
+			    break;
+		    }
+		    case DEVICE_MPC107:
+		    {
+			    break;
+		    }
+		    case DEVICE_MPC8343E:
+		    {
+				writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
+                break;
+			}
+		}
 	}
 	return flag;
 }
@@ -931,7 +944,6 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 		if (myFIFO->kf_MIOPT != myFIFO->kf_MIOPH)
 		{
-			illegal();
             custom->intena = INTF_PORTS;
 			GortInt(data, code);
 			custom->intena = INTF_SETCLR|INTF_INTEN|INTF_PORTS;
