@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma pack(push,2)
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <powerpc/powerpc.h>
@@ -28,7 +29,7 @@
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
-
+#pragma pack(pop)
 
 /********************************************************************************************
 *
@@ -845,7 +846,7 @@ PPCFUNCTION VOID myObtainSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct
 
 	if ((SemaphorePPC->ssppc_SS.ss_QueueCount) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
 	{
-		struct SemWait myWait;
+        struct SemWait myWait;
 		myWait.sw_Task = myTask;
 		myWait.sw_Semaphore = SemaphorePPC;
 		myTask->tp_Task.tc_SigRecvd |= SIGF_SINGLE;
