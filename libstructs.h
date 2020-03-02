@@ -334,13 +334,15 @@ APTR                        rd_PutChData;
 
 struct NewTask {
 struct TaskPPC              nt_Task;
+UWORD                       nt_Pad1;
 struct Message*             nt_StartMsg;
 struct Task*                nt_Mirror68K;
 struct MsgPort*             nt_MirrorPort;
 struct iframe               nt_Context;
+struct TaskPtr              nt_TaskPtr;
+UWORD                       nt_Pad2;
 struct MsgPortPPC           nt_Port;
 ULONG                       nt_SSReserved1[8];  //Belongs to Semaphore of nt_Port
-struct TaskPtr              nt_TaskPtr;
 struct MsgPortPPC           nt_IntPort;         //Currently not used or set-up. Also removed from functions atm.
 ULONG                       nt_SSReserved2[8];  //Belongs to Sempahore of nt_IntPort
 struct BATArray             nt_BatStore[4];

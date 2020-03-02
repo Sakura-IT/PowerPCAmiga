@@ -78,6 +78,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 		        }
 	        }
             HandleMsgs(PowerPCBase);
+            TaskCheck(PowerPCBase);
             SwitchPPC(PowerPCBase, iframe);
             break;
         }
@@ -157,61 +158,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             }
 
             HandleMsgs(PowerPCBase);
-
-            ULONG mask;
-
-            if ((PowerPCBase->pp_TaskExcept) && (PowerPCBase->pp_TaskExcept == currTask) &&
-               (currTask->tp_Task.tc_ExceptData) && (mask = currTask->tp_Task.tc_SigRecvd & currTask->tp_Task.tc_SigExcept))
-            {
-                currTask->tp_Task.tc_SigRecvd &= ~mask;
-                currTask->tp_Task.tc_SigExcept &= ~mask;
-
-                ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") ULONG) = currTask->tp_Task.tc_ExceptCode;
-                ULONG tempR2 = getR2();
-                ULONG signal = ExcHandler((ULONG)currTask->tp_Task.tc_ExceptData, mask);
-                storeR2(tempR2);
-
-                currTask->tp_Task.tc_SigExcept |= signal;
-            }
-
-            if (!(PowerPCBase->pp_FlagWait))
-            {
-                struct WaitTime* currWait = (struct WaitTime*)PowerPCBase->pp_WaitTime.mlh_Head;
-                struct WaitTime* nxtWait;
-
-                while (nxtWait = (struct WaitTime*)currWait->wt_Node.ln_Succ)
-                {
-                    if ((currWait->wt_TimeUpper > getTBU()) || ((currWait->wt_TimeUpper == getTBU()) && (currWait->wt_TimeLower > getTBL())))
-                    {
-                        if (currTask == currWait->wt_Task)
-                        {
-                            currWait->wt_Task->tp_Task.tc_State = TS_RUN;
-                        }
-                        else
-                        {
-                            currWait->wt_Task->tp_Task.tc_State = TS_READY;
-                        }
-                        currWait->wt_Task->tp_Task.tc_SigRecvd |= SIGF_WAIT;
-                        RemovePPC((struct Node*)currWait);
-                    }
-                currWait = nxtWait;
-                }
-            }
-
-            struct TaskPPC* currWTask = (struct TaskPPC*)PowerPCBase->pp_WaitingTasks.mlh_Head;
-            struct TaskPPC* nxtWTask;
-
-            while (nxtWTask = (struct TaskPPC*)currWTask->tp_Task.tc_Node.ln_Succ)
-            {
-                if ((currWTask->tp_Task.tc_State == TS_READY) || (currWTask->tp_Task.tc_SigWait & currWTask->tp_Task.tc_SigRecvd))
-                {
-                    currWTask->tp_Task.tc_State = TS_READY;
-                    RemovePPC((struct Node*)currWTask);
-                    AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)currWTask); //Enqueue on pri?
-                }
-                currWTask = nxtWTask;
-            }
-
+            TaskCheck(PowerPCBase);
             SwitchPPC(PowerPCBase, iframe);
             break;
         }
@@ -301,9 +248,76 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             break;
         }
     }
-
     PowerPCBase->pp_ExceptionMode = 0;
     setDEC(PowerPCBase->pp_Quantum);
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION void TaskCheck(struct PrivatePPCBase* PowerPCBase)
+{
+    ULONG mask;
+    struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
+
+    if(currTask)
+    {
+        if ((PowerPCBase->pp_TaskExcept) && (PowerPCBase->pp_TaskExcept == currTask) &&
+            (currTask->tp_Task.tc_ExceptData) && (mask = currTask->tp_Task.tc_SigRecvd & currTask->tp_Task.tc_SigExcept))
+        {
+            currTask->tp_Task.tc_SigRecvd &= ~mask;
+            currTask->tp_Task.tc_SigExcept &= ~mask;
+
+            ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") ULONG) = currTask->tp_Task.tc_ExceptCode;
+            ULONG tempR2 = getR2();
+            ULONG signal = ExcHandler((ULONG)currTask->tp_Task.tc_ExceptData, mask);
+            storeR2(tempR2);
+
+            currTask->tp_Task.tc_SigExcept |= signal;
+        }
+    }
+
+    if (!(PowerPCBase->pp_FlagWait))
+    {
+        struct WaitTime* currWait = (struct WaitTime*)PowerPCBase->pp_WaitTime.mlh_Head;
+        struct WaitTime* nxtWait;
+
+        while (nxtWait = (struct WaitTime*)currWait->wt_Node.ln_Succ)
+        {
+            if ((currWait->wt_TimeUpper > getTBU()) || ((currWait->wt_TimeUpper == getTBU()) && (currWait->wt_TimeLower > getTBL())))
+            {
+                if ((currTask) && (currTask == currWait->wt_Task))
+                {
+                    currWait->wt_Task->tp_Task.tc_State = TS_RUN;
+                }
+                else
+                {
+                    currWait->wt_Task->tp_Task.tc_State = TS_READY;
+                }
+                currWait->wt_Task->tp_Task.tc_SigRecvd |= SIGF_WAIT;
+                RemovePPC((struct Node*)currWait);
+            }
+            currWait = nxtWait;
+        }
+    }
+
+    struct TaskPPC* currWTask = (struct TaskPPC*)PowerPCBase->pp_WaitingTasks.mlh_Head;
+    struct TaskPPC* nxtWTask;
+
+    while (nxtWTask = (struct TaskPPC*)currWTask->tp_Task.tc_Node.ln_Succ)
+    {
+        if ((currWTask->tp_Task.tc_State == TS_READY) || (currWTask->tp_Task.tc_SigWait & currWTask->tp_Task.tc_SigRecvd))
+        {
+            currWTask->tp_Task.tc_State = TS_READY;
+            RemovePPC((struct Node*)currWTask);
+            AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)currWTask); //Enqueue on pri?
+        }
+        currWTask = nxtWTask;
+    }
     return;
 }
 
@@ -501,7 +515,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
             {
                 currTask->tp_Task.tc_State = TS_RUN;
                 PowerPCBase->pp_ThisPPCProc = currTask;
-                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(iframe));
+                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
                 break;
             }
             iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
@@ -519,7 +533,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
         else if (currTask->tp_Task.tc_State == TS_CHANGING)
         {
             currTask->tp_Task.tc_State = TS_WAIT;
-            CopyMemPPC((APTR)iframe, (APTR)currTask->tp_ContextMem, sizeof(iframe));
+            CopyMemPPC((APTR)iframe, (APTR)currTask->tp_ContextMem, sizeof(struct iframe));
             AddTailPPC((struct List*)&PowerPCBase->pp_WaitingTasks, (struct Node*)currTask);
             currTask = NULL;
             PowerPCBase->pp_ThisPPCProc = currTask;
@@ -531,7 +545,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 struct TaskPPC* oldTask = PowerPCBase->pp_ThisPPCProc;
                 oldTask->tp_Task.tc_State = TS_READY;
                 AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
-                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(iframe));
+                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
                 DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
                 break;
             }
@@ -542,8 +556,8 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 currTask->tp_Task.tc_State = TS_RUN;
                 AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
                 PowerPCBase->pp_ThisPPCProc = currTask;
-                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(iframe));
-                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(iframe));
+                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
+                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
                 break;
             }
         }

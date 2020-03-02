@@ -308,6 +308,7 @@ VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
 VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+void TaskCheck(struct PrivatePPCBase* PowerPCBase);
 VOID SystemStart(struct PrivatePPCBase* PowerPCBase, ULONG lowerlimit, ULONG upperlimit);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
 void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);

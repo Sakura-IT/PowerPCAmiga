@@ -1105,17 +1105,17 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
                 {
                     case ID_TPPC:
                     {
-                        SetupRunPPC(PowerPCBase, myFrame);
+                        SetupRunPPC(PowerPCBase, newFrame);
                         break;
                     }
                     case ID_END:
                     {
-                        KillTask(PowerPCBase, myFrame);
+                        KillTask(PowerPCBase, newFrame);
                         break;
                     }
                     default:
                     {
-                        break;
+                        break; //error
                     }
                 }
             }
@@ -1156,7 +1156,7 @@ PPCFUNCTION VOID EndTask(VOID)
 
 PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
-    FreeMsgFramePPC(PowerPCBase,myFrame);
+    FreeMsgFramePPC(PowerPCBase, myFrame);
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
