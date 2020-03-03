@@ -84,6 +84,8 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_DECREMENTER:
         {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcDecrementer);
+
             struct ExcData* eData;
 
             while (eData = (struct ExcData*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyExc))
@@ -164,8 +166,13 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_DATASTORAGE:
         {
+            if (PowerPCBase->pp_EnDAccessExc)  //not standard WOS behaviour
+            {
+                CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcDAccess);
+            }
+
             if ((iframe->if_Context.ec_DAR == 4) || (iframe->if_Context.ec_UPC.ec_SRR0 > 0x10000) ||
-            ((iframe->if_Context.ec_DAR < 0xfffff800) && (iframe->if_Context.ec_DAR < 0x800)))
+            ((iframe->if_Context.ec_DAR < 0xfffff800) && (iframe->if_Context.ec_DAR > 0x800)))
             {
                 if(!(PowerPCBase->pp_DataExcLow += 1))
                 {
@@ -191,9 +198,9 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 {
                     CommonExcError(PowerPCBase, iframe);
                 }
-            break;
+                break;
             }
-            CommonExcHandler(PowerPCBase, iframe,(struct List*)&PowerPCBase->pp_ExcDAccess);
+            CommonExcError(PowerPCBase, iframe);
             break;
         }
         case VEC_PROGRAM:
@@ -243,9 +250,44 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             }
             break;
         }
+        case VEC_MACHINECHECK:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcMCheck);
+            break;
+        }
+        case VEC_INSTSTORAGE:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcIAccess);
+            break;
+        }
+        case VEC_FPUNAVAILABLE:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcFPUn);
+            break;
+        }
+        case VEC_SYSTEMCALL:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcSystemCall);
+            break;
+        }
+        case VEC_TRACE:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcTrace);
+            break;
+        }
+        case VEC_PERFMONITOR:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcPerfMon);
+            break;
+        }
+        case VEC_IBREAKPOINT:
+        {
+            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcIABR);
+            break;
+        }
         default:
         {
-            break;
+            CommonExcError(PowerPCBase, iframe);
         }
     }
     PowerPCBase->pp_ExceptionMode = 0;
@@ -637,7 +679,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 {
     struct ExcData* nxtNode;
     struct ExcData* currNode = (struct ExcData*)excList->lh_Head;
-    ULONG status = 0;
+    ULONG status = EXCRETURN_NORMAL;
 
     while (nxtNode = (struct ExcData*)currNode->ed_Node.ln_Succ)
     {
@@ -664,6 +706,11 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
         }
         currNode = nxtNode;
     }
+
+    if ((status == EXCRETURN_NORMAL) && (iframe->if_Context.ec_ExcID != EXCB_DACCESS))
+    {
+        CommonExcError(PowerPCBase, iframe);
+    }
     return;
 }
 
@@ -675,6 +722,12 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
 PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
+    if ((iframe->if_Context.ec_ExcID == EXCB_INTERRUPT) || (iframe->if_Context.ec_ExcID == EXCB_DECREMENTER)
+     || (iframe->if_Context.ec_ExcID == EXCB_TRACE)     || (iframe->if_Context.ec_ExcID == EXCB_PERFMON))
+    {
+        return;
+    }
+
     ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100));
     errorData[0]  = (ULONG)PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
     errorData[1]  = (ULONG)PowerPCBase->pp_ThisPPCProc;
