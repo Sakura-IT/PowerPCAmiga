@@ -226,11 +226,15 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
             }
             else
             {
-                if(!(PowerPCBase->pp_AlignmentExcLow += 1))
+                if (DoAlign(iframe, iframe->if_Context.ec_UPC.ec_SRR0))
                 {
-                    PowerPCBase->pp_AlignmentExcHigh += 1;
+                    iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                    if (!(PowerPCBase->pp_AlignmentExcLow += 1))
+                    {
+                        PowerPCBase->pp_AlignmentExcHigh += 1;
+                    }
                 }
-                if(!(DoAlign(iframe, iframe->if_Context.ec_UPC.ec_SRR0)))
+                else
                 {
                     CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcAlign);
                 }
