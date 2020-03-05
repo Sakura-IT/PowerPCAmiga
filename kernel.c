@@ -339,7 +339,7 @@ PPCFUNCTION void TaskCheck(struct PrivatePPCBase* PowerPCBase)
 
         while (nxtWait = (struct WaitTime*)currWait->wt_Node.ln_Succ)
         {
-            if ((currWait->wt_TimeUpper > getTBU()) || ((currWait->wt_TimeUpper == getTBU()) && (currWait->wt_TimeLower > getTBL())))
+            if ((currWait->wt_TimeUpper < getTBU()) || ((currWait->wt_TimeUpper == getTBU()) && (currWait->wt_TimeLower < getTBL())))
             {
                 if ((currTask) && (currTask == currWait->wt_Task))
                 {

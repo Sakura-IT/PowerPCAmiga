@@ -582,7 +582,7 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
             quantum = KILLERQUANTUM;
             busclock = KILLERBUSCLOCK;
 
-            if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_RCWLR) & (1<<30))
+            if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_RCWLR) & (1<<RCWLR_DDRCM))
             {
                 quantum = quantum >> 1;
                 busclock = busclock >> 1;

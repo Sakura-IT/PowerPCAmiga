@@ -50,6 +50,7 @@
 
 #define KILLERQUANTUM           1333333
 #define KILLERBUSCLOCK          266666666
+#define RCWLR_DDRCM             1
 
 #define PPERR_MISCERR           3
 
