@@ -623,8 +623,6 @@ FUNC68K void MasterControl(void)
 	{
 		WaitPort(mcPort);
 
-        illegal();
-
 		while (myFrame = (struct MsgFrame*)GetMsg(mcPort))
 		{
 			myTask->tc_Flags |= TF_PPC;
@@ -871,28 +869,28 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				}
 				case ID_GETV:
 				{
-					myFrame->mf_Arg[1] = *((ULONG*)(myFrame->mf_Arg[0]));
+                    myFrame->mf_Arg[0] = *((ULONG*)(myFrame->mf_Arg[1]));
 					myFrame->mf_Identifier = ID_DONE;
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
 				case ID_PUTW:
 				{
-					*((ULONG*)(myFrame->mf_Arg[0])) = myFrame->mf_Arg[1];
+                    *((ULONG*)(myFrame->mf_Arg[1])) = myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
 				case ID_PUTH:
 				{
-					*((ULONG*)(myFrame->mf_Arg[0])) = (USHORT)myFrame->mf_Arg[1];
+                    *((USHORT*)(myFrame->mf_Arg[1])) = (USHORT)myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
 				case ID_PUTB:
 				{
-					*((ULONG*)(myFrame->mf_Arg[0])) = (UBYTE)myFrame->mf_Arg[1];
+                    *((UBYTE*)(myFrame->mf_Arg[1])) = (UBYTE)myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;

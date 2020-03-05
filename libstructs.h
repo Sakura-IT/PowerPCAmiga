@@ -302,6 +302,7 @@ ULONG                       dm_Address;
 ULONG                       dm_LoadType;
 ULONG                       dm_RegNumber;
 ULONG                       dm_LoadFlag;
+ULONG                       dm_IndexedFlag;
 };
 
 struct WaitTime {

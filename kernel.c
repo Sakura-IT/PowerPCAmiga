@@ -187,12 +187,17 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     myFrame->mf_Arg[1] = myData.dm_Address;
                     myFrame->mf_Arg[0] = myData.dm_Value;
                     libSendMsgFramePPC(myFrame);
-                    if (myData.dm_LoadFlag)
+                    if (!(myData.dm_LoadFlag))
                     {
                          while (myFrame->mf_Identifier != ID_DONE);
-                         FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
+                         if (!(FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData)))
+                         {
+                             CommonExcError(PowerPCBase, iframe);
+                             break;
+                         }
                     }
                     iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                    break;
                 }
                 else
                 {
