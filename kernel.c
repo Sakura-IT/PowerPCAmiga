@@ -598,9 +598,8 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
                 CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
                 DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
-                break;
             }
-            if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
+            else if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
             {
                 struct TaskPPC* oldTask = PowerPCBase->pp_ThisPPCProc;
                 oldTask->tp_Task.tc_State = TS_READY;
@@ -609,8 +608,8 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 PowerPCBase->pp_ThisPPCProc = currTask;
                 CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
                 CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
-                break;
             }
+            break;
         }
     }
     return;
