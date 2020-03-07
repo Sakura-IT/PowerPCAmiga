@@ -1875,20 +1875,16 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
         printDebug(PowerPCBase, (struct DebugArgs*)&args);
         return NULL;
     }
+
     excInfo->ei_ExcData.ed_Code = (APTR)value;
     value = myGetTagDataPPC(PowerPCBase, EXCATTR_FLAGS, 0, taglist);
-    if (!(value & (EXCF_SMALLCONTEXT | EXCF_LARGECONTEXT)))
+
+    if (!(value & (EXCF_SMALLCONTEXT | EXCF_LARGECONTEXT)) || !(value & (EXCF_GLOBAL | EXCF_LOCAL)))
     {
         FreeVec68K(PowerPCBase, excInfo);
         printDebug(PowerPCBase, (struct DebugArgs*)&args);
         return NULL;
     }           
-    if (!(value & (EXCF_GLOBAL | EXCF_LOCAL)))
-    {
-        FreeVec68K(PowerPCBase, excInfo);
-        printDebug(PowerPCBase, (struct DebugArgs*)&args);
-        return NULL;
-    }
     if (value & EXCF_GLOBAL)
     {
         excInfo->ei_ExcData.ed_Task = (struct TaskPPC*)myGetTagDataPPC(PowerPCBase, EXCATTR_TASK, 0, taglist);
@@ -1897,6 +1893,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
     {
         excInfo->ei_ExcData.ed_Task = PowerPCBase->pp_ThisPPCProc;
     }
+
     excInfo->ei_ExcData.ed_Flags = value;
     excInfo->ei_ExcData.ed_Data = myGetTagDataPPC(PowerPCBase, EXCATTR_DATA, 0, taglist);
     excInfo->ei_ExcData.ed_Node.ln_Name = (APTR)myGetTagDataPPC(PowerPCBase, EXCATTR_NAME, 0, taglist);

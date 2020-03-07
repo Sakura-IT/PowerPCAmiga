@@ -96,7 +96,7 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
 {
 	APTR memBlock = NULL;
 
-	if (size == (ULONG)memBlock)
+	if (size)
 	{
 		flags = (flags & ~MEMF_CHIP) | MEMF_PPC;
 		memBlock = (APTR)myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOAllocVec32, 0, 0, size, flags);
