@@ -682,14 +682,14 @@ FUNC68K void MasterControl(void)
 					}
 					case ID_LL68:
 					{
-						ULONG (*DoLL68K_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a0") ULONG,
+                        ULONG (*DoLL68K_ptr)(__reg("d0") ULONG, __reg("d1") ULONG, __reg("a0") ULONG,
 							 __reg("a1") ULONG, __reg("a6") ULONG) =
 							 (APTR)(myFrame->mf_PPCArgs.PP_Regs[0] + myFrame->mf_PPCArgs.PP_Regs[1]);
 						ULONG result = (*DoLL68K_ptr)(myFrame->mf_PPCArgs.PP_Regs[4], myFrame->mf_PPCArgs.PP_Regs[5],
 								myFrame->mf_PPCArgs.PP_Regs[2], myFrame->mf_PPCArgs.PP_Regs[3],
 								myFrame->mf_PPCArgs.PP_Regs[0]);
 						struct MsgFrame* newFrame = CreateMsgFrame(PowerPCBase);
-						newFrame->mf_PPCArgs.PP_Regs[6] = result;
+						newFrame->mf_PPCArgs.PP_Regs[0] = result;
 						newFrame->mf_Identifier = ID_DNLL; //original code had more
 
                         SendMsgFrame(PowerPCBase, newFrame);
