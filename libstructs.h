@@ -110,13 +110,6 @@ ULONG                       ba_dbatu;
 ULONG                       ba_dbatl;
 };
 
-struct PrivateTask {
-struct TaskPPC              pt_Task;
-struct Message*             pt_StartMsg;
-struct Task*                pt_Mirror68K;
-struct MsgPort*             pt_MirrorPort;
-};
-
 struct LibSema {
 struct SignalSemaphorePPC   ls_Semaphore;
 ULONG                       ls_Reserved[8];
@@ -333,12 +326,16 @@ ULONG                       rd_TruncateNum;
 APTR                        rd_PutChData;
 };
 
+struct PrivateTask {
+struct TaskPPC              pt_Task;
+UWORD                       pt_Pad1;
+struct Message*             pt_StartMsg;
+struct Task*                pt_Mirror68K;
+struct MsgPort*             pt_MirrorPort;
+};
+
 struct NewTask {
-struct TaskPPC              nt_Task;
-UWORD                       nt_Pad1;
-struct Message*             nt_StartMsg;
-struct Task*                nt_Mirror68K;
-struct MsgPort*             nt_MirrorPort;
+struct PrivateTask          nt_Task;
 struct iframe               nt_Context;
 struct TaskPtr              nt_TaskPtr;
 UWORD                       nt_Pad2;
