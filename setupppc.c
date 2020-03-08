@@ -595,6 +595,8 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
         }
     }
 
+    PowerPCBase->pp_LowerLimit = *((ULONG*)(((ULONG)PowerPCBase + _LVOInsertPPC + 2)));
+    PowerPCBase->pp_UpperLimit = *((ULONG*)(((ULONG)PowerPCBase + _LVOFindNamePPC + 2)));
     PowerPCBase->pp_StdQuantum = quantum;
     PowerPCBase->pp_BusClock = busclock;
 

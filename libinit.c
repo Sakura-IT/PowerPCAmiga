@@ -724,8 +724,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
         TASKATTR_NAME,   TRUE, //we cheat here. normally this is mandatory
         TASKATTR_R3,     (ULONG)PowerPCBase,
-        TASKATTR_R4,     *((ULONG*)(((ULONG)PowerPCBase + _LVOInsertPPC + 2))),
-        TASKATTR_R5,     *((ULONG*)(((ULONG)PowerPCBase + _LVOFindNamePPC + 2))),
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };

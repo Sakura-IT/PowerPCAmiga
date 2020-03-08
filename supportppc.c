@@ -886,12 +886,10 @@ PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase, ULONG lowerlimit, ULONG upperlimit)
+PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
 {
     ForbidPPC(PowerPCBase);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name = GetName();
-    PowerPCBase->pp_LowerLimit = lowerlimit;
-    PowerPCBase->pp_UpperLimit = upperlimit;
     PermitPPC(PowerPCBase);
 
     struct TaskPPC* myTask;

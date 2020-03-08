@@ -309,7 +309,7 @@ VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct T
 VOID HandleMsgs(struct PrivatePPCBase* PowerPCBase);
 VOID SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 void TaskCheck(struct PrivatePPCBase* PowerPCBase);
-VOID SystemStart(struct PrivatePPCBase* PowerPCBase, ULONG lowerlimit, ULONG upperlimit);
+VOID SystemStart(struct PrivatePPCBase* PowerPCBase);
 void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* newtask);
 void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
