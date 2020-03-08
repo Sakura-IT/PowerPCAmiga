@@ -690,7 +690,8 @@ FUNC68K void MasterControl(void)
 								myFrame->mf_PPCArgs.PP_Regs[0]);
 						struct MsgFrame* newFrame = CreateMsgFrame(PowerPCBase);
 						newFrame->mf_PPCArgs.PP_Regs[0] = result;
-						newFrame->mf_Identifier = ID_DNLL; //original code had more
+						newFrame->mf_Identifier = ID_DNLL;
+                        newFrame->mf_PPCTask = myFrame->mf_PPCTask;
 
                         SendMsgFrame(PowerPCBase, newFrame);
                         FreeMsgFrame(PowerPCBase, myFrame);
