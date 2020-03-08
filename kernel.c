@@ -133,14 +133,11 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 lastExc->ed_Flags &= ~(1<EXCB_ACTIVE);
             }
 
-            if (PowerPCBase->pp_LowerLimit)
+            ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
+            if ((PowerPCBase->pp_LowerLimit <= currAddress) && (currAddress < PowerPCBase->pp_UpperLimit))
             {
-                 ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
-                 if (PowerPCBase->pp_LowerLimit <= currAddress < PowerPCBase->pp_UpperLimit)
-                 {
-                     PowerPCBase->pp_Quantum = 0x1000;
-                     break;
-                 }
+                PowerPCBase->pp_Quantum = 0x1000;
+                break;
             }
 
             if ((PowerPCBase->pp_Mutex) || (PowerPCBase->pp_FlagForbid))
@@ -476,7 +473,6 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
                         ULONG signal = 1 << (myPort->mp_Port.mp_SigBit);
                         myTask->tp_Task.tc_SigRecvd |= signal;
                         AddTailPPC(&myPort->mp_Port.mp_MsgList, (struct Node*)currMsg);
-
                         if (currMsg->mf_Identifier == ID_DONE)
                         {
                             myTask->tp_Task.tc_SigAlloc = currMsg->mf_Arg[1];
