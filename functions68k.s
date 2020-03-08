@@ -94,17 +94,17 @@ xBack       move.l a6,-(a7)
             move.l a6,PP_REGS+56(a0)
 
             move.l TempSysB(pc),a6
+            move.l (a7)+,a3
             btst #AFB_FPU40,AttnFlags+1(a6)
             beq.s NoFPU2
-		
-            move.l (a7)+,a3
+
             lea PP_FREGS+64(a3),a3
             fmovem.x fp0-fp7,-(a3)
-            move.l a7,a1
+
+NoFPU2      move.l a7,a1
             lea 16(a1),a1
             unlk a1
-
-NoFPU2      move.l TempSysB(pc),a6
+            move.l TempSysB(pc),a6
             btst #AFB_FPU40,AttnFlags+1(a6)
             beq.s NoFPU3
 		

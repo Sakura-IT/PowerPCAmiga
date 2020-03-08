@@ -368,14 +368,14 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                     }
                     else if (myFrame->mf_Identifier == ID_T68K)
                     {
-                        thisTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+                        thisTask->tc_SigRecvd |= myFrame->mf_Signals;
                         myMirror->mt_PPCTask = myFrame->mf_PPCTask;
 
                         Run68KCode(SysBase, &myFrame->mf_PPCArgs);
 
                         struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
 
-                        CopyMem((const APTR) &myFrame, (APTR)&doneFrame, sizeof(struct MsgFrame));
+                        CopyMem((APTR)myFrame, (APTR)doneFrame, sizeof(struct MsgFrame));
 
                         doneFrame->mf_Identifier = ID_DONE;
                         doneFrame->mf_Arg[0]     = thisTask->tc_SigRecvd & andTemp;
