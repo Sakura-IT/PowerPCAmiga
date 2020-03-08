@@ -64,7 +64,6 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	}
 
 	PowerPCBase->pp_NumRun68k += 1;
-	//dFlush((ULONG)&PowerPCBase->pp_NumRun68k);
 
 	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
 
@@ -76,8 +75,8 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	myFrame->mf_Identifier = ID_T68K;
 	myFrame->mf_PPCTask = (struct TaskPPC*)myTask;
 	myFrame->mf_MirrorPort = privTask->pt_MirrorPort;
-	myFrame->mf_Arg[0] = (ULONG)myTask->tp_Task.tc_Node.ln_Name;
-	myFrame->mf_Arg[1] = myTask->tp_Task.tc_SigAlloc;
+	myFrame->mf_Arg[0] = myTask->tp_Task.tc_SigAlloc;
+    myFrame->mf_Arg[1] = 0;
 	myFrame->mf_Arg[2] = 0;
 
 	while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));

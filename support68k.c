@@ -648,7 +648,7 @@ FUNC68K void MasterControl(void)
 				{
 					case ID_T68K:
 					{
-						char *ppcName = myFrame->mf_PPCTask->tp_Task.tc_Node.ln_Name;
+                        char *ppcName = myFrame->mf_PPCTask->tp_Task.tc_Node.ln_Name;
 						char Name68k[255];
 						char nameAppend[] = "_68K\0";
 

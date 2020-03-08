@@ -51,11 +51,6 @@ _ExcCommon:
 
         stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
-
-        lwz     r4,0xb0(r0)                                #debugdebug
-        addi    r4,r4,1
-        stw     r4,0xb0(r0)
-
         la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
         mfsprg3 r0
