@@ -64,7 +64,7 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	}
 
 	PowerPCBase->pp_NumRun68k += 1;
-	dFlush((ULONG)&PowerPCBase->pp_NumRun68k);
+	//dFlush((ULONG)&PowerPCBase->pp_NumRun68k);
 
 	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
 
@@ -174,10 +174,10 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
                     case ID_DONE:
                     {
                         struct NewTask* myNewTask = (struct NewTask*)myTask;
-                        if (!(myNewTask->nt_MirrorPort))
+                        if (!(myNewTask->nt_Task.pt_MirrorPort))
                         {
-                            myNewTask->nt_MirrorPort = myFrame->mf_MirrorPort;
-                            myNewTask->nt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
+                            myNewTask->nt_Task.pt_MirrorPort = myFrame->mf_MirrorPort;
+                            myNewTask->nt_Task.pt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
                         }
 
                         while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -201,7 +201,7 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
         {
             struct NewTask* myNewTask = (struct NewTask*)myTask;
             struct MsgPort* mirrorPort;
-            if ((signals = recvdSigs & ~sigMask) && (mirrorPort = myNewTask->nt_MirrorPort))
+            if ((signals = recvdSigs & ~sigMask) && (mirrorPort = myNewTask->nt_Task.pt_MirrorPort))
             {
                 mySignal68K(PowerPCBase, mirrorPort->mp_SigTask, signals);
             }
@@ -666,7 +666,7 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
     struct MsgPort* mirrorPort;
     struct NewTask* PPCNewtask = (struct NewTask*)PPCtask;
 
-    if (mirrorPort = PPCNewtask->nt_MirrorPort)
+    if (mirrorPort = PPCNewtask->nt_Task.pt_MirrorPort)
     {
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         myFrame->mf_Identifier = ID_END;
