@@ -19,11 +19,11 @@
 // SOFTWARE.
 
 #pragma pack(push,2)
+#include <proto/powerpc.h>
+#include <powerpc/powerpc.h>
 #include "constants.h"
 #include "libstructs.h"
 #include "Internalsppc.h"
-#include <proto/powerpc.h>
-#include <powerpc/powerpc.h>
 #pragma pack(pop)
 
 /********************************************************************************************

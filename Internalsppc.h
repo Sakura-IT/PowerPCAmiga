@@ -50,6 +50,13 @@ VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\
 #define _LVOStartTask       -900
 #define _LVOEndTask         -906
 
+#undef TASKPPCB_ATOMIC      //TasksPPC.h is wrong. See TasksPPC.i
+#undef TASKPPCF_ATOMIC
+#define TASKPPCB_EMULATOR   4
+#define TASKPPCB_ATOMIC     5
+#define TASKPPCF_EMULATOR   (1L<<4)
+#define TASKPPCF_ATOMIC     (1L<<5)
+
 void        Reset  (void);
 ULONG   GetExcTable(void);
 ULONG   GetVecEntry(void);

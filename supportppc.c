@@ -62,7 +62,7 @@ PPCFUNCTION VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* li
     {
         struct TaskPPC* chkTask = (struct TaskPPC*)myNode;
 
-        if (chkTask->tp_Flags & TASKPPCF_THROW)
+        if (chkTask->tp_Flags & TASKPPCF_ATOMIC)
         {
             myNode = nextNode;
             break;
@@ -582,17 +582,6 @@ PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct Task
 
 	return signal;
 
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
-PPCFUNCTION VOID EndTaskPPC(VOID)
-{
-    return;
 }
 
 /********************************************************************************************

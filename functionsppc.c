@@ -389,8 +389,6 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
                                 longvalue = (LONG)myGetTagDataPPC(PowerPCBase, TASKATTR_NICE, 0, taglist);
 
-                                writeTest(0x6d000008, (ULONG)longvalue);
-
                                 if (longvalue < -20)
                                 {
                                     longvalue = -20;
@@ -448,31 +446,29 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                 memFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
                                                 memFrame->if_Context.ec_GPR[2] = getR2();
 
-                                                writeTest(0x6d000000, (ULONG)newTask);
-                                                writeTest(0x6d000004, 0xfab40000);
-                                                while(1);
-
                                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_BAT, 0, taglist))
                                                 {
                                                     myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_StoredBATs, &memFrame->if_BATs, sizeof(struct BATArray) * 4);  //Not working
+                                                    myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_StoredBATs, newTask->tp_BATStorage, sizeof(struct BATArray) * 4);
                                                 }
                                                 else
                                                 {
                                                     myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_SystemBATs, &memFrame->if_BATs, sizeof(struct BATArray) * 4);
+                                                    myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_SystemBATs, newTask->tp_BATStorage, sizeof(struct BATArray) * 4);
                                                 }
 
                                                 ULONG key = mySuper(PowerPCBase);
 
                                                 for (int i = 0; i < 16; i++)
                                                 {
-                                                    memFrame->if_Segments[i] = getSRIn(i * 4096);
+                                                    memFrame->if_Segments[i] = getSRIn(i<<28);
                                                 }
 
                                                 myUser(PowerPCBase, key);
 
-                                                ULONG defvalue = *((ULONG*)((ULONG)PowerPCBase + _LVOEndTask + 2));
+                                                value = *((ULONG*)((ULONG)PowerPCBase + _LVOEndTask + 2));
 
-                                                memFrame->if_Context.ec_LR = myGetTagDataPPC(PowerPCBase, TASKATTR_EXITCODE, defvalue, taglist);
+                                                memFrame->if_Context.ec_LR = myGetTagDataPPC(PowerPCBase, TASKATTR_EXITCODE, value, taglist);
 
                                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_PRIVATE, 0, taglist))
                                                 {
@@ -512,7 +508,6 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
                                                     if (myInitSemaphorePPC(PowerPCBase, &memPort->mp_Semaphore) == -1)
                                                     {
-
                                                         memPort->mp_Port.mp_SigTask = newTask;
                                                         memPort->mp_Port.mp_Flags = PA_SIGNAL;
                                                         memPort->mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
@@ -539,7 +534,6 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                 {
                                                                     PowerPCBase->pp_IdSysTasks += 1;
                                                                     newTask->tp_Id = PowerPCBase->pp_IdSysTasks;
-
                                                                 }
                                                                 else
                                                                 {
@@ -556,6 +550,9 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                 PowerPCBase->pp_FlagReschedule = -1;
 
                                                                 FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+                                                                //writeTest(0x6d000014, 0xfab4fab4);
+                                                                //while(1);
 
                                                                 myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
