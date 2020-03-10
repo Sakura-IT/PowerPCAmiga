@@ -718,7 +718,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         AddIntServer(INTB_VERTB, myInt2);
     }
 
-#if 0
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
@@ -728,12 +727,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TAG_DONE
     };
 
-    if (!(myCreatePPCTask(PowerPCBase, (struct TagItem*)&myTags)))
+    if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
         return NULL;
     }
-
+#if 0
     struct Library* ppcemu;
 
     if (ppcemu = OpenLibrary("ppc.library", 46L))

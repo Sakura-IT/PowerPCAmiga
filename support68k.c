@@ -804,9 +804,10 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		}
 		case DEVICE_MPC8343E:
 		{
-			if(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I)
+			if ((data == (APTR)SUPERKEY) || (readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
 			{
-				flag = 1;
+                writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
+                flag = 1;
 			}
 		}
 		default:
@@ -818,7 +819,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	{
 		while ((myFrame = GetMsgFrame(PowerPCBase)) != (APTR)-1)
 		{
-			switch(myFrame->mf_Identifier)
+			switch (myFrame->mf_Identifier)
 			{
 				case ID_T68K:
 				case ID_END:
@@ -903,23 +904,6 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				}
 			}
 		}
-
-        switch (PowerPCBase->pp_DeviceID)
-	    {
-		    case DEVICE_HARRIER:
-		    {
-			    break;
-		    }
-		    case DEVICE_MPC107:
-		    {
-			    break;
-		    }
-		    case DEVICE_MPC8343E:
-		    {
-				writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
-                break;
-			}
-		}
 	}
 	return flag;
 }
@@ -944,6 +928,7 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		if (myFIFO->kf_MIOPT != myFIFO->kf_MIOPH)
 		{
             custom->intena = INTF_PORTS;
+            data = (APTR)SUPERKEY;
 			GortInt(data, code);
 			custom->intena = INTF_SETCLR|INTF_INTEN|INTF_PORTS;
 		}

@@ -417,7 +417,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
 *
 *********************************************************************************************/
 
-LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PrivatePPCBase* PowerPCBase)
 {
     struct PPCArgs pa;
     LONG status;
@@ -433,7 +433,7 @@ LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
 
 	//pa.PP_Regs[12] = (ULONG) &LinkerDB;
 
-	if (!(status = RunPPC((APTR)&pa)))
+	if (!(status = myRunPPC(PowerPCBase, (APTR)&pa)))
     {
         cpuType = (pa.PP_Regs[0] >> 16);
 
@@ -475,7 +475,7 @@ LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PPCBase* PowerPCBase)
 *
 ********************************************************************************************/
 
-LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
+LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PrivatePPCBase* PowerPCBase)
 {
     struct PPCArgs pa;
     LONG status;
@@ -489,7 +489,7 @@ LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
 	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
     pa.PP_Regs[1]   = HW_PPCSTATE;
 
-	if (!(status = RunPPC((APTR)&pa)))
+	if (!(status = myRunPPC(PowerPCBase, (APTR)&pa)))
     {
         result = pa.PP_Regs[0];
     }
@@ -504,7 +504,7 @@ LIBFUNC68K ULONG myGetPPCState(__reg("a6") struct PPCBase* PowerPCBase)
 *********************************************************************************************/
 
 
-LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems)
+LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems)
 {
     struct PPCArgs pa;
 
@@ -516,7 +516,7 @@ LIBFUNC68K struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBa
 	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
     pa.PP_Regs[1]   = (ULONG) TagItems;
 
-	RunPPC((APTR)&pa);
+	myRunPPC(PowerPCBase, (APTR)&pa);
 
     return ((struct TaskPPC*)pa.PP_Regs[0]);
 }
@@ -689,7 +689,7 @@ LIBFUNC68K void mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0
 *
 ********************************************************************************************/
 
-LIBFUNC68K void myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG debuglevel)
+LIBFUNC68K void myPowerDebugMode(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("d0") ULONG debuglevel)
 {
     struct PPCArgs pa;
 
@@ -707,7 +707,7 @@ LIBFUNC68K void myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg(
     pa.PP_Regs[1]   = HW_SETDEBUGMODE;
     pa.PP_Regs[8]   = debuglevel;
 
-	RunPPC((APTR)&pa);
+	myRunPPC(PowerPCBase, (APTR)&pa);
 
     return;
 }

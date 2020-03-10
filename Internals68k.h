@@ -78,9 +78,9 @@ BPTR            myExpunge      (__reg("a6") struct PPCBase* PowerPCBase);
 ULONG           myReserved     (void);
 LONG            myRunPPC       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
 LONG            myWaitForPPC   (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
-ULONG           myGetCPU       (__reg("a6") struct PPCBase* PowerPCBase);
-ULONG           myGetPPCState  (__reg("a6") struct PPCBase* PowerPCBase);
-struct TaskPPC* myCreatePPCTask(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems);
+ULONG           myGetCPU       (__reg("a6") struct PrivatePPCBase* PowerPCBase);
+ULONG           myGetPPCState  (__reg("a6") struct PrivatePPCBase* PowerPCBase);
+struct TaskPPC* myCreatePPCTask(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct TagItem* TagItems);
 
 APTR            myAllocVec32 (__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG memsize, __reg("d1") ULONG attributes);
 void            myFreeVec32  (__reg("a6") struct PPCBase* PowerPCBase, __reg("a1") APTR memblock);
@@ -89,7 +89,7 @@ struct Message* myAllocXMsg  (__reg("a6") struct PPCBase* PowerPCBase,
 void            myFreeXMsg   (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") struct Message* myXMsg);
 void            mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG cacheflags,
                               __reg("a0") APTR start, __reg("d1") ULONG length);
-void         myPowerDebugMode(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG debuglevel);
+void         myPowerDebugMode(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("d0") ULONG debuglevel);
 void         PutChProc       (__reg("a6") struct ExecBase* SysBase, __reg("d0") UBYTE mychar,
                               __reg("a3") APTR PutChData);
 void         mySPrintF68K    (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Formatstring,
