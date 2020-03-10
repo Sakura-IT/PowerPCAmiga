@@ -1054,8 +1054,8 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
 
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
-    newFrame->mf_Arg[0] = myTask->tp_Task.tc_SigAlloc;
-    newFrame->mf_Arg[2] = myTask->tp_Task.tc_SigRecvd & 0xfffff000;
+    newFrame->mf_Arg[0]  = myTask->tp_Task.tc_SigAlloc;
+    newFrame->mf_Signals = myTask->tp_Task.tc_SigRecvd & 0xfffff000;
     myTask->tp_Task.tc_SigRecvd &= 0xfff;
 
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);

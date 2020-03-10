@@ -176,11 +176,11 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
                         if (!(myNewTask->nt_Task.pt_MirrorPort))
                         {
                             myNewTask->nt_Task.pt_MirrorPort = myFrame->mf_MirrorPort;
-                            myNewTask->nt_Task.pt_Mirror68K = (struct Task*)myFrame->mf_Arg[2];
+                            myNewTask->nt_Task.pt_Mirror68K = (struct Task*)myFrame->mf_Arg[0];
                         }
 
                         while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
-                        myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Arg[0];
+                        myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Signals;
                         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
                         myCopyMemPPC(PowerPCBase, (APTR)&myFrame->mf_PPCArgs, (APTR)PPStruct, sizeof(struct PPCArgs));
@@ -348,7 +348,6 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
             newTask->tp_Task.tc_Node.ln_Type = NT_PPCTASK;
             newTask->tp_Task.tc_Flags = TF_PROCTIME;
             newTask->tp_PowerPCBase = PowerPCBase;
-
             if (memBATStorage = AllocVec68K(PowerPCBase, sizeof(struct BATArray) * 4, MEMF_PUBLIC | MEMF_CLEAR))
             {
                 newTask->tp_BATStorage = memBATStorage;
@@ -370,7 +369,8 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                 memNameml->ml_ME[0].me_Un.meu_Addr = memName;
                                 memNameml->ml_ME[0].me_Length = nameSize;
                                 myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memNameml);
-
+                                //writeTest(0x6d000000, (ULONG)newTask);
+                                //while(1);
                                 CopyStr((APTR)value, (APTR)memName);
 
                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_SYSTEM, 0, taglist))
@@ -463,7 +463,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
                                                 myUser(PowerPCBase, key);
 
-                                                ULONG defvalue = *((ULONG*)((ULONG)PowerPCBase - _LVOEndTask + 2));
+                                                ULONG defvalue = *((ULONG*)((ULONG)PowerPCBase + _LVOEndTask + 2));
 
                                                 memFrame->if_Context.ec_LR = myGetTagDataPPC(PowerPCBase, TASKATTR_EXITCODE, defvalue, taglist);
 
@@ -1263,11 +1263,12 @@ PPCFUNCTION struct TagItem* myFindTagItemPPC(struct PrivatePPCBase* PowerPCBase,
 
 	while (myTagItem = myNextTagItemPPC(PowerPCBase, (struct TagItem**)&tagPtr))
 	{
-		if (myTagItem->ti_Tag == tagvalue)
+        if (myTagItem->ti_Tag == tagvalue)
 		{
 			break;
 		}
 	}
+
 	return myTagItem;
 }
 
@@ -1290,6 +1291,7 @@ PPCFUNCTION ULONG myGetTagDataPPC(struct PrivatePPCBase* PowerPCBase, ULONG tagv
     {
         result = tagdefault;
     }
+
     return result;
 }
 
@@ -1334,6 +1336,7 @@ PPCFUNCTION struct TagItem* myNextTagItemPPC(struct PrivatePPCBase* PowerPCBase,
         myTagItem = NULL;
         tagitemptr->tip_TagItem = myTagItem;
     }
+
     return myTagItem;
 }
 

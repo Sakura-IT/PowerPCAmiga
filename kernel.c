@@ -492,10 +492,10 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
             case ID_LLPP:
             {
                 struct PrivateTask* myTask = (struct PrivateTask*)PowerPCBase->pp_ThisPPCProc;
-                if (myTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[1])
+                if (myTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0])
                 {
                     myTask->pt_Task.tp_Task.tc_State = TS_RUN;
-                    myTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Arg[0];
+                    myTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Signals;
                 }
                 else
                 {
@@ -503,10 +503,10 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
                     struct PrivateTask* currTask = (struct PrivateTask*)PowerPCBase->pp_WaitingTasks.mlh_Head;
                     while (nxtTask = (struct PrivateTask*)currTask->pt_Task.tp_Task.tc_Node.ln_Succ)
                     {
-                        if (currTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[1])
+                        if (currTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0])
                         {
                             currTask->pt_Task.tp_Task.tc_State = TS_READY;
-                            currTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Arg[0];
+                            currTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Signals;
                             break;
                         }
                         currTask = nxtTask;
@@ -516,9 +516,9 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
                         currTask = (struct PrivateTask*)PowerPCBase->pp_ReadyTasks.mlh_Head;
                         while (nxtTask = (struct PrivateTask*)currTask->pt_Task.tp_Task.tc_Node.ln_Succ)
                         {
-                            if (currTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[1])
+                            if (currTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0])
                             {
-                                currTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Arg[0];
+                                currTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Signals;
                                 break;
                             }
                         }

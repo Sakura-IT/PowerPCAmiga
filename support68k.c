@@ -546,7 +546,7 @@ FUNC68K void MirrorTask(void)
             }
             else if (myFrame->mf_Identifier == ID_T68K)
             {
-                myTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+                myTask->tc_SigRecvd |= myFrame->mf_Signals;
                 myFrame->mf_MirrorPort = mirrorPort;
 
                 Run68KCode(SysBase, &myFrame->mf_PPCArgs);
@@ -556,9 +556,9 @@ FUNC68K void MirrorTask(void)
                 CopyMem((const APTR) &myFrame, (APTR)&doneFrame, sizeof(struct MsgFrame));
 
                 doneFrame->mf_Identifier = ID_DONE;
-                doneFrame->mf_Arg[0]     = myTask->tc_SigRecvd & andTemp;
+                doneFrame->mf_Signals    = myTask->tc_SigRecvd & andTemp;
+                doneFrame->mf_Arg[0]     = (ULONG)myTask;
                 doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
-                doneFrame->mf_Arg[2]     = (ULONG)myTask;
 
                 SendMsgFrame(PowerPCBase, doneFrame);
                 FreeMsgFrame(PowerPCBase, myFrame);
@@ -580,8 +580,8 @@ FUNC68K void MirrorTask(void)
         {
             struct MsgFrame* crossFrame = CreateMsgFrame(PowerPCBase);
             crossFrame->mf_Identifier   = ID_LLPP;
-            crossFrame->mf_Arg[0]       = (mySignal & andTemp);
-            crossFrame->mf_Arg[1]       = (ULONG)myTask;
+            crossFrame->mf_Signals      = (mySignal & andTemp);
+            crossFrame->mf_Arg[0]       = (ULONG)myTask;
             SendMsgFrame(PowerPCBase, crossFrame);
         }
     }

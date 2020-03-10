@@ -353,8 +353,8 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                     {
                         struct MsgFrame* crossFrame = CreateMsgFrame(PowerPCBase);
                         crossFrame->mf_Identifier   = ID_LLPP;
-                        crossFrame->mf_Arg[0]       = (Signals & andTemp);
-                        crossFrame->mf_Arg[1]       = (ULONG)thisTask;
+                        crossFrame->mf_Signals      = (Signals & andTemp);
+                        crossFrame->mf_Arg[0]       = (ULONG)thisTask;
                         SendMsgFrame(PowerPCBase, crossFrame);
                     }
                 }
@@ -378,9 +378,9 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                         CopyMem((APTR)myFrame, (APTR)doneFrame, sizeof(struct MsgFrame));
 
                         doneFrame->mf_Identifier = ID_DONE;
-                        doneFrame->mf_Arg[0]     = thisTask->tc_SigRecvd & andTemp;
+                        doneFrame->mf_Signals    = thisTask->tc_SigRecvd & andTemp;
+                        doneFrame->mf_Arg[0]     = (ULONG)thisTask;
                         doneFrame->mf_Arg[1]     = thisTask->tc_SigAlloc;
-                        doneFrame->mf_Arg[2]     = (ULONG)thisTask;
 
                         SendMsgFrame(PowerPCBase, doneFrame);
                         FreeMsgFrame(PowerPCBase, myFrame);
@@ -393,7 +393,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                 }
             }
 
-            thisTask->tc_SigRecvd |= myFrame->mf_Arg[2];
+            thisTask->tc_SigRecvd |= myFrame->mf_Signals;
             myMirror->mt_PPCTask = myFrame->mf_PPCTask;
 
             if (PPStruct->PP_Stack)
