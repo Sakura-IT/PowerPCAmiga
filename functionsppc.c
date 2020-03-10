@@ -323,6 +323,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG value, memStack, myCode;
+    LONG longvalue;
     APTR memBATStorage, memName;
 
     struct TaskPPC* newTask;
@@ -369,9 +370,8 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                 memNameml->ml_ME[0].me_Un.meu_Addr = memName;
                                 memNameml->ml_ME[0].me_Length = nameSize;
                                 myAddHeadPPC(PowerPCBase, (struct List*)&newTask->tp_Task.tc_MemEntry, (struct Node*)memNameml);
-                                //writeTest(0x6d000000, (ULONG)newTask);
-                                //while(1);
                                 CopyStr((APTR)value, (APTR)memName);
+                                newTask->tp_Task.tc_Node.ln_Name = memName;
 
                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_SYSTEM, 0, taglist))
                                 {
@@ -387,18 +387,20 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
                                 newTask->tp_Task.tc_Node.ln_Pri = myGetTagDataPPC(PowerPCBase, TASKATTR_PRI, 0, taglist);
 
-                                value = myGetTagDataPPC(PowerPCBase, TASKATTR_NICE, 0, taglist);
+                                longvalue = (LONG)myGetTagDataPPC(PowerPCBase, TASKATTR_NICE, 0, taglist);
 
-                                if (value < -20)
+                                writeTest(0x6d000008, (ULONG)longvalue);
+
+                                if (longvalue < -20)
                                 {
-                                    value = -20;
+                                    longvalue = -20;
                                 }
-                                else if (value > 20)
+                                else if (longvalue > 20)
                                 {
-                                    value = 20;
+                                    longvalue = 20;
                                 }
 
-                                newTask->tp_Nice = value;
+                                newTask->tp_Nice = longvalue;
 
                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_MOTHERPRI, 0, taglist))
                                 {
@@ -422,6 +424,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                     newTask->tp_Task.tc_SPUpper = (APTR)SPointer;
                                     SPointer = (SPointer - 56) & -32;
                                     newTask->tp_Task.tc_SPReg = (APTR)SPointer;
+                                    newTask->tp_StackMem = (APTR)memStack;
 
                                     if (memStackml = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC | MEMF_CLEAR))
                                     {
@@ -444,6 +447,10 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                 memFrame->if_Context.ec_UPC.ec_SRR0 = myCode;
                                                 memFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
                                                 memFrame->if_Context.ec_GPR[2] = getR2();
+
+                                                writeTest(0x6d000000, (ULONG)newTask);
+                                                writeTest(0x6d000004, 0xfab40000);
+                                                while(1);
 
                                                 if (value = myGetTagDataPPC(PowerPCBase, TASKATTR_BAT, 0, taglist))
                                                 {

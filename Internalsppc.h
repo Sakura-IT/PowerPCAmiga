@@ -316,7 +316,6 @@ void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID FlushDCache(struct PrivatePPCBase* PowerPCBase);
-STRPTR GetName(void);
 VOID EndTask(VOID);
 ULONG GetLen(STRPTR string);
 STRPTR CopyStr(APTR source, APTR dest);

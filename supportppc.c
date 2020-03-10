@@ -888,10 +888,6 @@ PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 
 PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
 {
-    ForbidPPC(PowerPCBase);
-    PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name = GetName();
-    PermitPPC(PowerPCBase);
-
     struct TaskPPC* myTask;
     APTR myPool;
     struct MemList* myMem;

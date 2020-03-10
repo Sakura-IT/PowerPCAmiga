@@ -22,7 +22,7 @@
 
 #********************************************************************************************
 
-.global     _LockMutexPPC, _FreeMutexPPC, _GetName, _CopyMemQuickPPC, _SwapStack, _SetFPExc
+.global     _LockMutexPPC, _FreeMutexPPC, _CopyMemQuickPPC, _SwapStack, _SetFPExc
 .global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _FlushICache, _RunCPP
 .global     _GetDecTable
 
@@ -353,23 +353,6 @@ _RunCPP:
         lwz     r3,200(r1)
         lwz     r1,0(r1)
         blr
-
-#********************************************************************************************
-#
-#    Getting a name for our clean-up task without the need for SDA/relocation.
-#
-#********************************************************************************************
-
-_GetName:
-       mflr     r4
-       bl       .skipName
-
-       .byte  "Kryten\0\0"
-
-.skipName:
-       mflr      r3
-       mtlr      r4
-       blr
 
 #********************************************************************************************
 #
