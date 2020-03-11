@@ -49,7 +49,7 @@ _ExcCommon:
         sync                                               #Also reenable FPU
         isync
 
-        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
+        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 24 altivec support 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
         la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
@@ -189,29 +189,29 @@ _StoreFrame:
         stwu    r0,8(r3)
         mfibatl r0,0
         stwu    r0,4(r3)
-        mfibatu r0,1
-        stwu    r0,4(r3)
-        mfibatl r0,1
-        stwu    r0,4(r3)
-        mfibatu r0,2
-        stwu    r0,4(r3)
-        mfibatl r0,2
-        stwu    r0,4(r3)
-        mfibatu r0,3
-        stwu    r0,4(r3)
-        mfibatl r0,3
-        stwu    r0,4(r3)
         mfdbatu r0,0
         stwu    r0,4(r3)
         mfdbatl r0,0
+        stwu    r0,4(r3)
+        mfibatu r0,1
+        stwu    r0,4(r3)
+        mfibatl r0,1
         stwu    r0,4(r3)
         mfdbatu r0,1
         stwu    r0,4(r3)
         mfdbatl r0,1
         stwu    r0,4(r3)
+        mfibatu r0,2
+        stwu    r0,4(r3)
+        mfibatl r0,2
+        stwu    r0,4(r3)
         mfdbatu r0,2
         stwu    r0,4(r3)
         mfdbatl r0,2
+        stwu    r0,4(r3)
+        mfibatu r0,3
+        stwu    r0,4(r3)
+        mfibatl r0,3
         stwu    r0,4(r3)
         mfdbatu r0,3
         stwu    r0,4(r3)
@@ -342,29 +342,29 @@ _LoadFrame:
         lwzu    r3,4(r31)
         mtibatl 0,r3
         lwzu    r3,4(r31)
-        mtibatu 1,r3
-        lwzu    r3,4(r31)
-        mtibatl 1,r3
-        lwzu    r3,4(r31)
-        mtibatu 2,r3
-        lwzu    r3,4(r31)
-        mtibatl 2,r3
-        lwzu    r3,4(r31)
-        mtibatu 3,r3
-        lwzu    r3,4(r31)
-        mtibatl 3,r3
-        lwzu    r3,4(r31)
         mtdbatu 0,r3
         lwzu    r3,4(r31)
         mtdbatl 0,r3
+        lwzu    r3,4(r31)
+        mtibatu 1,r3
+        lwzu    r3,4(r31)
+        mtibatl 1,r3
         lwzu    r3,4(r31)
         mtdbatu 1,r3
         lwzu    r3,4(r31)
         mtdbatl 1,r3
         lwzu    r3,4(r31)
+        mtibatu 2,r3
+        lwzu    r3,4(r31)
+        mtibatl 2,r3
+        lwzu    r3,4(r31)
         mtdbatu 2,r3
         lwzu    r3,4(r31)
         mtdbatl 2,r3
+        lwzu    r3,4(r31)
+        mtibatu 3,r3
+        lwzu    r3,4(r31)
+        mtibatl 3,r3
         lwzu    r3,4(r31)
         mtdbatu 3,r3
         lwzu    r3,4(r31)
@@ -576,6 +576,7 @@ _DoAlign:
 #********************************************************************************************
 
 _DoDataStore:
+
         li      r12,0                        #r3 = iframe, r4 = srr0, r5 = datastruct
         stw     r12,IF_ALIGNSTORE(r3)        #to get an offset of 0 (reusing an unused variable)
         la      r11,IF_CONTEXT_GPR(r3)       #get reg table in r11

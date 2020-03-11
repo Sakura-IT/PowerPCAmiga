@@ -457,14 +457,10 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                     myCopyMemPPC(PowerPCBase, &PowerPCBase->pp_SystemBATs, newTask->tp_BATStorage, sizeof(struct BATArray) * 4);
                                                 }
 
-                                                ULONG key = mySuper(PowerPCBase);
-
                                                 for (int i = 0; i < 16; i++)
                                                 {
-                                                    memFrame->if_Segments[i] = getSRIn(i<<28);
+                                                    memFrame->if_Segments[i] = PowerPCBase->pp_SystemSegs[i];
                                                 }
-
-                                                myUser(PowerPCBase, key);
 
                                                 value = *((ULONG*)((ULONG)PowerPCBase + _LVOEndTask + 2));
 
@@ -551,9 +547,6 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 
                                                                 FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
-                                                                //writeTest(0x6d000014, 0xfab4fab4);
-                                                                //while(1);
-
                                                                 myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
                                                                 struct SnoopData* currSnoop = (struct SnoopData*)PowerPCBase->pp_Snoop.mlh_Head;
@@ -572,6 +565,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                     }
                                                                     currSnoop = nextSnoop;
                                                                 }
+
                                                                 myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
                                                                 CauseDECInterrupt(PowerPCBase);

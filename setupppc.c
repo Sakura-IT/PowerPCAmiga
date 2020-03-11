@@ -610,6 +610,11 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
     mvfrBAT2(&PowerPCBase->pp_SystemBATs[2]);
     mvfrBAT3(&PowerPCBase->pp_SystemBATs[3]);
 
+    for (int i = 0; i < 16; i++)
+    {
+        PowerPCBase->pp_SystemSegs[i] = getSRIn(i<<28);
+    }
+
     setupCaches(PowerPCBase);
 
     myZP->zp_Status = STATUS_READY;

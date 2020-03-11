@@ -563,6 +563,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 currTask->tp_Task.tc_State = TS_RUN;
                 PowerPCBase->pp_ThisPPCProc = currTask;
                 CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
+                currTask->tp_Task.tc_SPReg = (APTR)iframe->if_Context.ec_GPR[1];
                 break;
             }
             iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
@@ -604,6 +605,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
                 PowerPCBase->pp_ThisPPCProc = currTask;
                 CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
                 CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
+                currTask->tp_Task.tc_SPReg = (APTR)iframe->if_Context.ec_GPR[1];
             }
             break;
         }
@@ -664,11 +666,27 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
     newTask->nt_Port.mp_Port.mp_Node.ln_Type = NT_MSGPORTPPC;
     newTask->nt_Task.pt_Task.tp_Msgport = &newTask->nt_Port;
 
-    iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
-    iframe->if_Context.ec_UPC.ec_SRR0 = *((ULONG*)((ULONG)PowerPCBase + 2 + _LVOStartTask));
-    iframe->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.pt_Task.tp_Task.tc_SPReg;
-    iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
-    iframe->if_Context.ec_GPR[4] = (ULONG)myFrame;
+    struct iframe* newFrame = (struct iframe*)&newTask->nt_Context;
+
+    writeTest(0x6d000020, (ULONG)newFrame);
+    writeTest(0x6d000024, (ULONG)iframe);
+    writeTest(0x6d000028, (ULONG)newTask);
+
+    newFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+    newFrame->if_Context.ec_UPC.ec_SRR0 = *((ULONG*)((ULONG)PowerPCBase + 2 + _LVOStartTask));
+    newFrame->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.pt_Task.tp_Task.tc_SPReg;
+    newFrame->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
+    newFrame->if_Context.ec_GPR[4] = (ULONG)myFrame;
+
+    CopyMemPPC(&PowerPCBase->pp_SystemBATs, &newFrame->if_BATs, sizeof(struct BATArray) * 4);
+    CopyMemPPC(&PowerPCBase->pp_SystemBATs, newTask->nt_Task.pt_Task.tp_BATStorage, sizeof(struct BATArray) * 4);
+
+    for (int i = 0; i < 16; i++)
+    {
+        newFrame->if_Segments[i] = PowerPCBase->pp_SystemSegs[i];
+    }
+
+    CopyMemPPC((APTR)newFrame, (APTR)iframe, sizeof(struct iframe));
 
     return;
 }

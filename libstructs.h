@@ -211,6 +211,7 @@ ULONG                       pp_NumRun68k;
 struct BATArray             pp_ExceptionBATs[4];
 struct BATArray             pp_StoredBATs[4];
 struct BATArray             pp_SystemBATs[4];
+ULONG                       pp_SystemSegs[16];
 };
 
 struct killFIFO {
