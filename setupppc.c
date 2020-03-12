@@ -172,7 +172,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
     }
     else
     {
-        initData->id_Status = 0x45727234;
+        initData->id_Status = ERR_PPCSETUP;
         return;
     }
     endEffAddr   = startEffAddr + 0x100000;
@@ -182,7 +182,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
 
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
     {
-        initData->id_Status = 0x45727231;
+        initData->id_Status = ERR_PPCMMU;
         return;
     }
 
@@ -194,7 +194,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
 
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
     {
-        initData->id_Status = 0x45727231;
+        initData->id_Status = ERR_PPCMMU;
         return;
     }
 
@@ -210,7 +210,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
 
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
             {
-                initData->id_Status = 0x45727231;
+                initData->id_Status = ERR_PPCMMU;
                 return;
             }
 
@@ -247,7 +247,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
 
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
             {
-                initData->id_Status = 0x45727231;
+                initData->id_Status = ERR_PPCMMU;
                 return;
             }
 
@@ -294,7 +294,7 @@ PPCSETUP void mmuSetup(struct InitData* initData)
 
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
     {
-        initData->id_Status = 0x45727231;
+        initData->id_Status = ERR_PPCMMU;
         return;
     }
 
@@ -337,9 +337,9 @@ PPCSETUP void installExceptions(void)
         }
         switch (excVector)
         {
-            case 0x1000:
-            case 0x1100:
-            case 0x1200:
+            case VEC_ITLBMISS:
+            case VEC_DLOADTLBMISS:
+            case VEC_DSTORETLBMISS :
             {
                 *((UWORD*)(excVector)) = 0x4800;
                 *((UWORD*)(excVector+2)) = ((excVector>>6)& 0xf) + OFFSET_KERNEL - excVector;
@@ -398,8 +398,8 @@ PPCSETUP void killerFIFOs(struct InitData* initData)
         memOP    += 4;
         memIF    += 4;
         memOF    += 4;
-        memFIFO  += 192;
-        memFIFO2 += 192;
+        memFIFO  += MSGLEN;
+        memFIFO2 += MSGLEN;
     }
 
 
@@ -486,7 +486,7 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
     ULONG copySrc = 0;
     struct PPCZeroPage *myZP = 0;
 
-    initData->id_Status = 0x496e6974;    //Init
+    initData->id_Status = STATUS_INIT;
 
     Reset();
 
@@ -514,9 +514,9 @@ PPCSETUP __interrupt void setupPPC(struct InitData* initData)
 
     mmuSetup(initData);
 
-    while (initData->id_Status != 0x496e6974);
+    while (initData->id_Status != STATUS_INIT);
 
-    initData->id_Status = 0x426f6f6e;   //Boon
+    initData->id_Status = ERR_PPCOK;
 
     while (myZP->zp_Status != STATUS_INIT);
 

@@ -506,32 +506,32 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
         switch (status)
         {
-            case 0x426f6f6e:        //Boon
+            case ERR_PPCOK:
             {
                 break;
             }
-            case 0x45727231:        //Err1
+            case ERR_PPCMMU:
             {
                 PrintCrtErr(myConsts, "Error during MMU setup of PPC");
                 return NULL;
             }
-            case 0x45727232:        //Err2
+            case ERR_PPCMEM:
             {
                 PrintCrtErr(myConsts, "No memory detected on the PPC card");
                 return NULL;
             }
-            case 0x45727233:        //Err3
+            case ERR_PPCCORRUPT:
             {
                 PrintCrtErr(myConsts, "Memory corruption detected during setup");
                 return NULL;
             }
-            case 0x45727234:        //Err4
+            case ERR_PPCSETUP:
             {
                 PrintCrtErr(myConsts, "General PPC setup error");
                 return NULL;
             }
         }
-        if (status == 0x426f6f6e)
+        if (status == ERR_PPCOK)
         {
             break;
         }
@@ -541,8 +541,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     {
         switch (status)
         {
-            case 0x496e6974:        //Init
-            case 0x426f6f6e:        //Boon
+            case STATUS_INIT:
+            case ERR_PPCOK:
             {
                 PrintCrtErr(myConsts, "PowerPC CPU possibly crashed during setup");
                 return NULL;
@@ -655,7 +655,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     AddLibrary(WarpBase);
 
-    CopyMem((const APTR)(kernelPointer + 4), (APTR)(cardData->id_MemBase + OFFSET_KERNEL), *((ULONG*)(kernelPointer - 4)));
+    CopyMem((APTR)(kernelPointer + 4), (APTR)(cardData->id_MemBase + OFFSET_KERNEL), *((ULONG*)(kernelPointer - 4)));
 
     CacheClearU();
 
@@ -721,7 +721,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
-        TASKATTR_NAME,   TRUE, //we cheat here. normally this is mandatory
+        TASKATTR_NAME,   (ULONG)"Kryten",
         TASKATTR_R3,     (ULONG)PowerPCBase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
@@ -993,7 +993,7 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 
     CacheClearU();
 
-    writememLong(configBase, IMMR_RPR, 0x52535445); //"RSTE"
+    writememLong(configBase, IMMR_RPR, KILLER_RESET);
 
     res = readmemLong(configBase, IMMR_RCER);
 
@@ -1128,7 +1128,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     segSize = *((ULONG*)(initPointer - 4));
 
-    CopyMemQuick((const APTR)(initPointer+4), (APTR)(killerData), segSize);
+    CopyMemQuick((APTR)(initPointer+4), (APTR)(killerData), segSize);
 
     killerData->id_Status        = 0xabcdabcd;
     killerData->id_MemBase       = ppcmemBase;

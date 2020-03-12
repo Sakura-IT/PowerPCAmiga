@@ -553,7 +553,7 @@ FUNC68K void MirrorTask(void)
 
                 struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
 
-                CopyMem((const APTR) &myFrame, (APTR)&doneFrame, sizeof(struct MsgFrame));
+                CopyMemQuick((APTR)myFrame, (APTR)doneFrame, sizeof(struct MsgFrame));
 
                 doneFrame->mf_Identifier = ID_DONE;
                 doneFrame->mf_Signals    = myTask->tc_SigRecvd & andTemp;

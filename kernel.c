@@ -668,10 +668,6 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
 
     struct iframe* newFrame = (struct iframe*)&newTask->nt_Context;
 
-    writeTest(0x6d000020, (ULONG)newFrame);
-    writeTest(0x6d000024, (ULONG)iframe);
-    writeTest(0x6d000028, (ULONG)newTask);
-
     newFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
     newFrame->if_Context.ec_UPC.ec_SRR0 = *((ULONG*)((ULONG)PowerPCBase + 2 + _LVOStartTask));
     newFrame->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.pt_Task.tp_Task.tc_SPReg;

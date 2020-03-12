@@ -77,6 +77,12 @@
 #define ERR_ETIM                0x4554494D
 #define ERR_DEAD                0xDEADDEAD
 
+#define ERR_PPCOK               0x426F6F6E
+#define ERR_PPCMMU              0x45727231
+#define ERR_PPCMEM              0x45727232
+#define ERR_PPCCORRUPT          0x45727233
+#define ERR_PPCSETUP            0x45727234
+
 #define VEC_SYSTEMRESET         0x0100
 #define VEC_MACHINECHECK        0x0200
 #define VEC_DATASTORAGE         0x0300
@@ -385,4 +391,5 @@
 
 #define IMMR_SIMSR_L            0x724
 #define SIMSR_L_MU              0x04000000
+#define KILLER_RESET            0x52535445
 
