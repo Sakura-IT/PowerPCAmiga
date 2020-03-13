@@ -617,7 +617,7 @@ _DoDataStore:
         bne     .NoZero                      #When update r0 = r0 and not 0
         mr.     r8,r8
         bne     .NoZero
-        li      r8,IF_ALIGNSTORE             #Point to 0 in frame
+        li      r8,IF_ALIGNSTORE-IF_CONTEXT_GPR             #Point to 0 in frame
 
 .NoZero:
         lwzx    r3,r11,r8                    #Get Destination Address
