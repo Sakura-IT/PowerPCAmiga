@@ -33,18 +33,32 @@ FUNC_CNT	SET	   FUNC_CNT-6  * Standard offset-6 bytes each
 ;********************************************************************************************
 
 _Run68KCode
-            movem.l d0-a6,-(a7)         		;a0 = PPStruct  a6 = SysBase
+            movem.l d0-a6,-(a7)               ;a0 = PPStruct  a6 = SysBase
             lea TempSysB(pc),a2
             move.l a6,(a2)
 
             btst #AFB_FPU40,AttnFlags+1(a6)
             beq.s NoFPU1
 
-            fmovem.x fp0-fp7,-(a7)
+            fmove.d fp0,-(a7)
+            fmove.d fp1,-(a7)
+            fmove.d fp2,-(a7)
+            fmove.d fp3,-(a7)
+            fmove.d fp4,-(a7)
+            fmove.d fp5,-(a7)
+            fmove.d fp6,-(a7)
+            fmove.d fp7,-(a7)
 
             lea PP_FREGS(a0),a2
 
-            fmovem.x (a2)+,fp0-fp7
+            fmove.d (a2)+,fp0
+            fmove.d (a2)+,fp1
+            fmove.d (a2)+,fp2
+            fmove.d (a2)+,fp3
+            fmove.d (a2)+,fp4
+            fmove.d (a2)+,fp5
+            fmove.d (a2)+,fp6
+            fmove.d (a2)+,fp7
 
 NoFPU1      link a1,#-16
             lea -16(a1),a1
@@ -64,16 +78,16 @@ NoFPU1      link a1,#-16
             move.l a7,(a2)+
 
             move.l PP_STACKPTR(a0),a0
-            lea 24(a0),a0				;Offset needs to be 24 according to Run68K docs
+            lea 24(a0),a0                     ;Offset needs to be 24 according to Run68K docs
             addq.l #3,d0
-            and.l #$fffffffc,d0				;Make it 4 aligned
+            and.l #$fffffffc,d0               ;Make it 4 aligned
             move.l a7,a1
             sub.l d0,a1
             move.l a1,a7
             jsr _LVOCopyMem(a6)
             jsr _LVOCacheClearU(a6)
 
-            move.l a3,-(a7)				;Return function
+            move.l a3,-(a7)                   ;Return function
             bra StckPtr
 
 NoStckPtr   pea xBack(pc)
@@ -98,8 +112,15 @@ xBack       move.l a6,-(a7)
             btst #AFB_FPU40,AttnFlags+1(a6)
             beq.s NoFPU2
 
-            lea PP_FREGS+64(a3),a3
-            fmovem.x fp0-fp7,-(a3)
+            lea PP_FREGS(a3),a3
+            fmove.d fp0,(a3)+
+            fmove.d fp1,(a3)+
+            fmove.d fp2,(a3)+
+            fmove.d fp3,(a3)+
+            fmove.d fp4,(a3)+
+            fmove.d fp5,(a3)+
+            fmove.d fp6,(a3)+
+            fmove.d fp7,(a3)+
 
 NoFPU2      move.l a7,a1
             lea 16(a1),a1
@@ -108,7 +129,14 @@ NoFPU2      move.l a7,a1
             btst #AFB_FPU40,AttnFlags+1(a6)
             beq.s NoFPU3
 		
-            fmovem.x (a7)+,fp0-fp7
+            fmove.d (a7)+,fp7
+            fmove.d (a7)+,fp6
+            fmove.d (a7)+,fp5
+            fmove.d (a7)+,fp4
+            fmove.d (a7)+,fp3
+            fmove.d (a7)+,fp2
+            fmove.d (a7)+,fp1
+            fmove.d (a7)+,fp0
 
 NoFPU3      movem.l (a7)+,d0-a6
             rts
