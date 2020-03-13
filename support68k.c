@@ -112,6 +112,7 @@ void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase*
             {
                 struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
                 myFrame->mf_Identifier = ID_END;
+                myFrame->mf_PPCTask = currMir->mt_PPCTask;
                 SendMsgFrame(PowerPCBase, myFrame);
                 Disable();
                 Remove((struct Node*)currMir);
