@@ -573,7 +573,6 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
         }
         if (currTask->tp_Task.tc_State == TS_REMOVED)
         {
-            RemovePPC((struct Node*)currTask);
             AddTailPPC((struct List*)&PowerPCBase->pp_RemovedTasks, (struct Node*)currTask);
             currTask = NULL;
             PowerPCBase->pp_ThisPPCProc = currTask;
@@ -819,5 +818,6 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     myFrame->mf_Identifier = ID_CRSH;
     libSendMsgFramePPC(myFrame);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
+    PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
     SwitchPPC(PowerPCBase, iframe);
 }

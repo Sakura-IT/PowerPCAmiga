@@ -540,6 +540,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                 newTask->tp_Quantum = PowerPCBase->pp_StdQuantum;
                                                                 newTask->tp_Task.tc_State = TS_READY;
                                                                 newTask->tp_Desired = 0; //from NICE table TBI
+                                                                newTask->tp_Flags |= TASKPPCF_CREATORPPC;
 
                                                                 InsertOnPri(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyTasks, newTask);
 
