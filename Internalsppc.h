@@ -54,8 +54,12 @@ VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\
 #undef TASKPPCF_ATOMIC
 #define TASKPPCB_EMULATOR   4
 #define TASKPPCB_ATOMIC     5
+#define TASKPPCB_CREATORPPC 14
+#define TASKPPCB_CRASHED    15
 #define TASKPPCF_EMULATOR   (1L<<4)
 #define TASKPPCF_ATOMIC     (1L<<5)
+#define TASKPPCF_CREATORPPC (1L<<14)
+#define TASKPPCF_CRASHED    (1L<<15)
 
 void        Reset  (void);
 ULONG   GetExcTable(void);

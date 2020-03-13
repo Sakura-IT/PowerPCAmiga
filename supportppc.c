@@ -886,6 +886,10 @@ PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
         myWaitTime(PowerPCBase, 0, 0x4c0000); // Around 5 seconds.
         while (myTask = (struct TaskPPC*)myRemHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_RemovedTasks))
         {
+            if (myTask->tp_Flags & (TASKPPCF_CRASHED | TASKPPCF_CREATORPPC))
+            {
+                myDeleteTaskPPC(PowerPCBase, myTask);
+            }
             while (myPool = (APTR)myRemHeadPPC(PowerPCBase, (struct List*)&myTask->tp_TaskPools))
             {
                 myDeletePoolPPC(PowerPCBase, myPool);
