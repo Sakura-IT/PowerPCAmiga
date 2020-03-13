@@ -679,7 +679,7 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
         CauseDECInterrupt(PowerPCBase);
         TaskHalt();
     }
-    else
+    else if (!(PPCtask->tp_Flags & (TASKPPCF_CRASHED)))
     {
         while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
         myRemovePPC(PowerPCBase, (struct Node*)PPCtask);
