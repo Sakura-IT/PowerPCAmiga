@@ -2362,7 +2362,7 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 PPCFUNCTION struct TaskPtr* myLockTaskList(struct PrivatePPCBase* PowerPCBase)
 {
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
-	return ((struct TaskPtr*)&PowerPCBase->pp_AllTasks.mlh_Head);
+	return ((struct TaskPtr*)PowerPCBase->pp_AllTasks.mlh_Head);
 }
 
 /********************************************************************************************
