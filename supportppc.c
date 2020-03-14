@@ -592,53 +592,41 @@ PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct Task
 
 PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
 {
-    if (!(byteSize))
+    struct MemChunk* currChunk = NULL;
+
+    if (byteSize)
     {
-        return NULL;
-    }
+        byteSize = (byteSize + 31) & -32;
 
-    byteSize = (byteSize + 31) & -32;
-
-    if (byteSize > memHeader->mh_Free)
-    {
-        return NULL;
-    }
-
-    struct MemChunk* memChunk;
-    struct MemChunk* currChunk;
-    struct MemChunk* newChunk;
-
-    if (!(memChunk = (struct MemChunk*)&memHeader->mh_First))
-    {
-        return NULL;
-    }
-
-    while (currChunk = memChunk->mc_Next)
-    {
-        if (currChunk->mc_Bytes == byteSize)
+        if (byteSize <= memHeader->mh_Free)
         {
-            memChunk->mc_Next = currChunk->mc_Next;
-            break;
+            struct MemChunk* newChunk;
+            struct MemChunk* prevChunk = (struct MemChunk*)&memHeader->mh_First;
+
+            while (currChunk = prevChunk->mc_Next)
+            {
+                if (currChunk->mc_Bytes == byteSize)
+                {
+                    prevChunk->mc_Next = currChunk->mc_Next;
+                    break;
+                }
+                if (currChunk->mc_Bytes > byteSize)
+                {
+                    newChunk = (struct MemChunk*)((ULONG)currChunk + byteSize);
+                    newChunk->mc_Next = currChunk->mc_Next;
+                    newChunk->mc_Bytes = currChunk->mc_Bytes - byteSize;
+                    prevChunk->mc_Next = newChunk;
+                    break;
+                }
+                prevChunk = currChunk;
+            }
+
+            if (currChunk)
+            {
+                memHeader->mh_Free -= byteSize;         //clear alloc?
+            }
         }
-        if (currChunk->mc_Bytes > byteSize)
-        {
-            newChunk = currChunk + byteSize;
-            newChunk->mc_Next = currChunk->mc_Next;
-            newChunk->mc_Bytes = currChunk->mc_Bytes - byteSize;
-            memChunk->mc_Next = newChunk;
-            break;
-        }
-
-        memChunk = currChunk;
     }
-
-    if (!(currChunk))
-    {
-        return NULL;
-    }
-
-    memHeader->mh_Free -= byteSize;         //clear alloc?
-
     return (APTR)currChunk;
 }
 

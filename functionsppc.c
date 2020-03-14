@@ -3683,7 +3683,7 @@ PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolh
             }
             if (puddle)
             {
-                ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xff;
+                ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xffffff;
                 ULONG granularity = (puddle->mh_Free / divider) + 0x80;
                 puddle->mh_Node.ln_Pri = (UBYTE)granularity;
                 myEnqueuePPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList, (struct Node*)puddle);
@@ -3729,11 +3729,10 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
 
-    if (myHeader->ph_PuddleSize < size)
+    if (myHeader->ph_ThresholdSize < size)
     {
-        struct Node* memBlock = (struct Node*)(mem);
-        myRemovePPC(PowerPCBase, memBlock);
-        FreeVec68K(PowerPCBase, (APTR)memBlock);
+        myRemovePPC(PowerPCBase, (struct Node*)mem);
+        FreeVec68K(PowerPCBase, (APTR)mem);
     }
     else
     {
@@ -3754,7 +3753,7 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
                 }
                 else
                 {
-                    ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xff;
+                    ULONG divider = (myHeader->ph_PuddleSize >> 8) & 0xffffff;
                     ULONG granularity = (currPuddle->mh_Free / divider) + 0x80;
                     currPuddle->mh_Node.ln_Pri = (UBYTE)granularity;
                     myEnqueuePPC(PowerPCBase, (struct List*)&myHeader->ph_PuddleList, (struct Node*)currPuddle);
