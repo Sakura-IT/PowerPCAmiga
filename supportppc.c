@@ -449,24 +449,24 @@ PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
 		s1 = string1[offset];
 		s2 = string2[offset];
 
-		if (0x40 < s1 < 0x5b)
+		if ((0x40 < s1) && (s1< 0x5b))
 		{
 			s1 |= 0x20;
 		}
 		else if (s1 > 0x5a)
 		{
-			if (0xc0 < s1 < 0xe0)
+			if ((0xc0 < s1) && (s1 < 0xe0))
 			{
 				s1 |= 0x20;
 			}
 		}
-		if (0x40 < s2 < 0x5b)
+		if ((0x40 < s2) && (s2 < 0x5b))
 		{
 			s2 |= 0x20;
 		}
 		else if (s2 > 0x5a)
 		{
-			if (0xc0 < s2 < 0xe0)
+			if ((0xc0 < s2) && (s2 < 0xe0))
 			{
 				s2 |= 0x20;
 			}
@@ -639,78 +639,69 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
 PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader,
                    APTR memoryBlock, ULONG byteSize)
 {
-	if (!(byteSize))
-	{
-		return;
-	}
+	if (byteSize)
+    {
+	    ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
+	    struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
+	    ULONG freeSize = testSize + byteSize + 31;
 
-	ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
-	struct MemChunk* newChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
-	ULONG freeSize = testSize + byteSize + 31;
+	    if (freeSize &= -32)
+        {
+	        struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
 
-	if (!(freeSize &= -32))
-	{
-		return;
-	}
+	        ULONG flag = 0;
 
-	struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
+	        while (currChunk->mc_Next)
+	        {
+		        if (currChunk->mc_Next > testChunk)
+		        {
+			        if ((currChunk == (struct MemChunk*)&memHeader->mh_First) || ((ULONG)testChunk > currChunk->mc_Bytes + (ULONG)currChunk))
+			        {
+                        break;
+			        }
+			        else if ((ULONG)testChunk < currChunk->mc_Bytes + (ULONG)currChunk)
+			        {
+                        HaltError(ERR_EMEM);
+			        }
+			        flag = 1;
+			        break;
+		        }
+		        else if (currChunk->mc_Next == testChunk)
+		        {
+                    HaltError(ERR_EMEM);
+		        }
+	            currChunk = currChunk->mc_Next;
+	        }
+	
+            if (flag)
+	        {
+		        currChunk->mc_Bytes += freeSize;
+		        testChunk = currChunk;
+	        }
+	        else
+            {
+		        testChunk->mc_Next = currChunk->mc_Next;
+		        currChunk->mc_Next = testChunk;
+		        testChunk->mc_Bytes = freeSize;
+	        }
 
-	ULONG flag = 0;
-
-	while (currChunk->mc_Next)
-	{
-		if (currChunk->mc_Next > newChunk)
-		{
-			if (currChunk == (struct MemChunk*)&memHeader->mh_First)
-			{
-				break;
-			}
-			if (newChunk > currChunk->mc_Bytes + currChunk)
-			{
-				break;
-			}
-			else if (newChunk < currChunk->mc_Bytes + currChunk)
-			{
-                HaltError(ERR_EMEM);
-			}
-			flag = 1;
-			break;
-		}
-		else if (currChunk->mc_Next == newChunk)
-		{
-            HaltError(ERR_EMEM);
-		}
-	currChunk = currChunk->mc_Next;
-	}
-
-	if (flag)
-	{
-		currChunk->mc_Bytes += freeSize;
-		newChunk = currChunk;
-	}
-	else
-	{
-		newChunk->mc_Next = currChunk->mc_Next;
-		currChunk->mc_Next = newChunk;
-		newChunk->mc_Bytes = freeSize;
-	}
-
-	struct MemChunk* nextChunk = newChunk->mc_Next;
-	if (nextChunk)
-	{
-		if ((ULONG)nextChunk < (ULONG)(newChunk) + newChunk->mc_Bytes)
-		{
-            HaltError(ERR_EMEM);
-		}
-		else if ((ULONG)nextChunk > (ULONG)(newChunk) + newChunk->mc_Bytes)
-		{
-			newChunk->mc_Next = nextChunk->mc_Next;
-			newChunk->mc_Bytes = nextChunk->mc_Bytes + newChunk->mc_Bytes;
-		}
-	}
-
-	memHeader->mh_Free += freeSize;
-
+	        struct MemChunk* nextChunk = testChunk->mc_Next;
+	
+            if (nextChunk)
+	        {
+		        if ((ULONG)nextChunk < (ULONG)(testChunk) + testChunk->mc_Bytes)
+		        {
+                    HaltError(ERR_EMEM);
+		        }
+		        else if ((ULONG)nextChunk > (ULONG)(testChunk) + testChunk->mc_Bytes)
+		        {
+			        testChunk->mc_Next = nextChunk->mc_Next;
+			        testChunk->mc_Bytes = nextChunk->mc_Bytes + testChunk->mc_Bytes;
+		        }
+	        }
+	        memHeader->mh_Free += freeSize;
+        }
+    }
 	return;
 }
 
