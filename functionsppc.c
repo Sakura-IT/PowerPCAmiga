@@ -264,12 +264,12 @@ PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, U
     }
     if (currPool)
     {
-        mem = myAllocPooledPPC(PowerPCBase, currPool, size + align +32);
+        mem = myAllocPooledPPC(PowerPCBase, currPool, size + align + 32);
     }
     if (mem)
     {
         ULONG origmem = (ULONG)mem;
-        mem = (APTR)(((ULONG)mem + 31 + align) & ~align);
+        mem = (APTR)(((ULONG)mem + 31 + align) & (-align));
         if (flags & MEMF_CLEAR)
         {
             UBYTE* buffer = mem;
@@ -881,11 +881,9 @@ PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 
 	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
-	LONG testSem = SemaphorePPC->ssppc_SS.ss_QueueCount + 1;
-
 	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
 
-	if ((testSem) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
+	if ((SemaphorePPC->ssppc_SS.ss_QueueCount + 1) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
 	{
 		result = ATTEMPT_FAILURE;
 	}
