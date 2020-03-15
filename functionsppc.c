@@ -2481,7 +2481,7 @@ PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* t
                     {
                         shift = 13;
                     }
-                    ULONG state = (PowerPCBase->pp_CPUHID0 >> shift) & 0x7;
+                    ULONG state = (PowerPCBase->pp_CPUHID0 >> shift) & 0x5;
                     switch (state)
                     {
                        case 4:
