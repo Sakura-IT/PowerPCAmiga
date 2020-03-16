@@ -357,7 +357,7 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
             struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
 			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
-			writememLongPPC(IMMR_ADDR_DEFAULT, IMMR_OMR0, (ULONG)msgFrame);
+			storePCI(IMMR_ADDR_DEFAULT, IMMR_OMR0, (ULONG)msgFrame);
             break;
 		}
 

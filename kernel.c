@@ -65,6 +65,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                         AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
                     }
                     storePCI(IMMR_ADDR_DEFAULT, IMMR_IMISR, IMMR_IMISR_IM0I);
+                    break;
 		        }
 
 		        case DEVICE_MPC107:
@@ -77,6 +78,30 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 			        break;
 		        }
 	        }
+
+            ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
+            if ((PowerPCBase->pp_LowerLimit <= currAddress) && (currAddress < PowerPCBase->pp_UpperLimit))
+            {
+                PowerPCBase->pp_Quantum = 0x1000;
+                break;
+            }
+
+            if ((PowerPCBase->pp_Mutex) || (PowerPCBase->pp_FlagForbid))
+            {
+                PowerPCBase->pp_Quantum = 0x1000;
+                break;
+            }
+
+            struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
+
+            if (currTask)
+            {
+                if (currTask->tp_Task.tc_State == TS_ATOMIC)
+                {
+                    break;
+                }
+            }
+
             HandleMsgs(PowerPCBase);
             TaskCheck(PowerPCBase);
             SwitchPPC(PowerPCBase, iframe);
