@@ -543,6 +543,7 @@ _SetFPExc:
 #********************************************************************************************
 
 _Calculator:
+        mfctr   r8
         li      r9,32
         mtctr   r9
         li      r6,0
@@ -569,6 +570,7 @@ _Calculator:
 .SkipNext:	
         bdnz+   .DoCalcLoop
 
+        mtctr   r8
         mr	r3,r6
 
 		blr
