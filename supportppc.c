@@ -51,8 +51,9 @@ PPCFUNCTION VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* li
     LONG realPri    = myTask->tp_Priority + myTask->tp_Prioffset;
     LONG defaultPri = PowerPCBase->pp_LowActivityPri + PowerPCBase->pp_LowActivityPriOffset;
 
-    if (realPri < defaultPri)
+    if (realPri >= defaultPri)
     {
+        realPri = defaultPri;
         myTask->tp_Prioffset = defaultPri - myTask->tp_Priority;
     }
 

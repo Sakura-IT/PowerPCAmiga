@@ -63,7 +63,7 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 		HaltError(ERR_ESNC);
 	}
 
-	PowerPCBase->pp_NumRun68k += 1;
+    PowerPCBase->pp_NumRun68k += 1;
 
 	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
 
@@ -1201,7 +1201,7 @@ PPCFUNCTION VOID myEnqueuePPC(struct PrivatePPCBase* PowerPCBase, struct List* l
 	{
 		LONG cmpPrio = (LONG)nextNode->ln_Pri;
 
-		if (cmpPrio > myPrio)
+		if (myPrio > cmpPrio)
 		{
 			break;
 		}
