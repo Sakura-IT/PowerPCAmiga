@@ -193,39 +193,45 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcDAccess);
             }
 
-            if ((iframe->if_Context.ec_DAR == 4) || (iframe->if_Context.ec_UPC.ec_SRR0 > 0x10000) ||
-            ((iframe->if_Context.ec_DAR < 0xfffff800) && (iframe->if_Context.ec_DAR > 0x800)))
+            if ((iframe->if_Context.ec_DAR == 4) || ((iframe->if_Context.ec_DAR < 0xfffff800) && (iframe->if_Context.ec_DAR > 0x800)))
             {
-                if(!(PowerPCBase->pp_DataExcLow += 1))
+                if (iframe->if_Context.ec_UPC.ec_SRR0 > 0x10000)
                 {
-                    PowerPCBase->pp_DataExcHigh += 1;
-                }
-                struct DataMsg myData;
-                ULONG Status = DoDataStore(iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
-                if (Status)
-                {
-                    struct MsgFrame* myFrame = libCreateMsgFramePPC();
-                    myFrame->mf_Identifier = myData.dm_Type;
-                    myFrame->mf_Arg[1] = myData.dm_Address;
-                    myFrame->mf_Arg[0] = myData.dm_Value;
-                    libSendMsgFramePPC(myFrame);
-                    if (!(myData.dm_LoadFlag))
+                    if(!(PowerPCBase->pp_DataExcLow += 1))
                     {
-                         while (myFrame->mf_Identifier != ID_DONE);
-                         if (!(FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData)))
-                         {
-                             CommonExcError(PowerPCBase, iframe);
-                             break;
-                         }
+                        PowerPCBase->pp_DataExcHigh += 1;
                     }
-                    iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                    struct DataMsg myData;
+                    ULONG Status = DoDataStore(iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
+                    if (Status)
+                    {
+                        struct MsgFrame* myFrame = libCreateMsgFramePPC();
+                        myFrame->mf_Identifier = myData.dm_Type;
+                        myFrame->mf_Arg[1] = myData.dm_Address;
+                        myFrame->mf_Arg[0] = myData.dm_Value;
+                        myFrame->mf_Arg[2] = myData.dm_Type; //x
+                        myFrame->mf_Arg[-1] = myData.dm_Address; //x
+                        //myFrame->mf_Arg[-2] = iframe->if_Context.ec_DAR;
+                        //myFrame->mf_Arg[-3] = iframe->if_Context.ec_UPC.ec_SRR0;
+                        libSendMsgFramePPC(myFrame);
+                        if (!(myData.dm_LoadFlag))
+                        {
+                            while (myFrame->mf_Identifier != ID_DONE);
+                            if (!(FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData)))
+                            {
+                                CommonExcError(PowerPCBase, iframe);
+                                break;
+                            }
+                        }
+                        iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                        break;
+                    }
+                    else
+                    {
+                        CommonExcError(PowerPCBase, iframe);
+                    }
                     break;
                 }
-                else
-                {
-                    CommonExcError(PowerPCBase, iframe);
-                }
-                break;
             }
             CommonExcError(PowerPCBase, iframe);
             break;
