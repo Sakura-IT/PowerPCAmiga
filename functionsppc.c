@@ -258,7 +258,7 @@ PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, U
         zeros = 32 - zeros;
         align = 1 << zeros;
     }
-    if (!(currPool))
+    if (!(nextPool))
     {
         currPool = myCreatePoolPPC(PowerPCBase, flags, 0x100000, 0x80000);
     }
@@ -3558,9 +3558,9 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
 
 	if (puddle_size >= thres_size)
 	{
-		if (myPoolHeader = AllocVec68K(PowerPCBase, sizeof(struct poolHeader), flags))
+        if (myPoolHeader = AllocVec68K(PowerPCBase, sizeof(struct poolHeader), flags))
 		{
-			puddle_size = (puddle_size + 31) & -32;
+            puddle_size = (puddle_size + 31) & -32;
 			myNewListPPC(PowerPCBase, (struct List*)&myPoolHeader->ph_PuddleList);
 			myNewListPPC(PowerPCBase, (struct List*)&myPoolHeader->ph_BlockList);
 
@@ -3568,7 +3568,7 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
 			myPoolHeader->ph_PuddleSize = puddle_size;
 			myPoolHeader->ph_ThresholdSize = thres_size;
 
-			myAddHeadPPC(PowerPCBase, &PowerPCBase->pp_ThisPPCProc->tp_TaskPools, (struct Node*)&myPoolHeader->ph_Node);
+            myAddHeadPPC(PowerPCBase, &PowerPCBase->pp_ThisPPCProc->tp_TaskPools, (struct Node*)&myPoolHeader->ph_Node);
 		}
 	}
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
