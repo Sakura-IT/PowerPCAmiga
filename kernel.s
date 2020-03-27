@@ -102,6 +102,7 @@ _ExcCommon:
 
 _StoreFrame:
 
+        stfd    f0,IF_CONTEXT_FPR-IF_CONTEXT(r3)
         mfsprg0 r0
         stwu    r0,4(r3)
         mfsprg1 r0
@@ -152,8 +153,7 @@ _StoreFrame:
         stwu    r30,4(r3)
         stwu    r31,4(r3)
 
-        stfdu   f0,4(r3)
-        stfdu   f1,8(r3)
+        stfdu   f1,12(r3)                    #skipped f0 (see above)
         stfdu   f2,8(r3)
         stfdu   f3,8(r3)
         stfdu   f4,8(r3)
