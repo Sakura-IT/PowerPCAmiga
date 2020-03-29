@@ -51,25 +51,24 @@ _ExcCommon:
 
         stwu	r1,-2048(r1)                 #256 nothing 512 altivec 24 altivec support 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
+        mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
-        mfsprg3 r0
         stw     r0,IF_CONTEXT_GPR+GPR0(r4)                 #GPR[0]
         mflr    r3
         rlwinm  r0,r3,24,24,31
-        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID
         stw     r3,-4(r4)
+        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID
+        la      r3,IF_CONTEXT(r4)
         mfsprg2 r0
         stw     r0,-8(r4)                                  #LR
-        la      r3,IF_CONTEXT(r4)
 
         bl      _StoreFrame                  #r0, r3 and r4 are skipped in this routine and were saved above
 
         la      r4,IF_GAP(r1)                              #iFrame
-        lwz     r5,-4(r4)                                  #same as -4(r4)
+        lwz     r5,-4(r4)
         subi    r5,r5,PPC_VECLEN*4
         stw     r5,IF_EXCEPTIONVECTOR(r4)                  #if_ExceptionVector
-
         lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
 
         bl      _Exception_Entry
@@ -92,7 +91,7 @@ _ExcCommon:
 
 .Mojo3: lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
-        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
+.skop2: lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
         lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
 
@@ -250,6 +249,7 @@ _StoreFrame:
         stwu    r0,4(r3)
         mfsr    r0,15
         stwu    r0,4(r3)
+
         blr
 
 #********************************************************************************************
