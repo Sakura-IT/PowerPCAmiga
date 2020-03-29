@@ -273,7 +273,7 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 	    EnablePPC();
 	    myUser(PowerPCBase, key);
     }
-//#if 0
+
     if (msgFrame)
     {
         ULONG clearFrame = msgFrame;
@@ -283,7 +283,6 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
             clearFrame += 4;
         }
     }
-//#endif
 	return (struct MsgFrame*)msgFrame;
 }
 
@@ -727,7 +726,6 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 {
     if (PowerPCBase->pp_DebugLevel)
     {
-        HaltError(PowerPCBase->pp_DebugLevel);
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         if (args->db_Process == (APTR)ID_DBGS)
         {
