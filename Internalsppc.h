@@ -23,6 +23,7 @@
 
 void illegal(void) = "\t.long\t0\n";                //debug function
 VOID writeTest(ULONG, ULONG) ="\tstw\tr4,0(r3)\n"; // "
+void counter(ULONG) = "\tlwzx\tr4,r0,r3\n\taddi\tr4,r4,1\n\tstwx\tr4,r0,r3\n";
 
 #define PPCFUNCTION __section ("functions","acrx") __entry
 #define PPCKERNEL __section ("kernel","acrx") __entry
@@ -347,7 +348,7 @@ VOID SetFPExc(VOID);
 VOID FinalCalc(ULONG counter, ULONG tbu, ULONG tbl, ULONG value1, ULONG value2, struct WaitTime* myWait);
 ULONG Calculator(ULONG value1, ULONG value2, ULONG value3);
 VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
-VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag);
+VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, ULONG* currExc, ULONG flag);
 VOID FPE_Enable(ULONG value);
 VOID FPE_Disable(ULONG value);
 VOID EnablePPC(VOID);

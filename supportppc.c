@@ -273,6 +273,17 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 	    EnablePPC();
 	    myUser(PowerPCBase, key);
     }
+//#if 0
+    if (msgFrame)
+    {
+        ULONG clearFrame = msgFrame;
+        for (int i=0; i<48; i++)
+        {
+            *((ULONG*)(clearFrame)) = 0;
+            clearFrame += 4;
+        }
+    }
+//#endif
 	return (struct MsgFrame*)msgFrame;
 }
 
@@ -397,7 +408,7 @@ PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 	    DisablePPC();
     }
 	
-    msgFrame->mf_Identifier = ID_FREE;
+    //msgFrame->mf_Identifier = ID_FREE;
 
 	switch (PowerPCBase->pp_DeviceID)
 	{
@@ -559,7 +570,7 @@ PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct Task
 {
 	ULONG sigmask;
 
-	while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
 	sigmask = myTask->tp_Task.tc_SigExcept & (myTask->tp_Task.tc_SigRecvd | signal);
 
@@ -716,6 +727,7 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 {
     if (PowerPCBase->pp_DebugLevel)
     {
+        HaltError(PowerPCBase->pp_DebugLevel);
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         if (args->db_Process == (APTR)ID_DBGS)
         {
@@ -951,11 +963,12 @@ PPCFUNCTION VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInf
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, struct Node* currExc, ULONG flag)
+PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, ULONG* currExc, ULONG flag)
 {
     myCopyMemPPC(PowerPCBase, (APTR)excInfo, (APTR)newData, sizeof(struct ExcData));
-    currExc = (struct Node*)newData;
+    currExc[0] = (ULONG)newData;
     newData->ed_ExcID = flag;
+    excInfo->ei_ExcData.ed_LastExc = newData;
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
     myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_ReadyExc, (struct Node*)newData);
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
@@ -970,10 +983,13 @@ PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* 
 
 PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
+
     mySetCache(PowerPCBase, CACHE_ICACHEINV, 0, 0);
 
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+
     myTask->tp_Task.tc_SigRecvd |= myFrame->mf_Signals;
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
@@ -1034,12 +1050,17 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
 
     myCopyMemPPC(PowerPCBase, &myFrame->mf_PPCArgs.PP_Regs, &newFrame->mf_PPCArgs.PP_Regs, (15*4) + (8*8));
 
-    FreeMsgFramePPC(PowerPCBase, myFrame);
     SendMsgFramePPC(PowerPCBase, newFrame);
+    FreeMsgFramePPC(PowerPCBase, myFrame);
 
     return;
 }
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
 PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
 {
@@ -1060,7 +1081,7 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
         {
             if (mask = signals & ~SIGF_DOS)
             {
-                while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+                while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
                 myTask->tp_Task.tc_SigRecvd |= mask;
 
@@ -1082,6 +1103,7 @@ PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* 
                     }
                     default:
                     {
+                        HaltError(0xBAD0BAD0);
                         break; //error
                     }
                 }

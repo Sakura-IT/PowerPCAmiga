@@ -524,7 +524,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                 PowerPCBase->pp_NumAllTasks += 1;
                                                                 myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 
-                                                                while (!(LockMutexPPC((ULONG)&PowerPCBase->pp_Mutex)));
+                                                                while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
                                                                 if (newTask->tp_Flags & TASKPPCF_SYSTEM)
                                                                 {
@@ -1507,7 +1507,7 @@ PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 
 		CauseDECInterrupt(PowerPCBase);
 
-		while(myTask->tp_Task.tc_State != TS_RUN);
+		while((volatile)myTask->tp_Task.tc_State != TS_RUN);
 
 		while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
@@ -1910,7 +1910,6 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
     }
 
     ULONG flag = 0;
-
     while (1)
     {
         struct ExcData* newData;
@@ -1922,7 +1921,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_MachineCheck, EXCF_MCHECK);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_MachineCheck, EXCF_MCHECK);
         }
         if (value & EXCF_DACCESS)
         {
@@ -1931,7 +1930,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_DataAccess, EXCF_DACCESS);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_DataAccess, EXCF_DACCESS);
         }
         if (value & EXCF_IACCESS)
         {
@@ -1940,7 +1939,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_InstructionAccess, EXCF_IACCESS);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_InstructionAccess, EXCF_IACCESS);
         }
         if (value & EXCF_INTERRUPT)
         {
@@ -1949,7 +1948,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Interrupt, EXCF_INTERRUPT);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_Interrupt, EXCF_INTERRUPT);
         }
         if (value & EXCF_ALIGN)
         {
@@ -1958,7 +1957,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Alignment, EXCF_ALIGN);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_Alignment, EXCF_ALIGN);
         }
         if (value & EXCF_PROGRAM)
         {
@@ -1967,7 +1966,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Program, EXCF_PROGRAM);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_Program, EXCF_PROGRAM);
         }
         if (value & EXCF_FPUN)
         {
@@ -1976,7 +1975,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_FPUnavailable, EXCF_FPUN);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_FPUnavailable, EXCF_FPUN);
         }
         if (value & EXCF_DECREMENTER)
         {
@@ -1985,7 +1984,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Decrementer, EXCF_DECREMENTER);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_Decrementer, EXCF_DECREMENTER);
         }
         if (value & EXCF_SC)
         {
@@ -1994,7 +1993,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_SystemCall, EXCF_SC);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_SystemCall, EXCF_SC);
         }
         if (value & EXCF_TRACE)
         {
@@ -2003,7 +2002,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_Trace, EXCF_TRACE);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_Trace, EXCF_TRACE);
         }
         if (value & EXCF_PERFMON)
         {
@@ -2012,7 +2011,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_PerfMon, EXCF_PERFMON);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_PerfMon, EXCF_PERFMON);
         }
         if (value & EXCF_IABR)
         {
@@ -2021,7 +2020,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
                 flag = 1;
                 break;
             }
-            AddExcList(PowerPCBase, excInfo, newData, (struct Node*)&excInfo->ei_IABR, EXCF_IABR);
+            AddExcList(PowerPCBase, excInfo, newData, (ULONG*)&excInfo->ei_IABR, EXCF_IABR);
         }
         break;
     }
@@ -2036,7 +2035,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
 
     CauseDECInterrupt(PowerPCBase);
 
-    while (!(excInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE));
+    while (!((volatile)excInfo->ei_ExcData.ed_LastExc->ed_Flags & EXCF_ACTIVE));
 
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
@@ -2068,7 +2067,7 @@ PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
 
     struct ExcInfo* myInfo = xlock;
 
-    while (myInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE);
+    while ((volatile)myInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE);
 
     FreeAllExcMem(PowerPCBase, myInfo);
 
