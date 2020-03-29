@@ -34,6 +34,7 @@
 
 PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
+
     PowerPCBase->pp_ExceptionMode = -1;
     PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
     PowerPCBase->pp_CPUSDR1 = getSDR1();
@@ -64,7 +65,11 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     {
                         AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
                     }
-                    storePCI(IMMR_ADDR_DEFAULT, IMMR_IMISR, IMMR_IMISR_IM0I);
+
+                    if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_IMISR) & IMMR_IMISR_IM0I)
+                    {
+                        storePCI(IMMR_ADDR_DEFAULT, IMMR_IMISR, IMMR_IMISR_IM0I);
+                    }
                     break;
 		        }
 
@@ -115,31 +120,31 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 
             while (eData = (struct ExcData*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyExc))
             {
-                if (eData->ed_ExcID & 1<<EXCB_MCHECK)
+                if (eData->ed_ExcID & EXCF_MCHECK)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcMCheck, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_DACCESS)
+                if (eData->ed_ExcID & EXCF_DACCESS)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcDAccess, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_IACCESS)
+                if (eData->ed_ExcID & EXCF_IACCESS)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcIAccess, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_INTERRUPT)
+                if (eData->ed_ExcID & EXCF_INTERRUPT)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcInterrupt, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_ALIGN)
+                if (eData->ed_ExcID & EXCF_ALIGN)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcAlign, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_PROGRAM)
+                if (eData->ed_ExcID & EXCF_PROGRAM)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcProgram, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_FPUN)
+                if (eData->ed_ExcID & EXCF_FPUN)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcFPUn, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_DECREMENTER)
+                if (eData->ed_ExcID & EXCF_DECREMENTER)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcDecrementer, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_SC)
+                if (eData->ed_ExcID & EXCF_SC)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcSystemCall, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_TRACE)
+                if (eData->ed_ExcID & EXCF_TRACE)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcTrace, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_PERFMON)
+                if (eData->ed_ExcID & EXCF_PERFMON)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcPerfMon, (struct Node*)eData);
-                if (eData->ed_ExcID & 1<<EXCB_IABR)
+                if (eData->ed_ExcID & EXCF_IABR)
                     EnqueuePPC((struct List*)&PowerPCBase->pp_ExcIABR, (struct Node*)eData);
-                eData->ed_Flags |= 1<<EXCB_ACTIVE;
+                eData->ed_Flags |= EXCF_ACTIVE;
             }
 
             while (eData = (struct ExcData*)RemHeadPPC((struct List*)&PowerPCBase->pp_RemovedExc))
@@ -155,7 +160,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     }
                 }
                 struct ExcData* lastExc = eData->ed_LastExc;
-                lastExc->ed_Flags &= ~(1<EXCB_ACTIVE);
+                lastExc->ed_Flags &= ~EXCF_ACTIVE;
             }
 
             ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
@@ -209,10 +214,6 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                         myFrame->mf_Identifier = myData.dm_Type;
                         myFrame->mf_Arg[1] = myData.dm_Address;
                         myFrame->mf_Arg[0] = myData.dm_Value;
-                        myFrame->mf_Arg[2] = myData.dm_Type; //x
-                        myFrame->mf_Arg[-1] = myData.dm_Address; //x
-                        //myFrame->mf_Arg[-2] = iframe->if_Context.ec_DAR;
-                        //myFrame->mf_Arg[-3] = iframe->if_Context.ec_UPC.ec_SRR0;
                         libSendMsgFramePPC(myFrame);
                         if (!(myData.dm_LoadFlag))
                         {
@@ -414,6 +415,44 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
     {
         switch (currMsg->mf_Identifier)
         {
+            case ID_TPPC:
+            case ID_DONE:
+            case ID_END:
+            case ID_DNLL:
+            {
+                struct TaskPPC* myTask = currMsg->mf_PPCTask;
+                if (!(myTask))
+                {
+                    RemovePPC((struct Node*)currMsg);
+                    AddTailPPC((struct List*)&PowerPCBase->pp_NewTasks, (struct Node*)currMsg);
+                }
+                else
+                {
+                    struct MsgPortPPC* myPort = myTask->tp_Msgport;
+                    if (myPort->mp_Semaphore.ssppc_SS.ss_QueueCount == -1)
+                    {
+                        RemovePPC((struct Node*)currMsg);
+
+                        ULONG signal = 1 << (myPort->mp_Port.mp_SigBit);
+                        myTask->tp_Task.tc_SigRecvd |= signal;
+
+                        AddTailPPC(&myPort->mp_Port.mp_MsgList, (struct Node*)currMsg);
+                        if (currMsg->mf_Identifier == ID_DONE)
+                        {
+                            myTask->tp_Task.tc_SigAlloc = currMsg->mf_Arg[1];
+                        }
+                        if (myTask == PowerPCBase->pp_ThisPPCProc)
+                        {
+                            myTask->tp_Task.tc_State = TS_RUN;
+                        }
+                        else
+                        {
+                            myTask->tp_Task.tc_State = TS_READY;
+                        }
+                    }
+                }
+                break;
+            }
             case ID_XMSG:
             {
                 struct MsgPortPPC* myPort = (struct MsgPortPPC*)currMsg->mf_Message.mn_ReplyPort;
@@ -480,43 +519,6 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
                 else
                 {
                     sigTask->tp_Task.tc_State = TS_READY;
-                }
-                break;
-            }
-            case ID_TPPC:
-            case ID_DONE:
-            case ID_END:
-            case ID_DNLL:
-            {
-                struct TaskPPC* myTask = currMsg->mf_PPCTask;
-                if (!(myTask))
-                {
-                    RemovePPC((struct Node*)currMsg);
-                    AddTailPPC((struct List*)&PowerPCBase->pp_NewTasks, (struct Node*)currMsg);
-                }
-                else
-                {
-                    struct MsgPortPPC* myPort = myTask->tp_Msgport;
-                    if (myPort->mp_Semaphore.ssppc_SS.ss_QueueCount == -1)
-                    {
-                        RemovePPC((struct Node*)currMsg);
-
-                        ULONG signal = 1 << (myPort->mp_Port.mp_SigBit);
-                        myTask->tp_Task.tc_SigRecvd |= signal;
-                        AddTailPPC(&myPort->mp_Port.mp_MsgList, (struct Node*)currMsg);
-                        if (currMsg->mf_Identifier == ID_DONE)
-                        {
-                            myTask->tp_Task.tc_SigAlloc = currMsg->mf_Arg[1];
-                        }
-                        if (myTask == PowerPCBase->pp_ThisPPCProc)
-                        {
-                            myTask->tp_Task.tc_State = TS_RUN;
-                        }
-                        else
-                        {
-                            myTask->tp_Task.tc_State = TS_READY;
-                        }
-                    }
                 }
                 break;
             }
@@ -731,7 +733,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
     while (nxtNode = (struct ExcData*)currNode->ed_Node.ln_Succ)
     {
-        if (currNode->ed_ExcID & iframe->if_Context.ec_ExcID)
+        if (currNode->ed_ExcID & (1<<iframe->if_Context.ec_ExcID))
         {
             if ((currNode->ed_Flags & EXCF_GLOBAL) || ((currNode->ed_Flags & EXCF_LOCAL) && (currNode->ed_Task) && (currNode->ed_Task != PowerPCBase->pp_ThisPPCProc)))
             {
