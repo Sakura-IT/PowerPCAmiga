@@ -2053,25 +2053,24 @@ PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
     struct DebugArgs args;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
-    if (!(xlock))
+    if (xlock)
     {
-        return;
+        while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+
+        myAddHeadPPC(PowerPCBase,(struct List*)&PowerPCBase->pp_RemovedExc, (struct Node*)xlock);
+
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+        CauseDECInterrupt(PowerPCBase);
+
+        struct ExcInfo* myInfo = xlock;
+
+        while ((volatile)myInfo->ei_ExcData.ed_LastExc->ed_Flags & EXCF_ACTIVE);
+
+        FreeAllExcMem(PowerPCBase, myInfo);
+
+        FreeVec68K(PowerPCBase, xlock);
     }
-    while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
-
-    myAddHeadPPC(PowerPCBase,(struct List*)&PowerPCBase->pp_RemovedExc, (struct Node*)xlock);
-
-    FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
-
-    CauseDECInterrupt(PowerPCBase);
-
-    struct ExcInfo* myInfo = xlock;
-
-    while ((volatile)myInfo->ei_ExcData.ed_Flags & EXCF_ACTIVE);
-
-    FreeAllExcMem(PowerPCBase, myInfo);
-
-    FreeVec68K(PowerPCBase, xlock);
 
     return;
 }
