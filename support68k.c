@@ -989,7 +989,7 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 *
 *********************************************************************************************/
 
-static inline struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
+struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 

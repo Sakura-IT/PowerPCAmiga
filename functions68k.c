@@ -38,69 +38,6 @@ extern APTR OldRemTask;
 
 /********************************************************************************************
 *
-*	Functions that creates a message for the PPC
-*
-*********************************************************************************************/
-
-static inline struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
-{
-    struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
-
-    ULONG msgFrame = NULL;
-
-    Disable();
-
-    switch (PowerPCBase->pp_DeviceID)
-    {
-        case DEVICE_HARRIER:
-        {
-            break;
-        }
-
-        case DEVICE_MPC8343E:
-        {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-            while (1)
-            {
-                msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
-                myFIFO->kf_MIIFT = (myFIFO->kf_MIIFT + 4) & 0xffff3fff;
-                if (msgFrame != myFIFO->kf_CreatePrevious)
-                {
-                    myFIFO->kf_CreatePrevious = msgFrame;
-                    break;
-                }
-            }
-            break;
-        }
-
-        case DEVICE_MPC107:
-        {
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    Enable();
-
-    if (msgFrame)
-    {
-        ULONG clearFrame = msgFrame;
-        for (int i=0; i<48; i++)
-        {
-            *((ULONG*)(clearFrame)) = 0;
-            clearFrame += 4;
-        }
-    }
-
-    return (struct MsgFrame*)msgFrame;
-}
-
-/********************************************************************************************
-*
 *	struct Library* Open (void)
 *
 *********************************************************************************************/

@@ -117,11 +117,6 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
 
 PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 {
-	if ((ULONG)memBlock & 0x1f)
-    {
-        HaltError((ULONG)memBlock);
-    }
-
     myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOFreeVec32, 0, (ULONG)memBlock, 0, 0);
 
 	return;
@@ -1136,7 +1131,6 @@ PPCFUNCTION VOID EndTask(VOID)
     ULONG key = mySuper(NULL);             //Super does not use PowerPCBase
     struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
     myUser(PowerPCBase, key);
-    HaltError(0xbeefbeef);
     myDeleteTaskPPC(PowerPCBase, NULL);
 
     return;

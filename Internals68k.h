@@ -62,7 +62,7 @@ void   commonRemTask(__reg("a1") struct Task* myTask, __reg("d0") ULONG flag, __
 
 ULONG  GortInt      (__reg("a1") APTR data, __reg("a5") APTR code);
 
-static inline struct MsgFrame*  CreateMsgFrame(struct PrivatePPCBase* PowerPCBase);
+struct MsgFrame*  CreateMsgFrame(struct PrivatePPCBase* PowerPCBase);
 void              SendMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 void              FreeMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 struct MsgFrame*  GetMsgFrame   (struct PrivatePPCBase* PowerPCBase);
