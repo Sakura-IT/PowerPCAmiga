@@ -644,7 +644,7 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
-    if (PPCtask->tp_Msgport)
+    if ((PPCtask->tp_Flags & TASKPPCF_CREATORPPC) && (PPCtask->tp_Msgport))
     {
         FreeVec68K(PowerPCBase, PPCtask->tp_Msgport->mp_Semaphore.ssppc_reserved);
         FreeVec68K(PowerPCBase, PPCtask->tp_Msgport);
