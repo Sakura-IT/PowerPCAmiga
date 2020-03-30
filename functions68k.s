@@ -28,10 +28,18 @@ FUNC_CNT	SET	   FUNC_CNT-6  * Standard offset-6 bytes each
             include exec/execbase.i
             include powerpc/powerpc.i
 
-            XREF _Run68KCode
+            XREF _Run68KCode, _MyCopy, _GetClock
 
 ;********************************************************************************************
 
+_MyCopy     move.l (a0)+,(a1)+
+            dbf d0,_MyCopy
+            rts
+
+_GetClock   move.b $bfe701,2(a0)
+            move.b $bfe601,3(a0)
+            move.w #0,0(a0)
+            rts
 _Run68KCode
             movem.l d0-a6,-(a7)               ;a0 = PPStruct  a6 = SysBase
             lea TempSysB(pc),a2

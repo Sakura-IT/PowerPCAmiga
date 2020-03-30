@@ -94,7 +94,7 @@ ULONG ExcStrings[24]   = {(ULONG)&excUnsupported, (ULONG)&excUnsupported, (ULONG
 *
 *********************************************************************************************/
 
-void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
+void commonRemTask(__reg("a1") struct Task* myTask, __reg("d0") ULONG flag, __reg("a6") struct ExecBase* SysBase)
 {
     if (!(myTask))
     {
@@ -110,10 +110,13 @@ void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase*
         {
             if (currMir->mt_Task == myTask)
             {
-                struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
-                myFrame->mf_Identifier = ID_END;
-                myFrame->mf_PPCTask = currMir->mt_PPCTask;
-                SendMsgFrame(PowerPCBase, myFrame);
+                if (!(flag))
+                {
+                    struct MsgFrame* myFrame = CreateMsgFrame(PowerPCBase);
+                    myFrame->mf_Identifier = ID_END;
+                    myFrame->mf_PPCTask = currMir->mt_PPCTask;
+                    SendMsgFrame(PowerPCBase, myFrame);
+                }
                 Disable();
                 Remove((struct Node*)currMir);
                 Enable();
@@ -128,6 +131,8 @@ void commonRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase*
     return;
 }
 
+/********************************************************************************************/
+
 PATCH68K void SysExitCode(void)
 {
     struct Task* myTask;
@@ -136,23 +141,27 @@ PATCH68K void SysExitCode(void)
     struct ExecBase* SysBase = myPPCBase->PPC_SysLib;
     myTask = SysBase->ThisTask;
 
-    commonRemTask(myTask, SysBase);
+    commonRemTask(myTask, 0, SysBase);
 
     RemSysTask_ptr();
 
     return;
 }
 
+/********************************************************************************************/
+
 PATCH68K void patchRemTask(__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase)
 {
     void (*RemTask_ptr)(__reg("a1") struct Task*, __reg("a6") struct ExecBase*) = OldRemTask;
 
-    commonRemTask (myTask, SysBase);
+    commonRemTask (myTask, 0, SysBase);
 
     RemTask_ptr(myTask, SysBase);
 
     return;
 }
+
+/********************************************************************************************/
 
 PATCH68K APTR patchAddTask(__reg("a1") struct Task* myTask, __reg("a2") APTR initialPC,
                   __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase)
@@ -531,15 +540,52 @@ FUNC68K void MirrorTask(void)
 		mySignal = Wait(SIGBREAKF_CTRL_F);
 	}
 
-
 	myFrame = (struct MsgFrame*)myTask->tc_UserData;
 
     ULONG andTemp = ~(0xfff + (1 << (ULONG)mirrorPort->mp_SigBit));
 
+    while (myFrame)
+    {
+        if (myFrame->mf_Identifier == ID_END)
+        {
+            FreeMsgFrame(PowerPCBase, myFrame);
+            return;
+        }
+        else if (myFrame->mf_Identifier == ID_T68K)
+        {
+            myTask->tc_SigRecvd |= myFrame->mf_Signals;
+            myFrame->mf_MirrorPort = mirrorPort;
+
+            Run68KCode(SysBase, &myFrame->mf_PPCArgs);
+
+            struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
+
+            CopyMemQuick((APTR)myFrame, (APTR)doneFrame, sizeof(struct MsgFrame));
+
+            doneFrame->mf_Identifier = ID_DONE;
+            doneFrame->mf_Signals    = myTask->tc_SigRecvd & andTemp;
+            doneFrame->mf_Arg[0]     = (ULONG)myTask;
+            doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
+
+            SendMsgFrame(PowerPCBase, doneFrame);
+            FreeMsgFrame(PowerPCBase, myFrame);
+        }
+        else
+        {
+            FreeMsgFrame(PowerPCBase, myFrame);
+            PrintError(SysBase, "68K mirror task received illegal command packet");
+        }
+        myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
+    }
+
     while (1)
     {
-        while (myFrame)
+        mySignal = Wait((ULONG)myTask->tc_SigAlloc & 0xfffff000);
+
+        if (mySignal & (1 << (ULONG)mirrorPort->mp_SigBit))
         {
+            while (myFrame = (struct MsgFrame*)GetMsg(mirrorPort))
+            {
             if (myFrame->mf_Identifier == ID_END)
             {
                 FreeMsgFrame(PowerPCBase, myFrame);
@@ -569,13 +615,7 @@ FUNC68K void MirrorTask(void)
                 FreeMsgFrame(PowerPCBase, myFrame);
                 PrintError(SysBase, "68K mirror task received illegal command packet");
             }
-            myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
-        }
-        mySignal = Wait((ULONG)myTask->tc_SigAlloc & 0xfffff000);
-
-        if (mySignal & (1 << (ULONG)mirrorPort->mp_SigBit))
-        {
-            myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
+            }
         }
         else if (mySignal & andTemp)
         {
@@ -699,14 +739,17 @@ FUNC68K void MasterControl(void)
 
 						break;
 					}
-					case ID_FREE:
+#if 0
+					case ID_____:
 					{
-						void (*FreeMem_ptr)(__reg("d0") ULONG, __reg("a1") ULONG, __reg("a6") struct ExecBase*) =
+						
+                        void (*FreeMem_ptr)(__reg("d0") ULONG, __reg("a1") ULONG, __reg("a6") struct ExecBase*) =
 							 (APTR)(myFrame->mf_PPCArgs.PP_Regs[0] + myFrame->mf_PPCArgs.PP_Regs[1]);
 						(*FreeMem_ptr)(myFrame->mf_PPCArgs.PP_Regs[4], myFrame->mf_PPCArgs.PP_Regs[3], SysBase);
 						FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
+#endif
 					case ID_DBGS:
 					{
 						mySPrintF68K((struct PPCBase*)PowerPCBase, "Process: %s Function: %s r4,r5,r6,r7 = "
@@ -771,7 +814,7 @@ FUNC68K void MasterControl(void)
 					}
 					default:
 					{
-						PrintError(SysBase, "68K received an illegal command packet");
+                        PrintError(SysBase, "68K received an illegal command packet");
 						break;
 					}
 				}
@@ -788,12 +831,12 @@ FUNC68K void MasterControl(void)
 
 FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 {
-	struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
+    struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myPPCBase;
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 	struct MsgFrame* myFrame;
 	ULONG flag = 0;
 
-	switch (PowerPCBase->pp_DeviceID)
+    switch (PowerPCBase->pp_DeviceID)
 	{
 		case DEVICE_HARRIER:
 		{
@@ -820,21 +863,24 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	{
 		while ((myFrame = GetMsgFrame(PowerPCBase)) != (APTR)-1)
 		{
-			switch (myFrame->mf_Identifier)
+            switch (myFrame->mf_Identifier)
 			{
 				case ID_T68K:
 				case ID_END:
 				{
 					struct MsgPort* mirrorPort;
-                    if ((mirrorPort = myFrame->mf_MirrorPort) && (myFrame->mf_Identifier != ID_END))
+                    if (mirrorPort = myFrame->mf_MirrorPort)
 					{
-						struct Task* sigTask = mirrorPort->mp_SigTask;
-						sigTask->tc_SigAlloc = myFrame->mf_Arg[0];
-						PutMsg(mirrorPort, &myFrame->mf_Message);
+						if (myFrame->mf_Identifier != ID_END)
+                        {
+                            struct Task* sigTask = mirrorPort->mp_SigTask;
+						    sigTask->tc_SigAlloc = myFrame->mf_Arg[0];
+						}
+                        PutMsg(mirrorPort, &myFrame->mf_Message);
                     }
 					else
 					{
-						PutMsg(PowerPCBase->pp_MasterControl, &myFrame->mf_Message);
+                        PutMsg(PowerPCBase->pp_MasterControl, &myFrame->mf_Message);
 					}
 					break;
 				}
@@ -943,7 +989,7 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 *
 *********************************************************************************************/
 
-struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
+static inline struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
 
@@ -969,7 +1015,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
                 {
                     myFIFO->kf_CreatePrevious = msgFrame;
                     break;
-                }                
+                }
             }
             break;
         }
@@ -987,6 +1033,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 
     Enable();
 
+//#if 0
     if (msgFrame)
     {
         ULONG clearFrame = msgFrame;
@@ -996,7 +1043,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
             clearFrame += 4;
         }
     }
-
+//#endif
     return (struct MsgFrame*)msgFrame;
 }
 
@@ -1058,7 +1105,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
     Disable();
 
-    msgFrame->mf_Identifier = ID_FREE;
+    //msgFrame->mf_Identifier = ID_FREE;
 
     switch (PowerPCBase->pp_DeviceID)
     {
@@ -1132,6 +1179,7 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
                     break;
                 }
             }
+            break;
         }
 
         case DEVICE_MPC107:

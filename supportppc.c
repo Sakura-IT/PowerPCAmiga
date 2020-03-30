@@ -117,7 +117,12 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
 
 PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 {
-	myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOFreeVec32, 0, (ULONG)memBlock, 0, 0);
+	if ((ULONG)memBlock & 0x1f)
+    {
+        HaltError((ULONG)memBlock);
+    }
+
+    myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOFreeVec32, 0, (ULONG)memBlock, 0, 0);
 
 	return;
 }
@@ -273,7 +278,7 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 	    EnablePPC();
 	    myUser(PowerPCBase, key);
     }
-
+//#if 0
     if (msgFrame)
     {
         ULONG clearFrame = msgFrame;
@@ -283,6 +288,7 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
             clearFrame += 4;
         }
     }
+//#endif
 	return (struct MsgFrame*)msgFrame;
 }
 
@@ -726,6 +732,7 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 {
     if (PowerPCBase->pp_DebugLevel)
     {
+        HaltError(PowerPCBase->pp_DebugLevel);
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         if (args->db_Process == (APTR)ID_DBGS)
         {
@@ -1129,7 +1136,7 @@ PPCFUNCTION VOID EndTask(VOID)
     ULONG key = mySuper(NULL);             //Super does not use PowerPCBase
     struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
     myUser(PowerPCBase, key);
-
+    HaltError(0xbeefbeef);
     myDeleteTaskPPC(PowerPCBase, NULL);
 
     return;
