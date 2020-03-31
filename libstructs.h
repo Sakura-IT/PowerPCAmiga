@@ -238,6 +238,7 @@ struct BATArray             if_BATs[4];
 ULONG                       if_Segments[16];
 DOUBLE                      if_AlignStore;
 ULONG                       if_ExceptionVector;
+ULONG                       if_ExcNum;
 };
 
 struct poolHeader {

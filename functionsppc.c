@@ -2512,7 +2512,7 @@ PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* t
                 }
                 case GETINFO_TABLESIZE:
                 {
-                    myTagItem->ti_Data = PowerPCBase->pp_PageTableSize;
+                    myTagItem->ti_Data = PowerPCBase->pp_PageTableSize>>10;
                     break;
                 }
                 case GETINFO_BUSCLOCK:

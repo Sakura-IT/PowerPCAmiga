@@ -277,7 +277,8 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
         }
         case VEC_ALTIVECUNAV:
         {
-            iframe->if_Context.ec_ExcID = EXCB_ALTIVECUNAV;
+            iframe->if_Context.ec_ExcID = EXCF_ALTIVECUNAV;
+            iframe->if_ExcNum = EXCB_ALTIVECUNAV;
             if (PowerPCBase->pp_EnAltivec)
             {
                 iframe->if_Context.ec_SRR1 |= PSL_VEC;
@@ -733,7 +734,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
     while (nxtNode = (struct ExcData*)currNode->ed_Node.ln_Succ)
     {
-        if (currNode->ed_ExcID & (1<<iframe->if_Context.ec_ExcID))
+        if (currNode->ed_ExcID & iframe->if_Context.ec_ExcID)
         {
             if ((currNode->ed_Flags & EXCF_GLOBAL) || ((currNode->ed_Flags & EXCF_LOCAL) && (currNode->ed_Task) && (currNode->ed_Task != PowerPCBase->pp_ThisPPCProc)))
             {
@@ -744,7 +745,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
                     status = ExcHandler(currNode->ed_Data, &iframe->if_Context);
                     storeR2(tempR2);
                 }
-                else if (currNode->ed_Flags &EXCF_SMALLCONTEXT)
+                else if (currNode->ed_Flags & EXCF_SMALLCONTEXT)
                 {
                     status = SmallExcHandler(currNode, iframe);
                 }
@@ -757,7 +758,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
         currNode = nxtNode;
     }
 
-    if ((status == EXCRETURN_NORMAL) && (iframe->if_Context.ec_ExcID != EXCB_DACCESS))
+    if ((status == EXCRETURN_NORMAL) && (iframe->if_Context.ec_ExcID != EXCF_DACCESS))
     {
         CommonExcError(PowerPCBase, iframe);
     }
@@ -772,8 +773,8 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 
 PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
 {
-    if ((iframe->if_Context.ec_ExcID == EXCB_INTERRUPT) || (iframe->if_Context.ec_ExcID == EXCB_DECREMENTER)
-     || (iframe->if_Context.ec_ExcID == EXCB_TRACE)     || (iframe->if_Context.ec_ExcID == EXCB_PERFMON))
+    if ((iframe->if_Context.ec_ExcID == EXCF_INTERRUPT) || (iframe->if_Context.ec_ExcID == EXCF_DECREMENTER)
+     || (iframe->if_Context.ec_ExcID == EXCF_TRACE)     || (iframe->if_Context.ec_ExcID == EXCF_PERFMON))
     {
         return;
     }
@@ -781,7 +782,7 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     ULONG* errorData = (ULONG*)(PowerPCBase->pp_PPCMemBase + (ULONG)(FIFO_END + 0x100));
     errorData[0]  = (ULONG)PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
     errorData[1]  = (ULONG)PowerPCBase->pp_ThisPPCProc;
-    errorData[2]  = iframe->if_Context.ec_ExcID;
+    errorData[2]  = iframe->if_ExcNum;
     errorData[3]  = iframe->if_Context.ec_UPC.ec_SRR0;
     errorData[4]  = iframe->if_Context.ec_SRR1;
     errorData[5]  = getMSR();
@@ -852,5 +853,6 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     libSendMsgFramePPC(myFrame);
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
+    while(1); //x
     SwitchPPC(PowerPCBase, iframe);
 }

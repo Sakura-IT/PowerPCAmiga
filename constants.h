@@ -105,8 +105,8 @@
 #define VEC_ALTIVECASSIST       0x1600
 #define VEC_THERMAL             0x1700
 
-#define EXCB_DECREMENTER        9
 #define EXCB_ALTIVECUNAV        10          //Is normally reserved for implementation specific exceptions
+#define EXCF_ALTIVECUNAV        1<<10
 
 #define ID_PPC                  0x5F505043
 #define ID_TPPC                 0x54505043

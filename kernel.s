@@ -58,7 +58,10 @@ _ExcCommon:
         mflr    r3
         rlwinm  r0,r3,24,24,31
         stw     r3,-4(r4)
-        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID
+        stw     r0,IF_EXCNUM(r4)                           #EXCB
+        li      r3,1
+        rlwnm   r0,r3,r0,0,31
+        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID (EXCF)
         la      r3,IF_CONTEXT(r4)
         mfsprg2 r0
         stw     r0,-8(r4)                                  #LR

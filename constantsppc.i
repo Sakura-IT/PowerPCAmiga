@@ -50,7 +50,8 @@
 .set IF_SEGMENTS,               IF_CONTEXT+40+128+256+64
 .set IF_ALIGNSTORE,             IF_SEGMENTS+64
 .set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
-.set IF_SIZE,                   IF_EXCEPTIONVECTOR+4
+.set IF_EXCNUM,                 IF_EXCEPTIONVECTOR+4
+.set IF_SIZE,                   IF_EXCNUM+4
 
 .set PP_FLAGS,                  8
 .set PP_STACK,                  12
