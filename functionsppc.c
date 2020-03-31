@@ -1884,9 +1884,12 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
         printDebug(PowerPCBase, (struct DebugArgs*)&args);
         return NULL;
     }           
-    if (value & EXCF_GLOBAL)
+
+    struct TaskPPC* value2 = (struct TaskPPC*)myGetTagDataPPC(PowerPCBase, EXCATTR_TASK, 0, taglist);
+
+    if ((value & EXCF_GLOBAL) || ((value & EXCF_LOCAL) && (value2)))
     {
-        excInfo->ei_ExcData.ed_Task = (struct TaskPPC*)myGetTagDataPPC(PowerPCBase, EXCATTR_TASK, 0, taglist);
+        excInfo->ei_ExcData.ed_Task = value2;
     }
     else
     {
