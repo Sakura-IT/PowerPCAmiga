@@ -1375,6 +1375,15 @@ PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signu
 		} while(resAlloc > -1);
 	}
 
+    if (resAlloc > -1)
+    {
+        PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigAlloc |= 1 << resAlloc;
+
+        while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+        PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigRecvd &= ~(1 << resAlloc);
+        PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigWait &= ~(1 << resAlloc);
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+    }
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return resAlloc;
