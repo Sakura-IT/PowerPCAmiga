@@ -36,6 +36,9 @@ _ExcCommon:
         b       ExcDLoadTLBMiss
         b       ExcDStoreTLBMiss
 
+
+        #256 nothing 512 altivec 24 altivec support 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
+
         mtsprg2 r0                                         #LR; sprg3 = r0
 
         mfsrr0  r0
@@ -49,7 +52,7 @@ _ExcCommon:
         sync                                               #Also reenable FPU
         isync
 
-        stwu	r1,-2048(r1)                 #256 nothing 512 altivec 24 altivec support 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
+        stwu	r1,-2048(r1)                               #Make room for struct iframe
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
         mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
@@ -119,13 +122,13 @@ _StoreFrame:
         stwu    r0,4(r3)
         lwz     r0,-8(r4)
         stwu    r0,4(r3)                     #LR
-        mfxer   r0
-        stwu    r0,4(r3)
         mffs    f0
-        stfsu   f0,4(r3)
+        stfdu   f0,4(r3)
+        mfxer   r0
+        stw     r0,0(r3)
 
         lwz     r0,0(r1)
-        stwu    r0,8(r3)                     #r1, skipped r0
+        stwu    r0,12(r3)                    #r1, skipped r0
         stwu    r2,4(r3)
         stwu    r5,12(r3)                    #skipped r3 and r4. Need to be stored seperately
         stwu    r6,4(r3)
@@ -273,10 +276,10 @@ _LoadFrame:
         mtctr   r3
         lwzu    r3,8(r31)                    #skip lr, is loaded seperately
         mtxer   r3
-        lfsu    f0,4(r31)
+        lfd     f0,0(r31)
         mtfsf   0xff,f0
 
-        lwzu    r0,4(r31)
+        lwzu    r0,8(r31)
         lwzu    r2,8(r31)                    #skip r1, is loaded seperately
         lwzu    r4,8(r31)                    #skip r3, is loaded seperately
         lwzu    r5,4(r31)

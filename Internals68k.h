@@ -92,8 +92,7 @@ void            myFreeXMsg   (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0
 void            mySetCache68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0") ULONG cacheflags,
                               __reg("a0") APTR start, __reg("d1") ULONG length);
 void         myPowerDebugMode(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("d0") ULONG debuglevel);
-void         PutChProc       (__reg("a6") struct ExecBase* SysBase, __reg("d0") UBYTE mychar,
-                              __reg("a3") APTR PutChData);
+void         PutChProc       (__reg("d0") UBYTE mychar, __reg("a3") APTR PutChData);
 void         mySPrintF68K    (__reg("a6") struct PPCBase* PowerPCBase, __reg("a0") STRPTR Formatstring,
                               __reg("a1") APTR values);
 void         myPutXMsg       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct MsgPort* MsgPortPPC,

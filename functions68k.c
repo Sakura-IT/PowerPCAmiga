@@ -35,6 +35,7 @@
 #include "internals68k.h"
 
 extern APTR OldRemTask;
+extern struct PPCBase* myPPCBase;
 
 /********************************************************************************************
 *
@@ -735,9 +736,9 @@ APTR __RawPutChar(__reg("a6") void *, __reg("d0") UBYTE MyChar)="\tjsr\t-516(a6)
 
 #define RawPutChar(MyChar) __RawPutChar(SysBase, (MyChar))
 
-void PutChProc(__reg("a6") struct ExecBase* SysBase, __reg("d0") UBYTE mychar,
-               __reg("a3") APTR PutChData)
+void PutChProc(__reg("d0") UBYTE mychar, __reg("a3") APTR PutChData)
 {
+    struct ExecBase* SysBase = (struct ExecBase*)PutChData;
     RawPutChar(mychar);
     return;
 }
@@ -747,7 +748,7 @@ LIBFUNC68K void mySPrintF68K(__reg("a6") struct PPCBase* PowerPCBase, __reg("a0"
 {
     struct ExecBase *SysBase = PowerPCBase->PPC_SysLib;
 
-    RawDoFmt(Formatstring, values, &PutChProc, NULL);
+    RawDoFmt(Formatstring, values, &PutChProc, (APTR)SysBase);
     return;
 }
 

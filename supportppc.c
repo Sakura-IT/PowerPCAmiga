@@ -725,22 +725,31 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 
 PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs* args)
 {
-    if (PowerPCBase->pp_DebugLevel)
+    if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
-        HaltError(PowerPCBase->pp_DebugLevel);
+        STRPTR procname = args->db_ProcessName;
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
-        if (args->db_Process == (APTR)ID_DBGS)
+        args->db_ProcessName = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
+        UBYTE oldlevel = PowerPCBase->pp_DebugLevel;
+
+        while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
+        PowerPCBase->pp_DebugLevel = 0;
+        myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
+        PowerPCBase->pp_DebugLevel = oldlevel;
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+
+        if (procname == (STRPTR)ID_DBGS)
         {
             myFrame->mf_Identifier = ID_DBGE;
+            args->db_ProcessName = 0;
         }
         else
         {
             myFrame->mf_Identifier = ID_DBGS;
+            args->db_ProcessName = (STRPTR)ID_DBGS;
         }
-        args->db_Process = PowerPCBase->pp_ThisPPCProc;
-        myCopyMemPPC(PowerPCBase, (APTR)args, (APTR)&myFrame->mf_PPCArgs, sizeof(struct DebugArgs));
+
         SendMsgFramePPC(PowerPCBase, myFrame);
-        args->db_Process = (APTR)ID_DBGS;
     }
     return;
 }

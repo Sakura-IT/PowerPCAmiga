@@ -49,9 +49,10 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	}
 
     struct DebugArgs args;
-    args.db_Function = 0;
-    args.db_Arg[0] = (ULONG)PPStruct->PP_Code;
-    args.db_Arg[1] = PPStruct->PP_Offset;
+    args.db_Function = 0 | (3<<8);
+    args.db_Arg[0] = (ULONG)PPStruct;
+    args.db_Arg[1] = (ULONG)PPStruct->PP_Code;            //Extra info
+    args.db_Arg[2] = PPStruct->PP_Offset;                 //Extra info
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if (!(PPStruct->PP_Code))
@@ -132,6 +133,8 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct)
 {
     struct DebugArgs args;
+    args.db_Function = 1 | (1<<8);
+    args.db_Arg[0] = (ULONG)PPStruct;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG recvdSigs, signals;
@@ -231,6 +234,10 @@ PPCFUNCTION VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstri
 PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags, ULONG align)
 {
     struct DebugArgs args;
+    args.db_Function = 2 | (3<<8);
+    args.db_Arg[0] = size;
+    args.db_Arg[1] = flags;
+    args.db_Arg[2] = align;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
     APTR mem = 0;
 
@@ -283,7 +290,7 @@ PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, U
         values[-2] = (ULONG)currPool;
         values[-3] = origmem;
     }
-
+    args.db_Arg[0] = (ULONG)mem;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return mem;
@@ -298,6 +305,8 @@ PPCFUNCTION APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, U
 PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 {
     struct DebugArgs args;
+    args.db_Function = 3 | (1<<8);
+    args.db_Arg[0] = (ULONG)memblock;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if (memblock)
@@ -305,8 +314,6 @@ PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 		ULONG* myMemblock = memblock;
 		myFreePooledPPC(PowerPCBase, (APTR)myMemblock[-2], (APTR)myMemblock[-3], myMemblock[-1]);
 	}
-
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
 	
     return MEMERR_SUCCESS;
 }
@@ -320,6 +327,8 @@ PPCFUNCTION LONG myFreeVecPPC(struct PrivatePPCBase* PowerPCBase, APTR memblock)
 PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 4 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG value, memStack, myCode;
@@ -572,8 +581,9 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
                                                                 CauseDECInterrupt(PowerPCBase);
 
                                                                 currTask->tp_Flags &= ~TASKPPCF_CHOWN;
-
+                                                                args.db_Arg[0] = (ULONG)newTask;
                                                                 printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
                                                                 return newTask;
                                                             }
                                                             FreeVec68K(PowerPCBase, newTask->tp_MessageRIP);
@@ -602,6 +612,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
             FreeVec68K(PowerPCBase, newTask);
         }
     }
+    args.db_Arg[0] = NULL;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
     return NULL;
 }
@@ -615,7 +626,10 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(struct PrivatePPCBase* PowerPCBase, 
 PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* PPCtask)
 {
     struct DebugArgs args;
+    args.db_Function = 5 | (1<<8);
+    args.db_Arg[0] = (ULONG)PPCtask;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     ULONG ownFlag = 0;
 
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
@@ -699,6 +713,8 @@ PPCFUNCTION VOID myDeleteTaskPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, STRPTR name)
 {
     struct DebugArgs args;
+    args.db_Function = 6 | (1<<8);
+    args.db_Arg[0] = (ULONG)name;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if(!(name))
@@ -721,6 +737,7 @@ PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, ST
 	}
 	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemTaskList);
 
+    args.db_Arg[0] = (ULONG)fndTask;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return fndTask;
@@ -735,6 +752,8 @@ PPCFUNCTION struct TaskPPC* myFindTaskPPC(struct PrivatePPCBase* PowerPCBase, ST
 PPCFUNCTION LONG myInitSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 7 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	LONG result = 0;
@@ -751,6 +770,7 @@ PPCFUNCTION LONG myInitSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct S
 		result = -1;
 	}
 
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return result;
@@ -765,6 +785,8 @@ PPCFUNCTION LONG myInitSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct S
 PPCFUNCTION VOID myFreeSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 8 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if (SemaphorePPC)
@@ -784,6 +806,8 @@ PPCFUNCTION VOID myFreeSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct S
 PPCFUNCTION LONG myAddSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 9 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 	
     LONG result = 0;
@@ -798,6 +822,7 @@ PPCFUNCTION LONG myAddSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 
 	}
 
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return result;
@@ -812,6 +837,8 @@ PPCFUNCTION LONG myAddSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 PPCFUNCTION VOID myRemSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 10 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
@@ -834,6 +861,8 @@ PPCFUNCTION VOID myRemSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 PPCFUNCTION VOID myObtainSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 11 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -875,6 +904,8 @@ PPCFUNCTION VOID myObtainSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct
 PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 12 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	LONG result = 0;
@@ -897,6 +928,7 @@ PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 
 	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return result;
@@ -911,6 +943,8 @@ PPCFUNCTION LONG myAttemptSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 13 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -1051,6 +1085,8 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struc
 PPCFUNCTION struct SignalSemaphorePPC* myFindSemaphorePPC(struct PrivatePPCBase* PowerPCBase, STRPTR name)
 {
     struct DebugArgs args;
+    args.db_Function = 14 | (1<<8);
+    args.db_Arg[0] = (ULONG)name;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
@@ -1059,6 +1095,7 @@ PPCFUNCTION struct SignalSemaphorePPC* myFindSemaphorePPC(struct PrivatePPCBase*
 
 	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 
+    args.db_Arg[0] = (ULONG)mySem;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return mySem;
@@ -1346,6 +1383,8 @@ PPCFUNCTION struct TagItem* myNextTagItemPPC(struct PrivatePPCBase* PowerPCBase,
 PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum)
 {
     struct DebugArgs args;
+    args.db_Function = 15 | (1<<8);
+    args.db_Arg[0] = signum;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	LONG resAlloc, testAlloc;
@@ -1384,6 +1423,8 @@ PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signu
         PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigWait &= ~(1 << resAlloc);
         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
     }
+
+    args.db_Arg[0] = resAlloc;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return resAlloc;
@@ -1397,6 +1438,11 @@ PPCFUNCTION LONG myAllocSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signu
 
 PPCFUNCTION VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum)
 {
+    struct DebugArgs args;
+    args.db_Function = 16 | (1<<8);
+    args.db_Arg[0] = (ULONG)signum;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     BYTE testSig = (BYTE)signum;
 	if (!(testSig == -1))
 	{
@@ -1416,6 +1462,9 @@ PPCFUNCTION VOID myFreeSignalPPC(struct PrivatePPCBase* PowerPCBase, LONG signum
 PPCFUNCTION ULONG mySetSignalPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG mask)
 {
     struct DebugArgs args;
+    args.db_Function = 17 | (2<<8);
+    args.db_Arg[0] = signals;
+    args.db_Arg[1] = mask;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
@@ -1428,6 +1477,7 @@ PPCFUNCTION ULONG mySetSignalPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 
 	CheckExcSignal(PowerPCBase, myTask, 0);
 
+    args.db_Arg[0] = oldSig;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return oldSig;
@@ -1442,6 +1492,8 @@ PPCFUNCTION ULONG mySetSignalPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 PPCFUNCTION VOID mySignalPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, ULONG signals)
 {
     struct DebugArgs args;
+    args.db_Function = 18 | (2<<8);
+    args.db_Arg[0] = signals;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     switch (task->tp_Task.tc_Node.ln_Type)
@@ -1500,6 +1552,8 @@ PPCFUNCTION VOID mySignalPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC*
 PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 {
     struct DebugArgs args;
+    args.db_Function = 19 | (1<<8);
+    args.db_Arg[0] = signals;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
@@ -1527,6 +1581,7 @@ PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 
 	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
+    args.db_Arg[0] = maskSig;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return maskSig;
@@ -1541,6 +1596,9 @@ PPCFUNCTION ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals)
 PPCFUNCTION LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, LONG pri)
 {
     struct DebugArgs args;
+    args.db_Function = 20 | (2<<8);
+    args.db_Arg[0] = (ULONG)task;
+    args.db_Arg[1] = pri;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	while(!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -1576,6 +1634,7 @@ PPCFUNCTION LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 		CauseDECInterrupt(PowerPCBase);
 	}
 
+    args.db_Arg[0] = oldPri;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return oldPri;
@@ -1590,6 +1649,9 @@ PPCFUNCTION LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct Task
 PPCFUNCTION VOID mySignal68K(struct PrivatePPCBase* PowerPCBase, struct Task* task, ULONG signals)
 {
     struct DebugArgs args;
+    args.db_Function = 21 | (2<<8);
+    args.db_Arg[0] = (ULONG)task;
+    args.db_Arg[1] = signals;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
@@ -1612,6 +1674,10 @@ PPCFUNCTION VOID mySignal68K(struct PrivatePPCBase* PowerPCBase, struct Task* ta
 PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR start, ULONG length)
 {
     struct DebugArgs args;
+    args.db_Function = 22 | (3<<8);
+    args.db_Arg[0] = flags;
+    args.db_Arg[1] = (ULONG)start;
+    args.db_Arg[2] = length;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG value, key;
@@ -1865,6 +1931,8 @@ PPCFUNCTION VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APT
 PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 23 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     struct ExcInfo* excInfo;
@@ -2049,6 +2117,7 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
 
     while (!((volatile)excInfo->ei_ExcData.ed_LastExc->ed_Flags & EXCF_ACTIVE));
 
+    args.db_Arg[0] = (ULONG)excInfo;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return excInfo;
@@ -2063,6 +2132,8 @@ PPCFUNCTION APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagI
 PPCFUNCTION VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock)
 {
     struct DebugArgs args;
+    args.db_Function = 24 | (1<<8);
+    args.db_Arg[0] = (ULONG)xlock;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     if (xlock)
@@ -2128,6 +2199,9 @@ PPCFUNCTION VOID myUser(struct PrivatePPCBase* PowerPCBase, ULONG key)
 PPCFUNCTION ULONG mySetHardware(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR param)
 {
     struct DebugArgs args;
+    args.db_Function = 25 | (2<<8);
+    args.db_Arg[0] = flags;
+    args.db_Arg[1] = (ULONG)param;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG status = HW_AVAILABLE;
@@ -2223,6 +2297,7 @@ PPCFUNCTION ULONG mySetHardware(struct PrivatePPCBase* PowerPCBase, ULONG flags,
         status = HW_NOTAVAILABLE;
     }
 
+    args.db_Arg[0] = status;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return status;
@@ -2237,6 +2312,8 @@ PPCFUNCTION ULONG mySetHardware(struct PrivatePPCBase* PowerPCBase, ULONG flags,
 PPCFUNCTION VOID myModifyFPExc(struct PrivatePPCBase* PowerPCBase, ULONG fpflags)
 {
     struct DebugArgs args;
+    args.db_Function = 26 | (1<<8);
+    args.db_Arg[0] = fpflags;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     if (fpflags & FPF_EN_OVERFLOW)
@@ -2290,11 +2367,15 @@ PPCFUNCTION VOID myModifyFPExc(struct PrivatePPCBase* PowerPCBase, ULONG fpflags
 
 PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG time)
 {
+    struct DebugArgs args;
+    args.db_Function = 27 | (2<<8);
+    args.db_Arg[0] = signals;
+    args.db_Arg[1] = time;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     struct UInt64 myInt64;
     struct WaitTime myWait;
     ULONG value1, value2, counter, tbu, tbl, recvdsig;
-    struct DebugArgs args;
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemWaitList);
 
@@ -2356,6 +2437,7 @@ PPCFUNCTION ULONG myWaitTime(struct PrivatePPCBase* PowerPCBase, ULONG signals, 
 
     recvdsig &= ~SIGF_WAIT;
 
+    args.db_Arg[0] = recvdsig;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return recvdsig;
@@ -2413,9 +2495,73 @@ PPCFUNCTION VOID myClearExcMMU(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
+PPCFUNCTION BOOL myChangeStack(struct PrivatePPCBase* PowerPCBase, ULONG NewStackSize)
+{
+    struct DebugArgs args;
+    args.db_Function = 28 | (1<<8);
+    args.db_Arg[0] = (ULONG)NewStackSize;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    BOOL result;
+    APTR newStack;
+    ULONG src, dst, siz, sup;
+    struct MemList* stackMem;
+
+    if (NewStackSize < PowerPCBase->pp_ThisPPCProc->tp_StackSize)
+    {
+        return FALSE;
+    }
+
+    if (!(newStack = AllocVec68K(PowerPCBase, NewStackSize, MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC)))
+    {
+        return FALSE;
+    }
+
+    if (stackMem = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC))
+    {
+        struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
+        stackMem->ml_NumEntries = 1;
+        stackMem->ml_ME[0].me_Un.meu_Addr = newStack;
+        stackMem->ml_ME[0].me_Length = NewStackSize;
+
+        myAddHeadPPC(PowerPCBase, (struct List*)&myTask->tp_Task.tc_MemEntry, (struct Node*)stackMem);
+
+        src = (ULONG)myTask->tp_Task.tc_SPLower;
+        sup = (ULONG)myTask->tp_Task.tc_SPUpper;
+        siz = sup - src;
+        dst = (ULONG)newStack + NewStackSize - siz;
+
+        myCopyMemPPC(PowerPCBase, (APTR)src, (APTR)dst, siz);
+
+        myTask->tp_Task.tc_SPLower = (APTR)dst;
+        myTask->tp_Task.tc_SPUpper = (APTR)((ULONG)newStack + NewStackSize);
+        myTask->tp_StackSize = NewStackSize;
+
+        SwapStack(sup, ((ULONG)newStack + NewStackSize));
+
+        result = TRUE;
+    }
+    else
+    {
+        FreeVec68K(PowerPCBase, stackMem);
+        result = FALSE;
+    }
+
+    args.db_Arg[0] = result;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+    return result;
+}
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 PPCFUNCTION VOID myChangeMMU(struct PrivatePPCBase* PowerPCBase, ULONG mode)
 {
     struct DebugArgs args;
+    args.db_Function = 29 | (1<<8);
+    args.db_Arg[0] = mode;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return; //stub
@@ -2449,6 +2595,8 @@ PPCFUNCTION VOID myChangeMMU(struct PrivatePPCBase* PowerPCBase, ULONG mode)
 PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 30 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct TagItem* myTagItem = NULL;
@@ -2572,6 +2720,7 @@ PPCFUNCTION VOID myGetInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* t
 PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(struct PrivatePPCBase* PowerPCBase)
 {
     struct DebugArgs args;
+    args.db_Function = 31;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct MsgPortPPC* myPort;
@@ -2600,6 +2749,8 @@ PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(struct PrivatePPCBase* PowerPC
 			FreeVec68K(PowerPCBase, myPort);
 		}
 	}
+
+    args.db_Arg[0] = (ULONG)myPort;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return myPort;
@@ -2614,6 +2765,8 @@ PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(struct PrivatePPCBase* PowerPC
 PPCFUNCTION VOID myDeleteMsgPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 32 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if(port)
@@ -2634,6 +2787,8 @@ PPCFUNCTION VOID myDeleteMsgPortPPC(struct PrivatePPCBase* PowerPCBase, struct M
 PPCFUNCTION VOID myAddPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 33 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myNewListPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList);
@@ -2656,6 +2811,8 @@ PPCFUNCTION VOID myAddPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 PPCFUNCTION VOID myRemPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 34 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
@@ -2676,6 +2833,8 @@ PPCFUNCTION VOID myRemPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase, STRPTR name)
 {
     struct DebugArgs args;
+    args.db_Function = 35 | (1<<8);
+    args.db_Arg[0] = (ULONG)name;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
@@ -2684,6 +2843,7 @@ PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase,
 
 	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
 
+    args.db_Arg[0] = (ULONG)myPort;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return myPort;
@@ -2698,6 +2858,8 @@ PPCFUNCTION struct MsgPortPPC* myFindPortPPC(struct PrivatePPCBase* PowerPCBase,
 PPCFUNCTION struct Message* myWaitPortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 36 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
@@ -2719,6 +2881,7 @@ PPCFUNCTION struct Message* myWaitPortPPC(struct PrivatePPCBase* PowerPCBase, st
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
 
+    args.db_Arg[0] = (ULONG)topMsg;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return (struct Message*)topMsg;
@@ -2733,6 +2896,9 @@ PPCFUNCTION struct Message* myWaitPortPPC(struct PrivatePPCBase* PowerPCBase, st
 PPCFUNCTION VOID myPutMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port, struct Message* message)
 {
     struct DebugArgs args;
+    args.db_Function = 37 | (2<<8);
+    args.db_Arg[0] = (ULONG)port;
+    args.db_Arg[1] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     message->mn_Node.ln_Type = NT_MESSAGE;
@@ -2758,6 +2924,8 @@ PPCFUNCTION VOID myPutMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortP
 PPCFUNCTION struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 38 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
@@ -2766,6 +2934,7 @@ PPCFUNCTION struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, stru
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
 
+    args.db_Arg[0] = (ULONG)myMsg;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return myMsg;
@@ -2780,6 +2949,8 @@ PPCFUNCTION struct Message* myGetMsgPPC(struct PrivatePPCBase* PowerPCBase, stru
 PPCFUNCTION VOID myReplyMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message)
 {
     struct DebugArgs args;
+    args.db_Function = 39 | (1<<8);
+    args.db_Arg[0] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     if (!(message->mn_ReplyPort))
@@ -2819,20 +2990,13 @@ PPCFUNCTION VOID myReplyMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Messag
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID myFreeAllMem(struct PrivatePPCBase* PowerPCBase)
-{
-    return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
 PPCFUNCTION VOID myCopyMemPPC(struct PrivatePPCBase* PowerPCBase, APTR source, APTR dest, ULONG size)
 {
     struct DebugArgs args;
+    args.db_Function = 40 | (3<<8);
+    args.db_Arg[0] = (ULONG)source;
+    args.db_Arg[1] = (ULONG)dest;
+    args.db_Arg[2] = size;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     CopyMemQuickPPC(PowerPCBase, source, dest, size);
@@ -2849,6 +3013,9 @@ PPCFUNCTION VOID myCopyMemPPC(struct PrivatePPCBase* PowerPCBase, APTR source, A
 PPCFUNCTION struct Message* myAllocXMsgPPC(struct PrivatePPCBase* PowerPCBase, ULONG length, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 41 | (2<<8);
+    args.db_Arg[0] = length;
+    args.db_Arg[1] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	length = (length + sizeof(struct Message) + 31) & -32;
@@ -2861,7 +3028,7 @@ PPCFUNCTION struct Message* myAllocXMsgPPC(struct PrivatePPCBase* PowerPCBase, U
 		myXMessage->mn_Length = length;
 	}
 
-
+    args.db_Arg[0] = (ULONG)myXMessage;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return myXMessage;
@@ -2875,7 +3042,12 @@ PPCFUNCTION struct Message* myAllocXMsgPPC(struct PrivatePPCBase* PowerPCBase, U
 
 PPCFUNCTION VOID myFreeXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message)
 {
-	myFreeVecPPC(PowerPCBase, message);
+	struct DebugArgs args;
+    args.db_Function = 42 | (1<<8);
+    args.db_Arg[0] = (ULONG)message;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+    myFreeVecPPC(PowerPCBase, message);
 
 	return;
 }
@@ -2889,6 +3061,9 @@ PPCFUNCTION VOID myFreeXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct Messag
 PPCFUNCTION VOID myPutXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort* port, struct Message* message)
 {
     struct DebugArgs args;
+    args.db_Function = 43 | (2<<8);
+    args.db_Arg[0] = (ULONG)port;
+    args.db_Arg[1] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	message->mn_Node.ln_Type = NT_XMSGPPC;
@@ -2913,9 +3088,11 @@ PPCFUNCTION VOID myPutXMsgPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPort
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID  myGetSysTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* timeval)
+PPCFUNCTION VOID myGetSysTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval* timeval)
 {
     struct DebugArgs args;
+    args.db_Function = 44 | (1<<8);
+    args.db_Arg[0] = (ULONG)timeval;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
     struct UInt64 myInt64;
     ULONG tbu, tbl, secs, micros, temp;
@@ -3030,11 +3207,15 @@ PPCFUNCTION LONG myCmpTimePPC(struct PrivatePPCBase* PowerPCBase, struct timeval
 PPCFUNCTION struct MsgPortPPC* mySetReplyPortPPC(struct PrivatePPCBase* PowerPCBase, struct Message* message, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 45 | (2<<8);
+    args.db_Arg[0] = (ULONG)message;
+    args.db_Arg[1] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct MsgPortPPC* oldPort = (struct MsgPortPPC*)message->mn_ReplyPort;
 	message->mn_ReplyPort = (struct MsgPort*)port;
 
+    args.db_Arg[0] = (ULONG)oldPort;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return oldPort;
@@ -3049,6 +3230,8 @@ PPCFUNCTION struct MsgPortPPC* mySetReplyPortPPC(struct PrivatePPCBase* PowerPCB
 PPCFUNCTION ULONG mySnoopTask(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 46 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG value;
@@ -3064,28 +3247,28 @@ PPCFUNCTION ULONG mySnoopTask(struct PrivatePPCBase* PowerPCBase, struct TagItem
             if(!(mySnoop->sd_Type = myGetTagDataPPC(PowerPCBase, SNOOP_TYPE, 0, taglist)))
             {
                 FreeVec68K(PowerPCBase, mySnoop);
-                printDebug(PowerPCBase, (struct DebugArgs*)&args);
-                return 0;
+                mySnoop = 0;
             }
-            myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+            else
+            {
+                myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
 
-            myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Snoop, (struct Node*)mySnoop);
+                myAddHeadPPC(PowerPCBase, (struct List*)&PowerPCBase->pp_Snoop, (struct Node*)mySnoop);
 
-            myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
-
-            printDebug(PowerPCBase, (struct DebugArgs*)&args);
-
-            return (ULONG)mySnoop;
-
+                myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
+            }
         }
         else
         {
             FreeVec68K(PowerPCBase, mySnoop);
+            mySnoop = 0;
         }
     }
+
+    args.db_Arg[0] = (ULONG)mySnoop;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
-    return 0;
+    return (ULONG)mySnoop;
 }
 
 /********************************************************************************************
@@ -3097,6 +3280,8 @@ PPCFUNCTION ULONG mySnoopTask(struct PrivatePPCBase* PowerPCBase, struct TagItem
 PPCFUNCTION VOID myEndSnoopTask(struct PrivatePPCBase* PowerPCBase, ULONG id)
 {
     struct DebugArgs args;
+    args.db_Function = 47 | (1<<8);
+    args.db_Arg[0] = id;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     if (id)
@@ -3122,6 +3307,8 @@ PPCFUNCTION VOID myEndSnoopTask(struct PrivatePPCBase* PowerPCBase, ULONG id)
 PPCFUNCTION VOID myGetHALInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 48 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     struct TagItem* myTagItem;
@@ -3154,6 +3341,8 @@ PPCFUNCTION VOID myGetHALInfo(struct PrivatePPCBase* PowerPCBase, struct TagItem
 PPCFUNCTION VOID mySetScheduling(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist)
 {
     struct DebugArgs args;
+    args.db_Function = 49 | (1<<8);
+    args.db_Arg[0] = (ULONG)taglist;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     struct TagItem* myTagItem;
@@ -3184,6 +3373,8 @@ PPCFUNCTION VOID mySetScheduling(struct PrivatePPCBase* PowerPCBase, struct TagI
 PPCFUNCTION struct TaskPPC* myFindTaskByID(struct PrivatePPCBase* PowerPCBase, LONG id)
 {
     struct DebugArgs args;
+    args.db_Function = 50 | (1<<8);
+    args.db_Arg[0] = id;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     struct TaskPtr* myPtr = myLockTaskList(PowerPCBase);
@@ -3202,6 +3393,7 @@ PPCFUNCTION struct TaskPPC* myFindTaskByID(struct PrivatePPCBase* PowerPCBase, L
 
     myUnLockTaskList(PowerPCBase);
 
+    args.db_Arg[0] = (ULONG)foundTask;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return foundTask;
@@ -3216,6 +3408,9 @@ PPCFUNCTION struct TaskPPC* myFindTaskByID(struct PrivatePPCBase* PowerPCBase, L
 PPCFUNCTION LONG mySetNiceValue(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, LONG nice)
 {
     struct DebugArgs args;
+    args.db_Function = 51 | (2<<8);
+    args.db_Arg[0] = (ULONG)task;
+    args.db_Arg[1] = nice;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     LONG oldNice;
@@ -3239,6 +3434,7 @@ PPCFUNCTION LONG mySetNiceValue(struct PrivatePPCBase* PowerPCBase, struct TaskP
         myUnLockTaskList(PowerPCBase);
     }
 
+    args.db_Arg[0] = oldNice;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return oldNice;
@@ -3253,6 +3449,9 @@ PPCFUNCTION LONG mySetNiceValue(struct PrivatePPCBase* PowerPCBase, struct TaskP
 PPCFUNCTION LONG myTrySemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, ULONG timeout)
 {
     struct DebugArgs args;
+    args.db_Function = 52 | (2<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
+    args.db_Arg[1] = timeout;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     LONG status;
@@ -3331,24 +3530,13 @@ PPCFUNCTION LONG myTrySemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct Si
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID myNewListPPC(struct PrivatePPCBase* PowerPCBase, struct List* list)
-{
-	list->lh_TailPred = (struct Node*)list;
-	list->lh_Tail = 0;
-	list->lh_Head = (struct Node*)((ULONG)list+4);
-
-	return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
 PPCFUNCTION ULONG mySetExceptPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals, ULONG mask, ULONG flag)
 {
     struct DebugArgs args;
+    args.db_Function = 53 | (3<<8);
+    args.db_Arg[0] = signals;
+    args.db_Arg[1] = mask;
+    args.db_Arg[2] = flag;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
@@ -3367,6 +3555,7 @@ PPCFUNCTION ULONG mySetExceptPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 
     CheckExcSignal(PowerPCBase, myTask, 0);
 
+    args.db_Arg[0] = OldSignals;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return OldSignals;
@@ -3381,9 +3570,11 @@ PPCFUNCTION ULONG mySetExceptPPC(struct PrivatePPCBase* PowerPCBase, ULONG signa
 PPCFUNCTION VOID myObtainSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 54 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
-    struct SemWait myWait;
 
+    struct SemWait myWait;
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
 
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -3421,9 +3612,11 @@ PPCFUNCTION VOID myObtainSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, 
 PPCFUNCTION LONG myAttemptSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 55 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
-    LONG result;
 
+    LONG result;
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
 
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
@@ -3441,6 +3634,7 @@ PPCFUNCTION LONG myAttemptSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase,
 
     FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return result;
@@ -3455,6 +3649,9 @@ PPCFUNCTION LONG myAttemptSemaphoreSharedPPC(struct PrivatePPCBase* PowerPCBase,
 PPCFUNCTION VOID myProcurePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, struct SemaphoreMessage* SemaphoreMessage)
 {
     struct DebugArgs args;
+    args.db_Function = 56 | (2<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
+    args.db_Arg[1] = (ULONG)SemaphoreMessage;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     SemaphoreMessage->ssm_Semaphore = (struct SignalSemaphore*)PowerPCBase->pp_ThisPPCProc;
@@ -3499,6 +3696,9 @@ PPCFUNCTION VOID myProcurePPC(struct PrivatePPCBase* PowerPCBase, struct SignalS
 PPCFUNCTION VOID myVacatePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC, struct SemaphoreMessage* SemaphoreMessage)
 {
     struct DebugArgs args;
+    args.db_Function = 57 | (2<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
+    args.db_Arg[1] = (ULONG)SemaphoreMessage;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     ULONG myStore = (ULONG)&SemaphoreMessage->ssm_Message.mn_Node.ln_Type;
@@ -3538,30 +3738,13 @@ PPCFUNCTION VOID myVacatePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSe
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID myCauseInterrupt(struct PrivatePPCBase* PowerPCBase)
-{
-    if (!(PowerPCBase->pp_ExceptionMode))
-    {
-        ULONG key = mySuper(PowerPCBase);
-
-        PowerPCBase->pp_ExternalInt = -1;
-
-		setDEC(10);
-		
-        myUser(PowerPCBase, key);
-    }
-    return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
 PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags, ULONG puddle_size, ULONG thres_size)
 {
     struct DebugArgs args;
+    args.db_Function = 58 | (3<<8);
+    args.db_Arg[0] = flags;
+    args.db_Arg[1] = puddle_size;
+    args.db_Arg[2] = thres_size;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	struct poolHeader* myPoolHeader = 0;
@@ -3581,6 +3764,8 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
             myAddHeadPPC(PowerPCBase, &PowerPCBase->pp_ThisPPCProc->tp_TaskPools, (struct Node*)&myPoolHeader->ph_Node);
 		}
 	}
+
+    args.db_Arg[0] = (ULONG)myPoolHeader;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return myPoolHeader;
@@ -3595,6 +3780,8 @@ PPCFUNCTION APTR myCreatePoolPPC(struct PrivatePPCBase* PowerPCBase, ULONG flags
 PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader)
 {
     struct DebugArgs args;
+    args.db_Function = 59 | (1<<8);
+    args.db_Arg[0] = (ULONG)poolheader;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	if (poolheader)
@@ -3633,11 +3820,14 @@ PPCFUNCTION VOID myDeletePoolPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader, ULONG size)
 {
     struct DebugArgs args;
+    args.db_Function = 60 | (2<<8);
+    args.db_Arg[0] = (ULONG)poolheader;
+    args.db_Arg[1] = size;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     struct Node* memBlock;
     struct MemHeader* puddle;
     APTR mem = NULL;
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
-
     struct poolHeader* myHeader = (struct poolHeader*)poolheader;
 
     myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
@@ -3705,6 +3895,7 @@ PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolh
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
 
+    args.db_Arg[0] = (ULONG)mem;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return mem;
@@ -3719,7 +3910,12 @@ PPCFUNCTION APTR myAllocPooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolh
 PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolheader, APTR ptr, ULONG size)
 {
     struct DebugArgs args;
+    args.db_Function = 61 | (3<<8);
+    args.db_Arg[0] = (ULONG)poolheader;
+    args.db_Arg[1] = (ULONG)ptr;
+    args.db_Arg[2] = size;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     ULONG realsize;
     struct poolHeader* myHeader = poolheader;
 
@@ -3771,6 +3967,7 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
             currPuddle = nextPuddle;
         }
     }
+
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
     return;
 }
@@ -3783,11 +3980,16 @@ PPCFUNCTION VOID myFreePooledPPC(struct PrivatePPCBase* PowerPCBase, APTR poolhe
 
 PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR formatstring, APTR datastream, APTR (*putchproc)(), APTR putchdata)
 {
+    struct DebugArgs args;
+    args.db_Function = 62 | (4<<8);
+    args.db_Arg[0] = (ULONG)formatstring;
+    args.db_Arg[1] = (ULONG)datastream;
+    args.db_Arg[2] = (ULONG)putchproc;
+    args.db_Arg[3] = (ULONG)putchdata;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     UBYTE sLength;
     STRPTR stringPtr;
-
-    struct DebugArgs args;
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
     struct RDFData rdfData;
 
     if (putchproc == (APTR)1)
@@ -4003,6 +4205,9 @@ PPCFUNCTION APTR myRawDoFmtPPC(struct PrivatePPCBase* PowerPCBase, STRPTR format
 PPCFUNCTION LONG myPutPublicMsgPPC(struct PrivatePPCBase* PowerPCBase, STRPTR portname, struct Message* message)
 {
     struct DebugArgs args;
+    args.db_Function = 63 | (2<<8);
+    args.db_Arg[0] = (ULONG)portname;
+    args.db_Arg[1] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     LONG status = PUBMSG_SUCCESS;
@@ -4022,6 +4227,7 @@ PPCFUNCTION LONG myPutPublicMsgPPC(struct PrivatePPCBase* PowerPCBase, STRPTR po
 
     myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
 
+    args.db_Arg[0] = status;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
     return status;
@@ -4036,6 +4242,8 @@ PPCFUNCTION LONG myPutPublicMsgPPC(struct PrivatePPCBase* PowerPCBase, STRPTR po
 PPCFUNCTION LONG myAddUniquePortPPC(struct PrivatePPCBase* PowerPCBase, struct MsgPortPPC* port)
 {
     struct DebugArgs args;
+    args.db_Function = 64 | (1<<8);
+    args.db_Arg[0] = (ULONG)port;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
@@ -4054,6 +4262,7 @@ PPCFUNCTION LONG myAddUniquePortPPC(struct PrivatePPCBase* PowerPCBase, struct M
 	}
 	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemPortList);
 		
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return result;
@@ -4068,6 +4277,8 @@ PPCFUNCTION LONG myAddUniquePortPPC(struct PrivatePPCBase* PowerPCBase, struct M
 PPCFUNCTION LONG myAddUniqueSemaphorePPC(struct PrivatePPCBase* PowerPCBase, struct SignalSemaphorePPC* SemaphorePPC)
 {
     struct DebugArgs args;
+    args.db_Function = 65 | (1<<8);
+    args.db_Arg[0] = (ULONG)SemaphorePPC;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
@@ -4086,6 +4297,7 @@ PPCFUNCTION LONG myAddUniqueSemaphorePPC(struct PrivatePPCBase* PowerPCBase, str
 	}
 	myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSemList);
 	
+    args.db_Arg[0] = result;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
 	return result;
@@ -4101,6 +4313,42 @@ PPCFUNCTION BOOL myIsExceptionMode(struct PrivatePPCBase* PowerPCBase)
 {
     BOOL status = PowerPCBase->pp_ExceptionMode;
     return status;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID myNewListPPC(struct PrivatePPCBase* PowerPCBase, struct List* list)
+{
+	list->lh_TailPred = (struct Node*)list;
+	list->lh_Tail = 0;
+	list->lh_Head = (struct Node*)((ULONG)list+4);
+
+	return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCFUNCTION VOID myCauseInterrupt(struct PrivatePPCBase* PowerPCBase)
+{
+    if (!(PowerPCBase->pp_ExceptionMode))
+    {
+        ULONG key = mySuper(PowerPCBase);
+
+        PowerPCBase->pp_ExternalInt = -1;
+
+		setDEC(10);
+
+        myUser(PowerPCBase, key);
+    }
+    return;
 }
 
 /********************************************************************************************
@@ -4142,57 +4390,9 @@ PPCFUNCTION VOID myResetPPC(void)
 *
 *********************************************************************************************/
 
-PPCFUNCTION BOOL myChangeStack(struct PrivatePPCBase* PowerPCBase, ULONG NewStackSize)
+PPCFUNCTION VOID myFreeAllMem(struct PrivatePPCBase* PowerPCBase)
 {
-    BOOL result;
-    APTR newStack;
-    ULONG src, dst, siz, sup;
-    struct MemList* stackMem;
-    struct DebugArgs args;
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
-
-    if (NewStackSize < PowerPCBase->pp_ThisPPCProc->tp_StackSize)
-    {
-        return FALSE;
-    }
-
-    if (!(newStack = AllocVec68K(PowerPCBase, NewStackSize, MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC)))
-    {
-        return FALSE;
-    }
-
-    if (stackMem = AllocVec68K(PowerPCBase, sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR|MEMF_PPC))
-    {
-        struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
-        stackMem->ml_NumEntries = 1;
-        stackMem->ml_ME[0].me_Un.meu_Addr = newStack;
-        stackMem->ml_ME[0].me_Length = NewStackSize;
-
-        myAddHeadPPC(PowerPCBase, (struct List*)&myTask->tp_Task.tc_MemEntry, (struct Node*)stackMem);
-
-        src = (ULONG)myTask->tp_Task.tc_SPLower;
-        sup = (ULONG)myTask->tp_Task.tc_SPUpper;
-        siz = sup - src;
-        dst = (ULONG)newStack + NewStackSize - siz;
-
-        myCopyMemPPC(PowerPCBase, (APTR)src, (APTR)dst, siz);
-
-        myTask->tp_Task.tc_SPLower = (APTR)dst;
-        myTask->tp_Task.tc_SPUpper = (APTR)((ULONG)newStack + NewStackSize);
-        myTask->tp_StackSize = NewStackSize;
-
-        SwapStack(sup, ((ULONG)newStack + NewStackSize));
-
-        result = TRUE;
-    }
-    else
-    {
-        FreeVec68K(PowerPCBase, stackMem);
-        result = FALSE;
-    }
-
-    printDebug(PowerPCBase, (struct DebugArgs*)&args);
-    return result;
+    return;
 }
 
 /********************************************************************************************

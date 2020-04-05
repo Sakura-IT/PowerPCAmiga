@@ -40,7 +40,7 @@ ULONG               mf_Arg[3];
 };
 
 struct DebugArgs {
-struct TaskPPC*     db_Process;
+STRPTR              db_ProcessName;
 ULONG               db_Function;
 ULONG               db_Arg[4];
 };

@@ -88,6 +88,131 @@ ULONG ExcStrings[24]   = {(ULONG)&excUnsupported, (ULONG)&excUnsupported, (ULONG
                           (ULONG)&excIABR, (ULONG)&excSysMan, (ULONG)&excUnsupported,
                           (ULONG)&excAVAssist, (ULONG)&excTherMan};
 
+
+UBYTE FRun68K[]                      = "Run68K\0";
+UBYTE FWaitFor68K[]                  = "WaitFor68K\0";
+UBYTE FAllocVecPPC[]                 = "AllocVecPPC\0";
+UBYTE FFreeVecPPC[]                  = "FreeVecPPC\0";
+UBYTE FCreateTaskPPC[]               = "CreateTaskPPC\0";
+UBYTE FDeleteTaskPPC[]               = "DeleteTaskPPC\0";
+UBYTE FFindTaskPPC[]                 = "FindTaskPPC\0";
+UBYTE FInitSemaphorePPC[]            = "InitSemaphorePPC\0";
+UBYTE FFreeSemaphorePPC[]            = "FreeSemaphorePPC\0";
+UBYTE FAddSemaphorePPC[]             = "AddSemaphorePPC\0";
+UBYTE FRemSemaphorePPC[]             = "RemSemaphorePPC\0";
+UBYTE FObtainSemaphorePPC[]          = "ObtainSemaphorePPC\0";
+UBYTE FAttemptSemaphorePPC[]         = "AttemptSemaphorePPC\0";
+UBYTE FReleaseSemaphorePPC[]         = "ReleaseSemaphorePPC\0";
+UBYTE FFindSemaphorePPC[]            = "FindSemaphorePPC\0";
+UBYTE FAllocSignalPPC[]              = "AllocSignalPPC\0";
+UBYTE FFreeSignalPPC[]               = "FreeSignalPPC\0";
+UBYTE FSetSignalPPC[]                = "SetSignalPPC\0";
+UBYTE FSignalPPC[]                   = "SignalPPC\0";
+UBYTE FWaitPPC[]                     = "WaitPPC\0";
+UBYTE FSetTaskPriPPC[]               = "SetTaskPriPPC\0";
+UBYTE FSignal68K[]                   = "Signal68K\0";
+UBYTE FSetCache[]                    = "SetCache\0";
+UBYTE FSetExcHandler[]               = "SetExcHandler\0";
+UBYTE FRemExcHandler[]               = "RemExcHandler\0";
+UBYTE FSetHardware[]                 = "SetHardware\0";
+UBYTE FModifyFPExc[]                 = "ModifyFPExc\0";
+UBYTE FWaitTime[]                    = "WaitTime\0";
+UBYTE FChangeStack[]                 = "ChangeStack\0";
+UBYTE FChangeMMU[]                   = "ChangeMMU\0";
+UBYTE FGetInfo[]                     = "GetInfo\0";
+UBYTE FCreateMsgPortPPC[]            = "CreateMsgPortPPC\0";
+UBYTE FDeleteMsgPortPPC[]            = "DeleteMsgPortPPC\0";
+UBYTE FAddPortPPC[]                  = "AddPortPPC\0";
+UBYTE FRemPortPPC[]                  = "RemPortPPC\0";
+UBYTE FFindPortPPC[]                 = "FindPortPPC\0";
+UBYTE FWaitPortPPC[]                 = "WaitPortPPC\0";
+UBYTE FPutMsgPPC[]                   = "PutMsgPPC\0";
+UBYTE FGetMsgPPC[]                   = "GetMsgPPC\0";
+UBYTE FReplyMsgPPC[]                 = "ReplyMsgPPC\0";
+UBYTE FCopyMemPPC[]                  = "CopyMemPPC\0";
+UBYTE FAllocXMsgPPC[]                = "AllocXMsgPPC\0";
+UBYTE FFreeXMsgPPC[]                 = "FreeXMsgPPC\0";
+UBYTE FPutXMsgPPC[]                  = "PutXMsgPPC\0";
+UBYTE FGetSysTimePPC[]               = "GetSysTimePPC\0";
+UBYTE FSetReplyPortPPC[]             = "SetReplyPortPPC\0";
+UBYTE FSnoopTask[]                   = "SnoopTask\0";
+UBYTE FEndSnoopTask[]                = "EndSnoopTask\0";
+UBYTE FGetHALInfo[]                  = "GetHALInfo\0";
+UBYTE FSetScheduling[]               = "SetScheduling\0";
+UBYTE FFindTaskByID[]                = "FindTaskByID\0";
+UBYTE FSetNiceValue[]                = "SetNiceValue\0";
+UBYTE FTrySemaphorePPC[]             = "TrySemaphorePPC\0";
+UBYTE FSetExceptPPC[]                = "SetExceptPPC\0";
+UBYTE FObtainSemaphoreSharedPPC[]    = "ObtainSemaphoreSharedPPC\0";
+UBYTE FAttemptSemaphoreSharedPPC[]   = "AttemptSempahoreSharedPPC\0";
+UBYTE FProcurePPC[]                  = "ProcurePPC\0";
+UBYTE FVacatePPC[]                   = "VacatePPC\0";
+UBYTE FCreatePoolPPC[]               = "CreatePoolPPC\0";
+UBYTE FDeletePoolPPC[]               = "DeletePoolPPC\0";
+UBYTE FAllocPooledPPC[]              = "AllocPooledPPC\0";
+UBYTE FFreePooledPPC[]               = "FreePooledPPC\0";
+UBYTE FRawDoFmtPPC[]                 = "RawDoFmtPPC\0";
+UBYTE FPutPublicMsgPPC[]             = "PutPublicMsgPPC\0";
+UBYTE FAddUniquePortPPC[]            = "AddUniquePortPPC\0";
+UBYTE FAddUniqueSemaphorePPC[]       = "AddUniqueSemaphorePPC\0";
+
+#if 0
+UBYTE FSPrintF[]                     = "SPrintF\0";
+UBYTE FInsertPPC[]                   = "InsertPPC\0";
+UBYTE FAddHeadPPC[]                  = "AddHeadPPC\0";
+UBYTE FAddTailPPC[]                  = "AddtailPPC\0";
+UBYTE FRemovePPC[]                   = "RemovePPC\0";
+UBYTE FRemHeadPPC[]                  = "RemHeadPPC\0";
+UBYTE FRemTailPPC[]                  = "RemTailPPC\0";
+UBYTE FEnqueuePPC[]                  = "EnqueuePPC\0";
+UBYTE FFindNamePPC[]                 = "FindNamePPC\0";
+UBYTE FFindTagItemPPC[]              = "FindTagItemPPC\0";
+UBYTE FGetTagDataPPC[]               = "GetTagItemPPC\0";
+UBYTE FNextTagItemPPC[]              = "NextTagItemPPC\0";
+UBYTE FSuper[]                       = "Super\0";
+UBYTE FUser[]                        = "User\0";
+UBYTE FLockTaskList[]                = "LockTaskList\0";
+UBYTE FUnLockTaskList[]              = "UnlockTaskList\0";
+UBYTE FSetExcMMU[]                   = "SetExcMMU\0";
+UBYTE FClearExcMMU[]                 = "ClearExcMMU\0";
+UBYTE FFreeAllMem[]                  = "FreeAllMem\0";
+UBYTE FAddTimePPC[]                  = "AddTimePPC\0";
+UBYTE FSubTimePPC[]                  = "SubTimePPC\0";
+UBYTE FCmpTimePPC[]                  = "CmpTimePPC\0";
+UBYTE FNewListPPC[]                  = "NewListPPC\0";
+UBYTE FCauseInterrupt[]              = "CauseInterrupt\0";
+UBYTE FAllocPrivateMem[]             = "AllocPrivateMem\0";
+UBYTE FFreePrivateMem[]              = "FreePrivateMem\0";
+UBYTE FResetPPC[]                    = "ResetPPC\0";
+UBYTE FIsExceptionMode[]             = "IsExceptionMode\0";
+UBYTE FRun68KLowLevel[]              = "Run68KLowLevel\0";
+UBYTE FAllocatePPC[]                 = "AllocatePPC\0";
+UBYTE FDeallocatePPC[]               = "DeallocatePPC\0";
+#endif
+
+ULONG FuncStrings[66]   = {(ULONG)&FRun68K, (ULONG)&FWaitFor68K, (ULONG)&FAllocVecPPC,
+                          (ULONG)&FFreeVecPPC, (ULONG)&FCreateTaskPPC, (ULONG)&FDeleteTaskPPC,
+                          (ULONG)&FFindTaskPPC, (ULONG)&FInitSemaphorePPC, (ULONG)&FFreeSemaphorePPC,
+                          (ULONG)&FAddSemaphorePPC, (ULONG)&FRemSemaphorePPC, (ULONG)&FObtainSemaphorePPC,
+                          (ULONG)&FAttemptSemaphorePPC, (ULONG)&FReleaseSemaphorePPC, (ULONG)&FFindSemaphorePPC,
+                          (ULONG)&FAllocSignalPPC, (ULONG)&FFreeSignalPPC, (ULONG)&FSetSignalPPC,
+                          (ULONG)&FSignalPPC, (ULONG)&FWaitPPC, (ULONG)&FSetTaskPriPPC,
+                          (ULONG)&FSignal68K, (ULONG)&FSetCache, (ULONG)&FSetExcHandler,
+                          (ULONG)&FRemExcHandler, (ULONG)&FSetHardware, (ULONG)&FModifyFPExc,
+                          (ULONG)&FWaitTime, (ULONG)&FChangeStack, (ULONG)&FChangeMMU,
+                          (ULONG)&FGetInfo, (ULONG)&FCreateMsgPortPPC, (ULONG)&FDeleteMsgPortPPC,
+                          (ULONG)&FAddPortPPC, (ULONG)&FRemPortPPC, (ULONG)&FFindPortPPC,
+                          (ULONG)&FWaitPortPPC, (ULONG)&FPutMsgPPC, (ULONG)&FGetMsgPPC,
+                          (ULONG)&FReplyMsgPPC, (ULONG)&FCopyMemPPC, (ULONG)&FAllocXMsgPPC,
+                          (ULONG)&FFreeXMsgPPC, (ULONG)&FPutXMsgPPC, (ULONG)&FGetSysTimePPC,
+                          (ULONG)&FSetReplyPortPPC, (ULONG)&FSnoopTask, (ULONG)&FEndSnoopTask,
+                          (ULONG)&FGetHALInfo, (ULONG)&FSetScheduling, (ULONG)&FFindTaskByID,
+                          (ULONG)&FSetNiceValue, (ULONG)&FTrySemaphorePPC, (ULONG)&FSetExceptPPC,
+                          (ULONG)&FObtainSemaphoreSharedPPC, (ULONG)&FAttemptSemaphoreSharedPPC, (ULONG)&FProcurePPC,
+                          (ULONG)&FVacatePPC, (ULONG)&FCreatePoolPPC, (ULONG)&FDeletePoolPPC,
+                          (ULONG)&FAllocPooledPPC, (ULONG)&FFreePooledPPC, (ULONG)&FRawDoFmtPPC,
+                          (ULONG)&FPutPublicMsgPPC, (ULONG)&FAddUniquePortPPC, (ULONG)&FAddUniqueSemaphorePPC};
+
 /********************************************************************************************
 *
 *	Task patch functions. To remove PPC tasks and free memory when the 68K part is ended
@@ -752,15 +877,46 @@ FUNC68K void MasterControl(void)
 #endif
 					case ID_DBGS:
 					{
-						mySPrintF68K((struct PPCBase*)PowerPCBase, "Process: %s Function: %s r4,r5,r6,r7 = "
-								       "%08lx,%08lx,%08lx,%08lx\n\0", (APTR)&myFrame->mf_PPCArgs);
-						FreeMsgFrame(PowerPCBase, myFrame);
+                        struct DebugArgs* dbargs = (struct DebugArgs*)&myFrame->mf_PPCArgs;
+                        ULONG numargs = dbargs->db_Function >> 8;
+                        dbargs->db_Function = FuncStrings[(dbargs->db_Function & 0xff)];
+                        switch (numargs)
+                        {
+                            case 1:
+                            {
+                                mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s(%08lx)\n\0", (APTR)dbargs);
+                                break;
+                            }
+                            case 2:
+                            {
+                                mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s(%08lx, %08lx)\n\0", (APTR)dbargs);
+                                break;
+                            }
+                            case 3:
+                            {
+                                mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s(%08lx, %08lx, %08lx)\n\0", (APTR)dbargs);
+                                break;
+                            }
+                            case 4:
+                            {
+                                mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s(%08lx, %08lx, %08lx, %08lx)\n\0", (APTR)dbargs);
+						        break;
+                            }
+                            default:
+                            {
+                                mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s()\n\0", (APTR)dbargs);
+                               break;
+                            }
+
+                        }
+                        FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
 					case ID_DBGE:
 					{
-						mySPrintF68K((struct PPCBase*)PowerPCBase, "Process: %s Function: %s r3 = %08lx\n\0",
-                                       (APTR)&myFrame->mf_PPCArgs);
+                        struct DebugArgs* dbargs = (struct DebugArgs*)&myFrame->mf_PPCArgs;
+                        dbargs->db_Function = FuncStrings[(dbargs->db_Function & 0xff)];
+                        mySPrintF68K((struct PPCBase*)PowerPCBase, "%s -> %s() = %08lx\n\0", (APTR)dbargs);
 						FreeMsgFrame(PowerPCBase, myFrame);
 						break;
 					}
