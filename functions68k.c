@@ -35,7 +35,6 @@
 #include "internals68k.h"
 
 extern APTR OldRemTask;
-extern struct PPCBase* myPPCBase;
 
 /********************************************************************************************
 *
@@ -156,7 +155,7 @@ LIBFUNC68K ULONG myReserved(void)
 *
 ********************************************************************************************/
 
-LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
+LIBFUNC68K LONG myCRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct)
 {
     ULONG  stackMem, stackSize, taskName;
     APTR   stackPP;
@@ -168,6 +167,8 @@ LIBFUNC68K LONG myRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("
     struct ExecBase* SysBase      = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
     struct Task* thisTask         = SysBase->ThisTask;
     struct Process* thisProc      = (struct Process*)thisTask;
+
+    //illegal();
 
     if (thisTask->tc_Node.ln_Type != NT_PROCESS)
     {
@@ -381,6 +382,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                         }
 
                         //MyCopy(&myFrame->mf_PPCArgs, (APTR)PPStruct, (sizeof(struct PPCArgs)/4)-1);
+                        //illegal();
                         CopyMemQuick((APTR)(&myFrame->mf_PPCArgs), (APTR)PPStruct, sizeof(struct PPCArgs));
                         FreeMsgFrame(PowerPCBase, myFrame);
                         return (PPERR_SUCCESS);

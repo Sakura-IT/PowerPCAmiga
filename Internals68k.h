@@ -79,6 +79,7 @@ BPTR            myClose        (__reg("a6") struct PPCBase* PowerPCBase);
 BPTR            myExpunge      (__reg("a6") struct PPCBase* PowerPCBase);
 ULONG           myReserved     (void);
 LONG            myRunPPC       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
+LONG            myCRunPPC       (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
 LONG            myWaitForPPC   (__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg("a0") struct PPCArgs* PPStruct);
 ULONG           myGetCPU       (__reg("a6") struct PrivatePPCBase* PowerPCBase);
 ULONG           myGetPPCState  (__reg("a6") struct PrivatePPCBase* PowerPCBase);
