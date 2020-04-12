@@ -604,6 +604,12 @@ PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct Task
 
 PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
 {
+    struct DebugArgs args;
+    args.db_Function = 66 | (2<<8) | (1<<16);
+    args.db_Arg[0] = (ULONG)memHeader;
+    args.db_Arg[1] = byteSize;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     struct MemChunk* currChunk = NULL;
 
     if (byteSize)
@@ -622,7 +628,7 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
                     prevChunk->mc_Next = currChunk->mc_Next;
                     break;
                 }
-                if (currChunk->mc_Bytes > byteSize)
+                else if (currChunk->mc_Bytes > byteSize)
                 {
                     newChunk = (struct MemChunk*)((ULONG)currChunk + byteSize);
                     newChunk->mc_Next = currChunk->mc_Next;
@@ -639,6 +645,10 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
             }
         }
     }
+
+    args.db_Arg[0] = (ULONG)currChunk;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
     return (APTR)currChunk;
 }
 
@@ -651,7 +661,15 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
 PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader,
                    APTR memoryBlock, ULONG byteSize)
 {
-	if (byteSize)
+	struct DebugArgs args;
+    args.db_Function = 67 | (3<<8) | (1<<16);
+    args.db_Arg[0] = (ULONG)memHeader;
+    args.db_Arg[1] = (ULONG)memoryBlock;
+    args.db_Arg[2] = byteSize;
+    printDebug(PowerPCBase, (struct DebugArgs*)&args);
+
+
+    if (byteSize)
     {
 	    ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
 	    struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
@@ -676,6 +694,8 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
                         HaltError(ERR_EMEM);
 			        }
 			        flag = 1;
+                    currChunk->mc_Bytes += freeSize;
+		            testChunk = currChunk;
 			        break;
 		        }
 		        else if (currChunk->mc_Next == testChunk)
@@ -685,12 +705,7 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 	            currChunk = currChunk->mc_Next;
 	        }
 	
-            if (flag)
-	        {
-		        currChunk->mc_Bytes += freeSize;
-		        testChunk = currChunk;
-	        }
-	        else
+            if (!(flag))
             {
 		        testChunk->mc_Next = currChunk->mc_Next;
 		        currChunk->mc_Next = testChunk;
@@ -705,7 +720,7 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 		        {
                     HaltError(ERR_EMEM);
 		        }
-		        else if ((ULONG)nextChunk > (ULONG)(testChunk) + testChunk->mc_Bytes)
+		        else if ((ULONG)nextChunk == (ULONG)(testChunk) + testChunk->mc_Bytes)
 		        {
 			        testChunk->mc_Next = nextChunk->mc_Next;
 			        testChunk->mc_Bytes = nextChunk->mc_Bytes + testChunk->mc_Bytes;
@@ -727,7 +742,9 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 {
     if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
-        STRPTR procname = args->db_ProcessName;
+        ULONG flag = args->db_Function >> 16;
+        args->db_Function &= ~(1<<16);
+
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         args->db_ProcessName = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
         UBYTE oldlevel = PowerPCBase->pp_DebugLevel;
@@ -738,15 +755,13 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
         PowerPCBase->pp_DebugLevel = oldlevel;
         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 
-        if (procname == (STRPTR)ID_DBGS)
+        if (flag)
         {
-            myFrame->mf_Identifier = ID_DBGE;
-            args->db_ProcessName = 0;
+            myFrame->mf_Identifier = ID_DBGS;
         }
         else
         {
-            myFrame->mf_Identifier = ID_DBGS;
-            args->db_ProcessName = (STRPTR)ID_DBGS;
+            myFrame->mf_Identifier = ID_DBGE;
         }
 
         SendMsgFramePPC(PowerPCBase, myFrame);

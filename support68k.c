@@ -156,6 +156,9 @@ UBYTE FPutPublicMsgPPC[]             = "PutPublicMsgPPC\0";
 UBYTE FAddUniquePortPPC[]            = "AddUniquePortPPC\0";
 UBYTE FAddUniqueSemaphorePPC[]       = "AddUniqueSemaphorePPC\0";
 
+UBYTE FAllocatePPC[]                 = "AllocatePPC\0";
+UBYTE FDeallocatePPC[]               = "DeallocatePPC\0";
+
 #if 0
 UBYTE FSPrintF[]                     = "SPrintF\0";
 UBYTE FInsertPPC[]                   = "InsertPPC\0";
@@ -186,11 +189,9 @@ UBYTE FFreePrivateMem[]              = "FreePrivateMem\0";
 UBYTE FResetPPC[]                    = "ResetPPC\0";
 UBYTE FIsExceptionMode[]             = "IsExceptionMode\0";
 UBYTE FRun68KLowLevel[]              = "Run68KLowLevel\0";
-UBYTE FAllocatePPC[]                 = "AllocatePPC\0";
-UBYTE FDeallocatePPC[]               = "DeallocatePPC\0";
 #endif
 
-ULONG FuncStrings[66]   = {(ULONG)&FRun68K, (ULONG)&FWaitFor68K, (ULONG)&FAllocVecPPC,
+ULONG FuncStrings[68]   = {(ULONG)&FRun68K, (ULONG)&FWaitFor68K, (ULONG)&FAllocVecPPC,
                           (ULONG)&FFreeVecPPC, (ULONG)&FCreateTaskPPC, (ULONG)&FDeleteTaskPPC,
                           (ULONG)&FFindTaskPPC, (ULONG)&FInitSemaphorePPC, (ULONG)&FFreeSemaphorePPC,
                           (ULONG)&FAddSemaphorePPC, (ULONG)&FRemSemaphorePPC, (ULONG)&FObtainSemaphorePPC,
@@ -211,7 +212,8 @@ ULONG FuncStrings[66]   = {(ULONG)&FRun68K, (ULONG)&FWaitFor68K, (ULONG)&FAllocV
                           (ULONG)&FObtainSemaphoreSharedPPC, (ULONG)&FAttemptSemaphoreSharedPPC, (ULONG)&FProcurePPC,
                           (ULONG)&FVacatePPC, (ULONG)&FCreatePoolPPC, (ULONG)&FDeletePoolPPC,
                           (ULONG)&FAllocPooledPPC, (ULONG)&FFreePooledPPC, (ULONG)&FRawDoFmtPPC,
-                          (ULONG)&FPutPublicMsgPPC, (ULONG)&FAddUniquePortPPC, (ULONG)&FAddUniqueSemaphorePPC};
+                          (ULONG)&FPutPublicMsgPPC, (ULONG)&FAddUniquePortPPC, (ULONG)&FAddUniqueSemaphorePPC,
+                          (ULONG)&FAllocatePPC,(ULONG)FDeallocatePPC};
 
 /********************************************************************************************
 *

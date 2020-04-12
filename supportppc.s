@@ -247,7 +247,6 @@ _RunCPP:
         la      r14,IF_CONTEXT_GPR(r14)
         lwz     r15,5*4(r14)        #args
         lwz     r16,PP_FLAGS(r15)
-
         rlwinm. r16,r16,(32-PPB_LINEAR),31,31
         beq     .notLinear2
 
