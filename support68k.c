@@ -967,6 +967,11 @@ FUNC68K void MasterControl(void)
 								PrintError(SysBase, "PPC timed out while waiting on 68K");
 								break;
 							}
+							case ERR_R68K:
+							{
+								PrintError(SysBase, "Illegal Run68K function execution detected");
+								break;
+							}
 						}
 						break;
 					}
@@ -1026,7 +1031,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				case ID_T68K:
 				case ID_END:
 				{
-					struct MsgPort* mirrorPort;
+                    struct MsgPort* mirrorPort;
                     if (mirrorPort = myFrame->mf_MirrorPort)
 					{
 						if (myFrame->mf_Identifier != ID_END)

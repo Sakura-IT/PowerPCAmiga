@@ -738,7 +738,6 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
         {
             if ((currNode->ed_Flags & EXCF_GLOBAL) || ((currNode->ed_Flags & EXCF_LOCAL) && (currNode->ed_Task) && (currNode->ed_Task == PowerPCBase->pp_ThisPPCProc)))
             {
-                writeTest(0x6d000000,0xbeef0003);
                 if (currNode->ed_Flags & EXCF_LARGECONTEXT)
                 {
                     ULONG (*ExcHandler)(__reg("r2") ULONG, __reg("r3") struct EXCContext*) = currNode->ed_Code;
@@ -855,4 +854,5 @@ PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe*
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
     SwitchPPC(PowerPCBase, iframe);
+    while(1);
 }

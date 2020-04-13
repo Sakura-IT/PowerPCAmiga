@@ -698,6 +698,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Disable();
 
+    if (!(ChangeStackRamLib(0x4000, SysBase)))
+    {
+        PrintCrtErr(myConsts, "Failure to increase ramlib stack size");
+        return NULL;
+    }
+
     OldLoadSeg    = SetFunction((struct Library*)DOSBase, _LVOLoadSeg,    (ULONG (*)())patchLoadSeg);
     OldNewLoadSeg = SetFunction((struct Library*)DOSBase, _LVONewLoadSeg, (ULONG (*)())patchNewLoadSeg);
     OldAddTask    = SetFunction((struct Library*)SysBase, _LVOAddTask,    (ULONG (*)())patchAddTask);

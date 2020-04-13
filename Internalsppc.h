@@ -206,6 +206,7 @@ void mvtoBAT3(struct BATArray*)
           \tmtibatu\t3,r4\n";
 
 LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
+LONG myCRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
 LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PPStruct);
 VOID mySPrintF(struct PrivatePPCBase* PowerPCBase, STRPTR Formatstring, APTR Values);
 APTR myAllocVecPPC(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags, ULONG align);

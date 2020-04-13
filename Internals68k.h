@@ -58,7 +58,7 @@ void   PrintError   (struct ExecBase* SysBase, UBYTE* errortext);
 void   MasterControl(void);
 void   Run68KCode   (__reg("a6") struct ExecBase* SysBase, __reg("a0") struct PPCArgs* PPStruct);
 void   commonRemTask(__reg("a1") struct Task* myTask, __reg("d0") ULONG flag, __reg("a6") struct ExecBase* SysBase);
-
+ULONG  ChangeStackRamLib(__reg("d0") ULONG size, __reg("a6")struct ExecBase* SysBase);
 
 ULONG  GortInt      (__reg("a1") APTR data, __reg("a5") APTR code);
 

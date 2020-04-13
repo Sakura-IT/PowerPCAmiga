@@ -57,7 +57,7 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 
 	if (!(PPStruct->PP_Code))
 	{
-		return PPERR_MISCERR;
+		HaltError(ERR_R68K);
 	}
 	if (PPStruct->PP_Flags)
 	{
@@ -91,7 +91,6 @@ PPCFUNCTION LONG myRun68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs* PP
 	{
 		if(PPStruct->PP_StackSize)
 		{
-			illegal();
             mySetCache(PowerPCBase, CACHE_DCACHEFLUSH, PPStruct->PP_Stack, PPStruct->PP_StackSize);
 		}
 		else
@@ -171,7 +170,8 @@ PPCFUNCTION LONG myWaitFor68K(struct PrivatePPCBase* PowerPCBase, struct PPCArgs
                         break;
                     }
                     case ID_TPPC:
-                    {   SetupRunPPC(PowerPCBase, myFrame);
+                    {
+                        SetupRunPPC(PowerPCBase, myFrame);
                         break;
                     }
                     case ID_DONE:

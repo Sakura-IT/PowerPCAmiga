@@ -26,9 +26,12 @@ FUNC_CNT	SET	   FUNC_CNT-6  * Standard offset-6 bytes each
 
             include exec/exec_lib.i
             include exec/execbase.i
+            include exec/tasks.i
+            include exec/memory.i
+            include dos/dosextens.i
             include powerpc/powerpc.i
 
-            XREF _Run68KCode, _myRunPPC, _MyCopy, _GetClock
+            XREF _ChangeStackRamLib, _Run68KCode, _myRunPPC, _MyCopy, _GetClock
             XDEF _myCRunPPC
 
 ;********************************************************************************************
@@ -48,6 +51,69 @@ _myRunPPC   movem.l d1-a6,-(a7)
             bsr _myCRunPPC
             movem.l (a7)+,d1-a6
             rts
+
+;********************************************************************************************
+
+_ChangeStackRamLib
+            movem.l d1-a6,-(a7)
+            move.l d0,d6
+            sub.l a1,a1
+            jsr _LVOFindTask(a6)
+            tst.l d0
+            beq PatchExit
+
+            move.l d0,a3
+            move.l TC_SPUPPER(a3),d0
+            move.l TC_SPLOWER(a3),d1
+            sub.l d1,d0
+            cmp.l d6,d0                  ;don't make stack smaller!
+            blt.s DoStackMagic
+
+            moveq.l #-1,d0
+            bra.s PatchExit
+
+DoStackMagic	
+            move.l d6,d0
+            move.l #MEMF_PUBLIC,d1
+            jsr _LVOAllocVec(a6)
+
+            tst.l d0
+            beq.s PatchExit
+
+            move.l d0,-(a7)
+            add.l d6,d0
+            move.l d0,-(a7)
+            move.l TC_SPUPPER(a3),d1
+            move.l TC_SPREG(a3),d2
+            move.l d2,a0
+            sub.l d2,d1
+            sub.l d1,d0
+            move.l d0,a1
+            move.l a1,-(a7)
+            move.l d1,d0
+
+            jsr _LVOCopyMem(a6)          ;Copy stack to new spot
+
+            move.l (a7)+,TC_SPREG(a3)
+            move.l (a7)+,d0
+            move.l TC_SPUPPER(a3),d2
+            move.l d0,TC_SPUPPER(a3)
+            move.l (a7)+,TC_SPLOWER(a3)
+            move.l a7,d1
+            move.l d0,d3
+            sub.l d1,d2
+            sub.l d2,d3
+            cmp.b #NT_PROCESS,LN_TYPE(a3)
+            bne.s NotAProc
+
+		    lsr.l #2,d0
+            move.l d0,pr_StackBase(a3)
+            move.l d6,pr_StackSize(a3)
+NotAProc    move.l d3,a7                 ;Set new stack pointer
+            moveq.l #-1,d0
+PatchExit   movem.l (a7)+,d1-a6
+            rts
+
 
 ;********************************************************************************************
 

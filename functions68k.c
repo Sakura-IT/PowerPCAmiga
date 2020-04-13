@@ -168,8 +168,6 @@ LIBFUNC68K LONG myCRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg(
     struct Task* thisTask         = SysBase->ThisTask;
     struct Process* thisProc      = (struct Process*)thisTask;
 
-    //illegal();
-
     if (thisTask->tc_Node.ln_Type != NT_PROCESS)
     {
         return (PPERR_MISCERR);
@@ -182,7 +180,7 @@ LIBFUNC68K LONG myCRunPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __reg(
     {
         if (thisTask == myMirror->mt_Task)
         {
-            if (myMirror->mt_Flags)
+            if (myMirror->mt_Flags & PPF_ASYNC)
             {
                 return (PPERR_ASYNCERR);
             }
@@ -382,7 +380,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                         }
 
                         //MyCopy(&myFrame->mf_PPCArgs, (APTR)PPStruct, (sizeof(struct PPCArgs)/4)-1);
-                        //illegal();
+
                         CopyMemQuick((APTR)(&myFrame->mf_PPCArgs), (APTR)PPStruct, sizeof(struct PPCArgs));
                         FreeMsgFrame(PowerPCBase, myFrame);
                         return (PPERR_SUCCESS);
