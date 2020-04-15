@@ -34,7 +34,7 @@
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value)
+PPCFUNCTION VOID writememLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offset, __reg("r5") ULONG value)
 {
 	*((ULONG*)(Base + offset)) = value;
 	return;
@@ -46,7 +46,7 @@ PPCFUNCTION VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask)
+PPCFUNCTION VOID InsertOnPri(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct List* list, __reg("r5") struct TaskPPC* myTask)
 {
     LONG realPri    = myTask->tp_Priority + myTask->tp_Prioffset;
     LONG defaultPri = PowerPCBase->pp_LowActivityPri + PowerPCBase->pp_LowActivityPriOffset;
@@ -93,7 +93,7 @@ PPCFUNCTION VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* li
 *
 *********************************************************************************************/
 
-PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULONG flags)
+PPCFUNCTION APTR AllocVec68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") ULONG size, __reg("r5") ULONG flags)
 {
 	APTR memBlock = NULL;
 
@@ -115,7 +115,7 @@ PPCFUNCTION APTR AllocVec68K(struct PrivatePPCBase* PowerPCBase, ULONG size, ULO
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
+PPCFUNCTION VOID FreeVec68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") APTR memBlock)
 {
     myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOFreeVec32, 0, (ULONG)memBlock, 0, 0);
 
@@ -128,7 +128,7 @@ PPCFUNCTION VOID FreeVec68K(struct PrivatePPCBase* PowerPCBase, APTR memBlock)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FlushDCache(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID FlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     ULONG key = mySuper(PowerPCBase);
     ULONG cacheSize;
@@ -206,7 +206,7 @@ PPCFUNCTION VOID EnablePPC(VOID)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID ForbidPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     PowerPCBase->pp_FlagForbid = 1;
 
@@ -219,7 +219,7 @@ PPCFUNCTION VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID PermitPPC(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID PermitPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     PowerPCBase->pp_FlagForbid = 0;
 
@@ -232,7 +232,7 @@ PPCFUNCTION VOID PermitPPC(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
 	ULONG key;
     ULONG msgFrame = 0;
@@ -293,7 +293,7 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBas
 *
 *********************************************************************************************/
 
-PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION struct MsgFrame* GetMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
 	ULONG key;
     ULONG msgFrame = 0;
@@ -347,7 +347,7 @@ PPCFUNCTION struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
+PPCFUNCTION VOID SendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
 {
 	ULONG key;
 
@@ -398,7 +398,7 @@ PPCFUNCTION VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
+PPCFUNCTION VOID FreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
 {
 	ULONG key;
 
@@ -450,7 +450,7 @@ PPCFUNCTION VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgF
 *
 *********************************************************************************************/
 
-PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
+PPCFUNCTION LONG StricmpPPC(__reg("r3") STRPTR string1, __reg("r4") STRPTR string2)
 {
     LONG result = 0;
 	ULONG offset = 0;
@@ -506,7 +506,7 @@ PPCFUNCTION LONG StricmpPPC(STRPTR string1, STRPTR string2)
 *
 *********************************************************************************************/
 
-PPCFUNCTION ULONG GetLen(STRPTR string)
+PPCFUNCTION ULONG GetLen(__reg("r3") STRPTR string)
 {
 	ULONG offset = 0;
 
@@ -523,7 +523,7 @@ PPCFUNCTION ULONG GetLen(STRPTR string)
 *
 *********************************************************************************************/
 
-PPCFUNCTION STRPTR CopyStr(APTR source, APTR dest)
+PPCFUNCTION STRPTR CopyStr(__reg("r3") APTR source, __reg("r4") APTR dest)
 {
 	ULONG offset = -1;
 
@@ -547,7 +547,7 @@ PPCFUNCTION STRPTR CopyStr(APTR source, APTR dest)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID CauseDECInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
 	ULONG key;
 
@@ -566,7 +566,7 @@ PPCFUNCTION VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* myTask, ULONG signal)
+PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct TaskPPC* myTask, __reg("r5") ULONG signal)
 {
 	ULONG sigmask;
 
@@ -602,7 +602,7 @@ PPCFUNCTION ULONG CheckExcSignal(struct PrivatePPCBase* PowerPCBase, struct Task
 *
 *********************************************************************************************/
 
-PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader, ULONG byteSize)
+PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
 {
     struct DebugArgs args;
     args.db_Function = 66 | (2<<8) | (1<<16);
@@ -658,8 +658,8 @@ PPCFUNCTION APTR AllocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeade
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHeader* memHeader,
-                   APTR memoryBlock, ULONG byteSize)
+PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader,
+                   __reg("r5") APTR memoryBlock, __reg("r6") ULONG byteSize)
 {
 	struct DebugArgs args;
     args.db_Function = 67 | (3<<8) | (1<<16);
@@ -738,12 +738,15 @@ PPCFUNCTION VOID DeallocatePPC(struct PrivatePPCBase* PowerPCBase, struct MemHea
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs* args)
+PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct DebugArgs* args)
 {
     if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
         ULONG flag = args->db_Function >> 16;
         args->db_Function &= ~(1<<16);
+
+        ULONG* memptr = (APTR)0x6f000000;
+        memptr[0] = (ULONG)args->db_Function;
 
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         args->db_ProcessName = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
@@ -775,7 +778,7 @@ PPCFUNCTION VOID printDebug(struct PrivatePPCBase* PowerPCBase, struct DebugArgs
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task)
+PPCFUNCTION VOID GetBATs(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct TaskPPC* task)
 {
     ULONG key = mySuper(PowerPCBase);
 
@@ -800,7 +803,7 @@ PPCFUNCTION VOID GetBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* tas
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task)
+PPCFUNCTION VOID StoreBATs(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct TaskPPC* task)
 {
     ULONG key = mySuper(PowerPCBase);
 
@@ -823,7 +826,7 @@ PPCFUNCTION VOID StoreBATs(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* t
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray)
+PPCFUNCTION VOID MoveToBAT(__reg("r3") ULONG BATnumber, __reg("r4") struct BATArray* batArray)
 {
     switch (BATnumber)
     {
@@ -857,7 +860,7 @@ PPCFUNCTION VOID MoveToBAT(ULONG BATnumber, struct BATArray* batArray)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
+PPCFUNCTION VOID MoveFromBAT(__reg("r3") ULONG BATnumber, __reg("r4") struct BATArray* batArray)
 {
     switch (BATnumber)
     {
@@ -891,7 +894,7 @@ PPCFUNCTION VOID MoveFromBAT(ULONG BATnumber, struct BATArray* batArray)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION VOID SystemStart(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     struct TaskPPC* myTask;
     APTR myPool;
@@ -926,7 +929,7 @@ PPCFUNCTION VOID SystemStart(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* myInfo)
+PPCFUNCTION VOID FreeAllExcMem(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct ExcInfo* myInfo)
 {
     APTR myData;
 
@@ -987,7 +990,7 @@ PPCFUNCTION VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInf
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, ULONG* currExc, ULONG flag)
+PPCFUNCTION VOID AddExcList(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct ExcInfo* excInfo, __reg("r5") struct ExcData* newData, __reg("r6") ULONG* currExc, __reg("r7") ULONG flag)
 {
     myCopyMemPPC(PowerPCBase, (APTR)excInfo, (APTR)newData, sizeof(struct ExcData));
     currExc[0] = (ULONG)newData;
@@ -1005,7 +1008,7 @@ PPCFUNCTION VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* 
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+PPCFUNCTION VOID SetupRunPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* myFrame)
 {
 
     mySetCache(PowerPCBase, CACHE_ICACHEINV, 0, 0);
@@ -1086,7 +1089,7 @@ PPCFUNCTION VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+PPCFUNCTION VOID StartTask(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* myFrame)
 {
     SetupRunPPC(PowerPCBase, myFrame);
 
@@ -1166,7 +1169,7 @@ PPCFUNCTION VOID EndTask(VOID)
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame)
+PPCFUNCTION VOID KillTask(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* myFrame)
 {
     FreeMsgFramePPC(PowerPCBase, myFrame);
 
@@ -1214,7 +1217,7 @@ PPCFUNCTION VOID KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* m
 *
 *********************************************************************************************/
 
-PPCFUNCTION ULONG getNum(struct RDFData* rdfData)
+PPCFUNCTION ULONG getNum(__reg("r3") struct RDFData* rdfData)
 {
     ULONG result = 0;
 
@@ -1239,7 +1242,7 @@ PPCFUNCTION ULONG getNum(struct RDFData* rdfData)
 
 /********************************************************************************************/
 
-PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
+PPCFUNCTION LONG AdjustParamInt(__reg("r3") struct RDFData* rdfData)
 {
     ULONG* mem = (ULONG*)rdfData->rd_DataStream;
     LONG value = mem[0];
@@ -1250,7 +1253,7 @@ PPCFUNCTION LONG AdjustParamInt(struct RDFData* rdfData)
 
 /********************************************************************************************/
 
-PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
+PPCFUNCTION LONG AdjustParam(__reg("r3") struct RDFData* rdfData, __reg("r4") ULONG flag)
 {
     WORD value;
     if (flag & RDFF_LONG)
@@ -1269,7 +1272,7 @@ PPCFUNCTION LONG AdjustParam(struct RDFData* rdfData, ULONG flag)
 
 /********************************************************************************************/
 
-PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
+PPCFUNCTION VOID MakeDecimal(__reg("r3") struct RDFData* rdfData, __reg("r4") BOOL sign, __reg("r5") LONG value)
 {
     if ((sign) && (value < 0))
     {
@@ -1305,7 +1308,7 @@ PPCFUNCTION VOID MakeDecimal(struct RDFData* rdfData, BOOL sign, LONG value)
 
 /********************************************************************************************/
 
-PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
+PPCFUNCTION VOID MakeHex(__reg("r3") struct RDFData* rdfData, __reg("r4") ULONG flag, __reg("r5") LONG value)
 {
     ULONG iterations, currNibble;
     ULONG mySwitch = 0;
@@ -1349,7 +1352,7 @@ PPCFUNCTION VOID MakeHex(struct RDFData* rdfData, ULONG flag, LONG value)
 
 /********************************************************************************************/
 
-PPCFUNCTION VOID PerformPad(struct RDFData* rdfData, ULONG flag, APTR (*putchproc)(), LONG prependNum)
+PPCFUNCTION VOID PerformPad(__reg("r3") struct RDFData* rdfData, __reg("r4") ULONG flag, __reg("r5") APTR (*putchproc)(), __reg("r6") LONG prependNum)
 {
     UBYTE currChar;
     UBYTE useChar;

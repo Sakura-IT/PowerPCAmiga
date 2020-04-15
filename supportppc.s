@@ -26,24 +26,9 @@
 .global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _FlushICache, _RunCPP
 .global     _GetDecTable
 
-#.global     _myRun68K
-
-#.extern     _myCRun68K
-
 #********************************************************************************************
 
 .section "functions","acrx"
-
-
-#_myRun68K:
-#        stwu    r1,-256(r1)
-#        mflr    r0
-#        stw     r0,8+256(r1)
-#        bl      _myCRun68K
-#        lwz     r0,8+256(r1)
-#        mtlr    r0
-#        lwz     r1,0(r1)
-#        blr
 
 #********************************************************************************************
 #

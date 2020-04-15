@@ -43,7 +43,7 @@
 #define TASKATTR_PRIVATE        0x80100011
 
 #define EXCATTR_TIMEDREMOVAL    0x80101007
-#define EXCF_DECREMENTER  		1<<9
+#define EXCF_DECREMENTER        1<<9
 
 #define OPCODE_NOP              0x60000000
 #define OPCODE_BRANCH           0x4C000000  //only for backward jump
@@ -76,6 +76,7 @@
 #define ERR_EMEM                0x454D454D
 #define ERR_ETIM                0x4554494D
 #define ERR_DEAD                0xDEADDEAD
+#define ERR_R68K                0x5236384B
 
 #define ERR_PPCOK               0x426F6F6E
 #define ERR_PPCMMU              0x45727231
