@@ -1255,19 +1255,19 @@ PPCFUNCTION LONG AdjustParamInt(__reg("r3") struct RDFData* rdfData)
 
 PPCFUNCTION LONG AdjustParam(__reg("r3") struct RDFData* rdfData, __reg("r4") ULONG flag)
 {
-    WORD value;
     if (flag & RDFF_LONG)
     {
-        AdjustParamInt(rdfData);
+        return(AdjustParamInt(rdfData));
     }
     else
     {
+        WORD value;
         UWORD* mem = (UWORD*)rdfData->rd_DataStream;
         value = mem[0];
         mem = (UWORD*)((ULONG)mem + 2);
         rdfData->rd_DataStream = (APTR)mem;
+        return (LONG)value;
     }
-    return (LONG)value;
 }
 
 /********************************************************************************************/

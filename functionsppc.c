@@ -3989,8 +3989,6 @@ PPCFUNCTION APTR myRawDoFmtPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     args.db_Arg[3] = (ULONG)putchdata;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
-    return PowerPCBase; //xx
-
     UBYTE sLength;
     STRPTR stringPtr;
     struct RDFData rdfData;
@@ -4004,11 +4002,11 @@ PPCFUNCTION APTR myRawDoFmtPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     rdfData.rd_PutChData = putchdata;
     rdfData.rd_FormatString = formatstring;
 
-    UBYTE currChar = rdfData.rd_FormatString[0];
-    rdfData.rd_FormatString += 1;
+    UBYTE currChar;
 
-    while (currChar)
+    while (currChar = rdfData.rd_FormatString[0])
     {
+        rdfData.rd_FormatString += 1;
         if (currChar == '%')
         {
             rdfData.rd_BufPointer = (STRPTR)&rdfData.rd_Buffer;
