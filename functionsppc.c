@@ -4037,7 +4037,7 @@ PPCFUNCTION APTR myRawDoFmtPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                 rdfData.rd_FormatString += 1;
             }
             currChar = rdfData.rd_FormatString[0];
-
+            rdfData.rd_FormatString += 1;
             switch (currChar)
             {
                 case 'd':    //type->signed decimal number
@@ -4108,10 +4108,10 @@ PPCFUNCTION APTR myRawDoFmtPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                         sLength -= 1;
                         filler += 1;
                     }
-                    sLength = !sLength;
+                    sLength = ~sLength;
 
          BStrOutput:
-                    if ((rdfData.rd_TruncateNum) && (sLength > rdfData.rd_TruncateNum))
+                    if ((!(rdfData.rd_TruncateNum)) || ((rdfData.rd_TruncateNum) && (sLength > rdfData.rd_TruncateNum)))
                     {
                         rdfData.rd_TruncateNum = sLength;
                     }

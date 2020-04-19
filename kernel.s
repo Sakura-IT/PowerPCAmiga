@@ -54,7 +54,7 @@ _ExcCommon:
 
         mr      r0,r1
         subi    r1,r1,2048
-        rlwinm  r1,r1,0,0,27
+        rlwinm  r1,r1,0,0,26
         stw     r0,0(r1)                                   #Make room for struct iframe and align on 0x20
 
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
