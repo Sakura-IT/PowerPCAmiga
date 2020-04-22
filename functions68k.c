@@ -401,6 +401,8 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                         doneFrame->mf_Arg[0]     = (ULONG)thisTask;
                         doneFrame->mf_Arg[1]     = thisTask->tc_SigAlloc;
 
+                        thisTask->tc_SigRecvd ^= doneFrame->mf_Signals;
+
                         SendMsgFrame(PowerPCBase, doneFrame);
                         FreeMsgFrame(PowerPCBase, myFrame);
                     }

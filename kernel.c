@@ -32,7 +32,7 @@
 *
 *********************************************************************************************/
 
-PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe)
 {
 
     PowerPCBase->pp_ExceptionMode = -1;
@@ -225,6 +225,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                             }
                         }
                         iframe->if_Context.ec_UPC.ec_SRR0  += 4;
+                        PowerPCBase->pp_Quantum = getDEC() + 1000; //Do not start quantum all over
                         break;
                     }
                     else
@@ -244,6 +245,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                 iframe->if_Context.ec_UPC.ec_SRR0  += 4;
                 iframe->if_Context.ec_SRR1         &= ~PSL_PR;
                 iframe->if_Context.ec_GPR[3]        = 0;            //Set SuperKey
+                PowerPCBase->pp_Quantum = getDEC() + 1000;
             }
             else
             {
@@ -267,6 +269,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
                     {
                         PowerPCBase->pp_AlignmentExcHigh += 1;
                     }
+                    PowerPCBase->pp_Quantum = getDEC() + 1000;
                 }
                 else
                 {
@@ -340,7 +343,7 @@ PPCKERNEL void Exception_Entry(struct PrivatePPCBase* PowerPCBase, struct iframe
 *
 *********************************************************************************************/
 
-PPCFUNCTION void TaskCheck(struct PrivatePPCBase* PowerPCBase)
+PPCFUNCTION void TaskCheck(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     ULONG mask;
     struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
@@ -408,7 +411,7 @@ PPCFUNCTION void TaskCheck(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
+PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     struct MsgFrame* currMsg = (struct MsgFrame*)PowerPCBase->pp_MsgQueue.mlh_Head;
     struct MsgFrame* nxtMsg;
@@ -580,7 +583,7 @@ PPCKERNEL void HandleMsgs(struct PrivatePPCBase* PowerPCBase)
 *
 *********************************************************************************************/
 
-PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe)
 {
     struct TaskPPC* currTask = PowerPCBase->pp_ThisPPCProc;
     while (1)
@@ -651,7 +654,7 @@ PPCKERNEL void SwitchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* ifra
 *
 *********************************************************************************************/
 
-PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct MsgFrame* myFrame)
+PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe, __reg("r5") struct MsgFrame* myFrame)
 {
     struct NewTask* newTask = (struct NewTask*)myFrame->mf_Arg[0];
 
@@ -726,7 +729,7 @@ PPCKERNEL void DispatchPPC(struct PrivatePPCBase* PowerPCBase, struct iframe* if
 *
 *********************************************************************************************/
 
-PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList)
+PPCKERNEL void CommonExcHandler(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe, __reg("r5") struct List* excList)
 {
     struct ExcData* nxtNode;
     struct ExcData* currNode = (struct ExcData*)excList->lh_Head;
@@ -771,7 +774,7 @@ PPCKERNEL void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct ifram
 *
 *********************************************************************************************/
 
-PPCKERNEL void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe)
+PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe)
 {
     if ((iframe->if_Context.ec_ExcID == EXCF_INTERRUPT) || (iframe->if_Context.ec_ExcID == EXCF_DECREMENTER)
      || (iframe->if_Context.ec_ExcID == EXCF_TRACE)     || (iframe->if_Context.ec_ExcID == EXCF_PERFMON))

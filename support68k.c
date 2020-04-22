@@ -694,6 +694,8 @@ FUNC68K void MirrorTask(void)
             doneFrame->mf_Arg[0]     = (ULONG)myTask;
             doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
 
+            myTask->tc_SigRecvd ^= doneFrame->mf_Signals;
+
             SendMsgFrame(PowerPCBase, doneFrame);
             FreeMsgFrame(PowerPCBase, myFrame);
         }
@@ -733,6 +735,8 @@ FUNC68K void MirrorTask(void)
                 doneFrame->mf_Signals    = myTask->tc_SigRecvd & andTemp;
                 doneFrame->mf_Arg[0]     = (ULONG)myTask;
                 doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
+
+                myTask->tc_SigRecvd ^= doneFrame->mf_Signals;
 
                 SendMsgFrame(PowerPCBase, doneFrame);
                 FreeMsgFrame(PowerPCBase, myFrame);

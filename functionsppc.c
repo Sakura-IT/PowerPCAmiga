@@ -39,11 +39,11 @@
 
 PPCFUNCTION LONG myRun68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct PPCArgs* PPStruct)
 {
-	if (PPStruct->PP_Offset)
+    if (PPStruct->PP_Offset)
 	{
 		if ((PPStruct->PP_Code) && (PPStruct->PP_Code == PowerPCBase->pp_UtilityBase) && (PPStruct->PP_Offset == _LVOStricmp))
 		{
-			PPStruct->PP_Regs[0] = (ULONG)StricmpPPC((STRPTR)PPStruct->PP_Regs[8], (STRPTR)PPStruct->PP_Regs[9]);
+            PPStruct->PP_Regs[0] = (ULONG)StricmpPPC((STRPTR)PPStruct->PP_Regs[8], (STRPTR)PPStruct->PP_Regs[9]);
 			return PPERR_SUCCESS;
 		}
 	}
@@ -189,6 +189,7 @@ PPCFUNCTION LONG myWaitFor68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 
                         myCopyMemPPC(PowerPCBase, (APTR)&myFrame->mf_PPCArgs, (APTR)PPStruct, sizeof(struct PPCArgs));
                         FreeMsgFramePPC(PowerPCBase, myFrame);
+
                         return PPERR_SUCCESS;
                     }
                     default:
@@ -2708,6 +2709,7 @@ PPCFUNCTION VOID myGetInfo(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
             }
 		}
     }
+
     return;
 }
 

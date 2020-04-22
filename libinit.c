@@ -1065,7 +1065,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     writememLong(configBase, IMMR_POCMR4, 0);
     writememLong(configBase, IMMR_POCMR5, 0);
 
-    vgamemBase = (myConsts->ic_gfxMem & (~(1<25)));
+    vgamemBase = (myConsts->ic_gfxMem & (~(1<<25)));
 
     startAddress = (MediatorPCIBase->pb_MemAddress);
     writememLong(configBase, IMMR_PCILAWBAR1,
@@ -1073,28 +1073,28 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     winSize = POCMR_EN|POCMR_CM_128MB;
 
-    if (!(myConsts->ic_gfxMem & (~(1<25))))
+    if (!(myConsts->ic_gfxMem & (~(1<<25))))
     {
-        if (myConsts->ic_gfxSize & (~(1<28)))
+        if (myConsts->ic_gfxSize & (~(1<<28)))
         {
             winSize = POCMR_EN|POCMR_CM_256MB;
         }
-        else if (myConsts->ic_gfxSize & (~(1<26)))
+        else if (myConsts->ic_gfxSize & (~(1<<26)))
         {
             winSize = POCMR_EN|POCMR_CM_64MB;
         }
     }
     writememLong(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
 
-    if (myConsts->ic_gfxSize & (~(1<27)))
+    if (myConsts->ic_gfxSize & (~(1<<27)))
     {
-        if (myConsts->ic_gfxMem & (~(1<27)))
+        if (myConsts->ic_gfxMem & (~(1<<27)))
         {
             startAddress += myConsts->ic_gfxSize;
         }
     }
     
-    writememLong(configBase, IMMR_POBAR0, (startAddress >> 12));
+    writememLong(configBase, IMMR_POBAR0, (startAddress + 0x60000000 >> 12));
     writememLong(configBase, IMMR_POTAR0, (vgamemBase >> 12));
     writememLong(configBase, IMMR_POCMR0, winSize);
 
@@ -1110,10 +1110,10 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         winSize = POCMR_EN|POCMR_CM_256MB;
 
-        if (!(myConsts->ic_sizeBAT & (~(1<28))))
+        if (!(myConsts->ic_sizeBAT & (~(1<<28))))
         {
             winSize = POCMR_EN|POCMR_CM_64MB;
-            if (!(myConsts->ic_sizeBAT & (~(1<26))))
+            if (!(myConsts->ic_sizeBAT & (~(1<<26))))
             {
                 winSize = POCMR_EN|POCMR_CM_128MB;
             }

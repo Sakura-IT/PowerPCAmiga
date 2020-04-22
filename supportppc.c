@@ -389,6 +389,7 @@ PPCFUNCTION VOID SendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 	    EnablePPC();
 	    myUser(PowerPCBase, key);
     }
+
 	return;
 }
 
@@ -747,6 +748,7 @@ PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
 
         ULONG* memptr = (APTR)0x6f000000;
         memptr[0] = (ULONG)args->db_Function;
+        memptr[1] = args->db_Arg[0];
 
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         args->db_ProcessName = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
