@@ -798,9 +798,9 @@ FUNC68K void MasterControl(void)
 		while (myFrame = (struct MsgFrame*)GetMsg(mcPort))
 		{
 			myTask->tc_Flags |= TF_PPC;
-			if (myTask->tc_Node.ln_Type == NT_REPLYMSG)
+			if (myFrame->mf_Message.mn_Node.ln_Type == NT_REPLYMSG)
 			{
-				if(myTask->tc_Node.ln_Name)
+				if(myFrame->mf_Message.mn_Node.ln_Name)
 				{
 					struct MsgFrame* newFrame = CreateMsgFrame(PowerPCBase);
 					newFrame->mf_Identifier = ID_XMSG;
