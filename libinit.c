@@ -576,21 +576,29 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     CopyMemQuick("ppc memory", nameSpace, 16L);
 
     myPPCMemHeader = (struct MemHeader*)((ULONG)myZeroPage + MEM_GAP);
+
+    if (ppcdevice->pd_DeviceID == DEVICE_MPC8343E)
+    {
+        myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize));
+        bytesFree = (cardData->id_MemSize - MEM_GAP - sizeof(struct MemHeader));
+    }
+    else
+    {
+        myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize) - (myZeroPage->zp_PageTableSize));
+        bytesFree = (cardData->id_MemSize - myZeroPage->zp_PageTableSize - MEM_GAP - sizeof(struct MemHeader));
+    }
+
     myPPCMemHeader->mh_Node.ln_Type = NT_MEMORY;
     myPPCMemHeader->mh_Node.ln_Pri = 1;
     myPPCMemHeader->mh_Node.ln_Name = nameSpace;
     myPPCMemHeader->mh_First = (struct MemChunk*)((ULONG)myPPCMemHeader + sizeof(struct MemHeader));
 
-    bytesFree = (cardData->id_MemSize - myZeroPage->zp_PageTableSize - MEM_GAP - sizeof(struct MemHeader));
-
     myPPCMemHeader->mh_First->mc_Next = NULL;
     myPPCMemHeader->mh_First->mc_Bytes = bytesFree;
 
     myPPCMemHeader->mh_Free = bytesFree;
-    myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize) - (myZeroPage->zp_PageTableSize));
     myPPCMemHeader->mh_Lower = (APTR)((ULONG)myPPCMemHeader + sizeof(struct MemHeader));
     myPPCMemHeader->mh_Attributes = MEMF_PUBLIC|MEMF_FAST|MEMF_PPC;
-
 
     Disable();
 
@@ -723,7 +731,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         myInt2->is_Node.ln_Type = NT_INTERRUPT;
         AddIntServer(INTB_VERTB, myInt2);
     }
-#if 0
+//#if 0
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
@@ -738,7 +746,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         PrintError(SysBase, "Error setting up Kryten PPC process");
         return NULL;
     }
-//#if 0
+#if 0
     struct Library* ppcemu;
 
     if (ppcemu = OpenLibrary("ppc.library", 46L))

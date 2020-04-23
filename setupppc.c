@@ -98,6 +98,7 @@ PPCSETUP BOOL setupTBL(__reg("r3") ULONG startEffAddr, __reg("r4") ULONG endEffA
 
 PPCSETUP void setupPT(void)
 {
+    ULONG ptLoc;
     struct PPCZeroPage *myZP = 0;
 
     ULONG memSize = myZP->zp_MemSize;
@@ -108,7 +109,18 @@ PPCSETUP void setupPT(void)
         ptSize = 0x10000;
     }
 
-    ULONG ptLoc    = memSize - ptSize;
+    ULONG myPVR = getPVR();
+
+    if ((myPVR >> 16) == ID_MPC834X)
+    {
+        ptLoc      = 0x100000;
+    }
+    else
+    {
+        ptLoc      = memSize - ptSize;
+    }
+
+//    ULONG ptLoc    = memSize - ptSize;
     LONG  HTABMASK = 0xffff;
     ULONG mask     = (HTABMASK <<16);
     ULONG HTABORG  = (ptLoc & mask);

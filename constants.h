@@ -150,7 +150,7 @@
 
 #define MEMF_PPC                (1L<<13)
 #define MMUF_BAT                (1L<<1)
-#define MEM_GAP                 0x480000
+#define MEM_GAP                 0x410000
 #define TF_PPC                  1<<2
 #define VENDOR_ELBOX            0x89e
 #define MEDIATOR_MKII           33
