@@ -713,6 +713,8 @@ FUNC68K void MirrorTask(void)
 
         if (mySignal & (1 << (ULONG)mirrorPort->mp_SigBit))
         {
+            illegal();
+            myTask->tc_SigRecvd |= (mySignal & andTemp);
             while (myFrame = (struct MsgFrame*)GetMsg(mirrorPort))
             {
             if (myFrame->mf_Identifier == ID_END)
