@@ -250,7 +250,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
     while (nextPool = (struct poolHeader*)currPool->ph_Node.mln_Succ)
     {
-        if ((currPool->ph_ThresholdSize == 0x80000) && (currPool->ph_Requirements == flags))
+        if ((currPool->ph_ThresholdSize == 0x40000) && (currPool->ph_Requirements == flags))
         {
             break;
         }
@@ -269,7 +269,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     }
     if (!(nextPool))
     {
-        currPool = myCreatePoolPPC(PowerPCBase, flags, 0x100000, 0x80000);
+        currPool = myCreatePoolPPC(PowerPCBase, flags, 0x80000, 0x40000);
     }
     if (currPool)
     {
@@ -352,7 +352,7 @@ PPCFUNCTION struct TaskPPC* myCreateTaskPPC(__reg("r3") struct PrivatePPCBase* P
 
     if (myCode = myGetTagDataPPC(PowerPCBase, TASKATTR_CODE, 0, taglist))
     {
-        if (newTask = AllocVec68K(PowerPCBase, sizeof(struct TaskPPC), MEMF_PUBLIC | MEMF_CLEAR))
+        if (newTask = AllocVec68K(PowerPCBase, sizeof(struct PrivateTask), MEMF_PUBLIC | MEMF_CLEAR))
         {
             newTask->tp_Link.tl_Task = newTask;
             newTask->tp_Link.tl_Sig = 0xfff;
