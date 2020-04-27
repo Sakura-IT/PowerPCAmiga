@@ -1447,9 +1447,9 @@ PPCFUNCTION VOID myFreeSignalPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase,
     BYTE testSig = (BYTE)signum;
 	if (!(testSig == -1))
 	{
-		PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigAlloc &= ~(1<signum);
+		PowerPCBase->pp_ThisPPCProc->tp_Task.tc_SigAlloc &= ~(1<<signum);
 		struct TaskLink* taskLink = &PowerPCBase->pp_ThisPPCProc->tp_Link;
-		taskLink->tl_Sig &= ~(1<signum);
+		taskLink->tl_Sig &= ~(1<<signum);
 	}
 	return;
 }
