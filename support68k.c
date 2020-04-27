@@ -660,52 +660,14 @@ FUNC68K void MirrorTask(void)
 
     myTask->tc_Flags |= TF_PPC;
 
-	ULONG mySignal = 0;
+    ULONG mySignal = Wait(SIGBREAKF_CTRL_F);
 
-	while (!(mySignal & SIGBREAKF_CTRL_F))
-	{
-		mySignal = Wait(SIGBREAKF_CTRL_F);
-	}
-
-	myFrame = (struct MsgFrame*)myTask->tc_UserData;
+    if (myFrame = (struct MsgFrame*)myTask->tc_UserData)
+    {
+        PutMsg(mirrorPort, (struct Message*)myFrame);
+    }
 
     ULONG andTemp = ~(0xfff + (1 << (ULONG)mirrorPort->mp_SigBit));
-
-    while (myFrame)
-    {
-        if (myFrame->mf_Identifier == ID_END)
-        {
-            FreeMsgFrame(PowerPCBase, myFrame);
-            return;
-        }
-        else if (myFrame->mf_Identifier == ID_T68K)
-        {
-            myTask->tc_SigRecvd |= myFrame->mf_Signals;
-            myFrame->mf_MirrorPort = mirrorPort;
-
-            Run68KCode(SysBase, &myFrame->mf_PPCArgs);
-
-            struct MsgFrame* doneFrame = CreateMsgFrame(PowerPCBase);
-
-            CopyMemQuick((APTR)myFrame, (APTR)doneFrame, sizeof(struct MsgFrame));
-
-            doneFrame->mf_Identifier = ID_DONE;
-            doneFrame->mf_Signals    = myTask->tc_SigRecvd & andTemp;
-            doneFrame->mf_Arg[0]     = (ULONG)myTask;
-            doneFrame->mf_Arg[1]     = myTask->tc_SigAlloc;
-
-            myTask->tc_SigRecvd ^= doneFrame->mf_Signals;
-
-            SendMsgFrame(PowerPCBase, doneFrame);
-            FreeMsgFrame(PowerPCBase, myFrame);
-        }
-        else
-        {
-            FreeMsgFrame(PowerPCBase, myFrame);
-            PrintError(SysBase, "68K mirror task received illegal command packet");
-        }
-        myFrame = (struct MsgFrame*)GetMsg(mirrorPort);
-    }
 
     while (1)
     {
@@ -713,7 +675,6 @@ FUNC68K void MirrorTask(void)
 
         if (mySignal & (1 << (ULONG)mirrorPort->mp_SigBit))
         {
-            illegal();
             myTask->tc_SigRecvd |= (mySignal & andTemp);
             while (myFrame = (struct MsgFrame*)GetMsg(mirrorPort))
             {
@@ -850,7 +811,7 @@ FUNC68K void MasterControl(void)
 							break;
 						}
 						myProc->pr_Task.tc_UserData = (APTR)myFrame;
-						myTask->tc_SigAlloc = myFrame->mf_Arg[0];
+						myProc->pr_Task.tc_SigAlloc = myFrame->mf_Arg[0];
 						Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
 						break;
 					}

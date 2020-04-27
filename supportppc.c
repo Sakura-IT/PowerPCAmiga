@@ -1008,9 +1008,6 @@ PPCFUNCTION VOID AddExcList(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
 
 PPCFUNCTION VOID SetupRunPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* myFrame)
 {
-
-    mySetCache(PowerPCBase, CACHE_ICACHEINV, 0, 0);
-
     while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
     struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
