@@ -889,7 +889,8 @@ PPCFUNCTION VOID myObtainSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerPC
 	}
 	else
 	{
-		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)myTask;
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 	}
 
 	SemaphorePPC->ssppc_SS.ss_NestCount += 1;
