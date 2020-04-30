@@ -425,7 +425,7 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             case ID_DNLL:
             {
                 struct TaskPPC* myTask = currMsg->mf_PPCTask;
-                if (!(myTask))
+                if ((currMsg->mf_Identifier == ID_TPPC) && (!(myTask)))
                 {
                     RemovePPC((struct Node*)currMsg);
                     AddTailPPC((struct List*)&PowerPCBase->pp_NewTasks, (struct Node*)currMsg);
@@ -529,6 +529,7 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             case ID_LLPP:
             {
                 struct PrivateTask* myTask = (struct PrivateTask*)PowerPCBase->pp_ThisPPCProc;
+
                 if (myTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0])
                 {
                     myTask->pt_Task.tp_Task.tc_State = TS_RUN;

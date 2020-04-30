@@ -48,6 +48,9 @@ PPCFUNCTION VOID writememLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offse
 
 PPCFUNCTION VOID InsertOnPri(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct List* list, __reg("r5") struct TaskPPC* myTask)
 {
+    //myEnqueuePPC(PowerPCBase, list, (struct Node*)myTask);
+    //return;
+
     LONG realPri    = myTask->tp_Priority + myTask->tp_Prioffset;
     LONG defaultPri = PowerPCBase->pp_LowActivityPri + PowerPCBase->pp_LowActivityPriOffset;
 
@@ -569,11 +572,11 @@ PPCFUNCTION VOID CauseDECInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBas
 
 PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct TaskPPC* myTask, __reg("r5") ULONG signal)
 {
-	ULONG sigmask;
+	ULONG sigmask, test;
 
 	while (!(LockMutexPPC((volatile ULONG)&PowerPCBase->pp_Mutex)));
 
-	sigmask = myTask->tp_Task.tc_SigExcept & (myTask->tp_Task.tc_SigRecvd | signal);
+	sigmask = (myTask->tp_Task.tc_SigRecvd | signal) & myTask->tp_Task.tc_SigExcept;
 
 	if (!(sigmask))
 	{
@@ -586,12 +589,7 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 	FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 	CauseDECInterrupt(PowerPCBase);
 
-    volatile ULONG test;
-
-	do
-	{
-		test = (ULONG)PowerPCBase->pp_TaskExcept;
-	} while (test);
+    while (test = (volatile ULONG)PowerPCBase->pp_TaskExcept);
 
 	return signal;
 
@@ -606,7 +604,7 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
 {
     struct DebugArgs args;
-    args.db_Function = 66 | (2<<8) | (1<<16);
+    args.db_Function = 66 | (2<<8) | (1<<16) | (3<<17);
     args.db_Arg[0] = (ULONG)memHeader;
     args.db_Arg[1] = byteSize;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
@@ -663,7 +661,7 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                    __reg("r5") APTR memoryBlock, __reg("r6") ULONG byteSize)
 {
 	struct DebugArgs args;
-    args.db_Function = 67 | (3<<8) | (1<<16);
+    args.db_Function = 67 | (3<<8) | (1<<16) | (3<<17);
     args.db_Arg[0] = (ULONG)memHeader;
     args.db_Arg[1] = (ULONG)memoryBlock;
     args.db_Arg[2] = byteSize;
@@ -743,8 +741,15 @@ PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
 {
     if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
-        ULONG flag = args->db_Function >> 16;
-        args->db_Function &= ~(1<<16);
+        ULONG flag = args->db_Function & (1<<16);
+        ULONG level = args->db_Function >> 17;
+
+        if (level > PowerPCBase->pp_DebugLevel - 1)
+        {
+            return;
+        }
+
+        args->db_Function &= ~(7<<16);
 
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
         args->db_ProcessName = PowerPCBase->pp_ThisPPCProc->tp_Task.tc_Node.ln_Name;
@@ -766,6 +771,8 @@ PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
         }
 
         SendMsgFramePPC(PowerPCBase, myFrame);
+
+        args->db_Function |= (level << 17);
     }
     return;
 }
