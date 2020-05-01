@@ -10,44 +10,44 @@ OBJDIR = o/vbcc-classic/
 
 CC = vbcc:bin/vc
 LD = vbcc:bin/vc
-CCPPC = vbcc:bin/vc +warpos -c99 -Iinclude_h: -O2
+CCPPC = vbcc:bin/vc +warpos -c99 -Iinclude_h: -O2 -speed
 ASPPC = vbcc:bin/vasmppc_std -many -mppc32 -mavec -Fhunk
 AS68K = vbcc:bin/vasmm68k_mot -Iinclude_i: -m68020up -Fhunk
 
 # target 'all' (default target)
 
 all : $(EXE)
-$(OBJDIR)setupppcasm.o : setupppc.s
+$(OBJDIR)setupppcasm.o : setupppc.s constantsppc.i
 	$(ASPPC) -o $(OBJDIR)setupppcasm.o setupppc.s
 
-$(OBJDIR)kernelasm.o : kernel.s
+$(OBJDIR)kernelasm.o : kernel.s constantsppc.i
 	$(ASPPC) -o $(OBJDIR)kernelasm.o kernel.s
 
-$(OBJDIR)supportppcasm.o : supportppc.s
+$(OBJDIR)supportppcasm.o : supportppc.s constantsppc.i
 	$(ASPPC) -o $(OBJDIR)supportppcasm.o supportppc.s
 
-$(OBJDIR)setupppc.o : setupppc.c
+$(OBJDIR)setupppc.o : setupppc.c libstructs.h constants.h internalsppc.h
 	$(CCPPC) -c -o $(OBJDIR)setupppc.o setupppc.c
 
-$(OBJDIR)kernel.o : kernel.c
+$(OBJDIR)kernel.o : kernel.c libstructs.h constants.h internalsppc.h
 	$(CCPPC) -c -o $(OBJDIR)kernel.o kernel.c
 
-$(OBJDIR)functionsppc.o : functionsppc.c
+$(OBJDIR)functionsppc.o : functionsppc.c libstructs.h constants.h internalsppc.h
 	$(CCPPC) -c -o $(OBJDIR)functionsppc.o functionsppc.c
 
-$(OBJDIR)supportppc.o : supportppc.c
+$(OBJDIR)supportppc.o : supportppc.c libstructs.h constants.h internalsppc.h
 	$(CCPPC) -c -o $(OBJDIR)supportppc.o supportppc.c
 
 $(OBJDIR)functions68kasm.o : functions68k.s
 	$(AS68K) -o $(OBJDIR)functions68kasm.o functions68k.s
 
-$(OBJDIR)support68k.o : support68k.c
+$(OBJDIR)support68k.o : support68k.c libstructs.h constants.h internals68k.h
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)support68k.o support68k.c
 
-$(OBJDIR)functions68k.o : functions68k.c
+$(OBJDIR)functions68k.o : functions68k.c libstructs.h constants.h internals68k.h
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)functions68k.o functions68k.c
 
-$(OBJDIR)libinit.o : libinit.c
+$(OBJDIR)libinit.o : libinit.c librev.h libstructs.h constants.h internals68k.h internalsppc.h
 	$(CC) $(shell vbccprefs) -c -o $(OBJDIR)libinit.o libinit.c
 
 OBJS = $(OBJDIR)libinit.o $(OBJDIR)functions68kasm.o $(OBJDIR)functions68k.o $(OBJDIR)support68k.o $(OBJDIR)setupppcasm.o $(OBJDIR)setupppc.o $(OBJDIR)kernelasm.o $(OBJDIR)kernel.o $(OBJDIR)functionsppc.o $(OBJDIR)supportppcasm.o $(OBJDIR)supportppc.o
