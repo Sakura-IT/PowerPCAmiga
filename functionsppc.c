@@ -49,7 +49,7 @@ PPCFUNCTION LONG myRun68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
 	}
 
     struct DebugArgs args;
-    args.db_Function = 0 | (3<<8) | (1<<16);
+    args.db_Function = 0 | (3<<8) | (1<<16) | (1<<17);
     args.db_Arg[0] = (ULONG)PPStruct;
     args.db_Arg[1] = (ULONG)PPStruct->PP_Code;            //Extra info
     args.db_Arg[2] = PPStruct->PP_Offset;                 //Extra info
@@ -133,7 +133,7 @@ PPCFUNCTION LONG myRun68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
 PPCFUNCTION LONG myWaitFor68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct PPCArgs* PPStruct)
 {
     struct DebugArgs args;
-    args.db_Function = 1 | (1<<8) | (1<<16);
+    args.db_Function = 1 | (1<<8) | (1<<16) | (1<<17);
     args.db_Arg[0] = (ULONG)PPStruct;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
@@ -3157,7 +3157,7 @@ PPCFUNCTION VOID myAddTimePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 PPCFUNCTION VOID mySubTimePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct timeval* dest, __reg("r5") struct timeval* source)
 {
     ULONG timeSecs = 0;
-    LONG timeMicro = dest->tv_micro + source->tv_micro;
+    LONG timeMicro = dest->tv_micro - source->tv_micro;
     if (timeMicro < 0)
     {
         timeSecs = 1;
