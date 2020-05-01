@@ -731,7 +731,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         myInt2->is_Node.ln_Type = NT_INTERRUPT;
         AddIntServer(INTB_VERTB, myInt2);
     }
-//#if 0
+
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
@@ -746,7 +746,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         PrintError(SysBase, "Error setting up Kryten PPC process");
         return NULL;
     }
-#if 0
+
     struct Library* ppcemu;
 
     if (ppcemu = OpenLibrary("ppc.library", 46L))
@@ -757,7 +757,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
     }
-#endif
 
     return PowerPCBase;
 }
@@ -1015,7 +1014,7 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 
     for (res=0; res<0x10000; res++);
 
-    writememLong(ppcmemBase, 0x1f0, 0); //debugdebug??
+    writememLong(ppcmemBase, 0x1f0, 0); //force a PCI write cycle.
 
     res = readmemLong(configBase, IMMR_RSR);
 
@@ -1132,8 +1131,8 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         writememLong(configBase, IMMR_POCMR1, winSize);
     }
 
-    writememLong(ppcmemBase, 0xfc, 0x48000000);
-    writememLong(ppcmemBase, 0x100, 0x4bfffffc);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET - 4, 0x48000000);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET, 0x4bfffffc);
 
     resetKiller(myConsts, configBase, ppcmemBase);
 
@@ -1158,7 +1157,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
-    writememLong(ppcmemBase, 0x100, 0x48012f00);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET, 0x48012f00);
     writememLong(configBase, IMMR_IMMRBAR, IMMR_ADDR_DEFAULT);
 
     resetKiller(myConsts, configBase, ppcmemBase);
