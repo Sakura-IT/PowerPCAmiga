@@ -559,8 +559,8 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
                                 currTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Signals;
                                 break;
                             }
+                            currTask = nxtTask;
                         }
-                        currTask = nxtTask;
                     }
                 }
                 RemovePPC((struct Node*)currMsg);
