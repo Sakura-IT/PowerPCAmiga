@@ -510,10 +510,10 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     ULONG myPVR = getPVR();
 
+    myZP->zp_MemSize = initData->id_MemSize;
+
     if ((myPVR>>16) == ID_MPC834X)
     {
-        myZP->zp_MemSize = initData->id_MemSize;
-
         killerFIFOs(initData);
     }
 
@@ -569,6 +569,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemSnoopList);
     initSema(PowerPCBase, (struct SignalSemaphorePPC*)&PowerPCBase->pp_SemMemory);
 
+    PowerPCBase->pp_PPCMemSize = initData->id_MemSize;
     PowerPCBase->pp_IdUsrTasks = 100;
     PowerPCBase->pp_EnAltivec = 1;
     PowerPCBase->pp_BusyCounter = 24;
