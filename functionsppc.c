@@ -1277,8 +1277,9 @@ PPCFUNCTION struct Node* myFindNamePPC(__reg("r3") struct PrivatePPCBase* PowerP
 			{
 				return curNode;
 			}
+            offset++;
 		}
-	curNode = nxtNode;
+	    curNode = nxtNode;
 	}
 	return NULL;
 }
