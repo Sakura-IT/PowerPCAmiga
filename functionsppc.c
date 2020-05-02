@@ -2964,7 +2964,7 @@ PPCFUNCTION VOID myReplyMsgPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         return;
     }
 
-    if (message->mn_Node.ln_Type = NT_XMSG68K)
+    if (message->mn_Node.ln_Type == NT_XMSG68K)
     {
         message->mn_Node.ln_Type = NT_REPLYMSG;
         struct MsgFrame* myFrame = CreateMsgFramePPC(PowerPCBase);
