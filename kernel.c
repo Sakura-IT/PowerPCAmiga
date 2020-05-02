@@ -39,7 +39,11 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
     PowerPCBase->pp_CPUSDR1 = getSDR1();
     PowerPCBase->pp_CPUHID0 = getHID0();
-    PowerPCBase->pp_L2State = getL2State();
+
+    if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
+    {
+        PowerPCBase->pp_L2State = getL2State();
+    }
 
     switch (iframe->if_ExceptionVector)
     {
@@ -530,7 +534,7 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             {
                 struct PrivateTask* myTask = (struct PrivateTask*)PowerPCBase->pp_ThisPPCProc;
 
-                if (myTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0])
+                if ((myTask) && (myTask->pt_Mirror68K == (struct Task*)currMsg->mf_Arg[0]))
                 {
                     myTask->pt_Task.tp_Task.tc_State = TS_RUN;
                     myTask->pt_Task.tp_Task.tc_SigRecvd |= currMsg->mf_Signals;
@@ -858,5 +862,4 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
     SwitchPPC(PowerPCBase, iframe);
-    while(1);
 }
