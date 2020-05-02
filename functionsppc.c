@@ -954,7 +954,6 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerP
 	if (SemaphorePPC->ssppc_SS.ss_NestCount < 0)
 	{
         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
-        writeTest(0x6f000000, (ULONG)SemaphorePPC);
         HaltError(ERR_ESEM);
 	}
 
