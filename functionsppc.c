@@ -891,9 +891,8 @@ PPCFUNCTION VOID myObtainSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerPC
 	{
 		SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)myTask;
         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        SemaphorePPC->ssppc_SS.ss_NestCount += 1;
 	}
-
-	SemaphorePPC->ssppc_SS.ss_NestCount += 1;
 
 	return;
 }
@@ -956,6 +955,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerP
 
 	if (SemaphorePPC->ssppc_SS.ss_NestCount < 0)
 	{
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
         HaltError(ERR_ESEM);
 	}
 
@@ -968,16 +968,14 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerP
 	{
 		SemaphorePPC->ssppc_SS.ss_Owner = 0;
 		SemaphorePPC->ssppc_SS.ss_QueueCount -= 1;
-		if (SemaphorePPC->ssppc_SS.ss_QueueCount < 0)
-		{
-			FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
-		}
-		else
+        FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+		
+        if (SemaphorePPC->ssppc_SS.ss_QueueCount != -1)
 		{
 			SemaphorePPC->ssppc_lock = 1;
-			FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 			struct SemWait* myWait = (struct SemWait*)myRemHeadPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue);
-			if (myWait)
+
+            if (myWait)
 			{
 				struct TaskPPC* currTask = myWait->sw_Task;
                 struct TaskPPC* sigTask = (struct TaskPPC*)((ULONG)currTask & ~SM_SHARED);
@@ -985,7 +983,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerP
 				{
 					if (sigTask)
 					{
-						SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)sigTask;
+                        SemaphorePPC->ssppc_SS.ss_Owner = (struct Task*)sigTask;
 						SemaphorePPC->ssppc_SS.ss_NestCount += 1;
 						mySignalPPC(PowerPCBase, sigTask, SIGF_SINGLE);
 					}
@@ -3657,8 +3655,6 @@ PPCFUNCTION VOID myProcurePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     args.db_Arg[0] = (ULONG)SemaphorePPC;
     args.db_Arg[1] = (ULONG)SemaphoreMessage;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
-
-    illegal();
 
     SemaphoreMessage->ssm_Semaphore = (struct SignalSemaphore*)PowerPCBase->pp_ThisPPCProc;
 
