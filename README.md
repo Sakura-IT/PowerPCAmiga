@@ -8,5 +8,6 @@ It is a rewrite from assembly to (mostly) C of the SonnetAmiga project.
 
 # Current State
 
-Refer to issue #1 which is tracked for progress. Currently, the library is
-still non-functional. 
+Refer to the issues tracker for progress. Currently, the library is
+in an early working beta stage for the K1/M1 cards.
+
