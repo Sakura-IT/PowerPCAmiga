@@ -873,13 +873,11 @@ PPCFUNCTION VOID myObtainSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerPC
 
 	struct TaskPPC* myTask = PowerPCBase->pp_ThisPPCProc;
 
-	if ((SemaphorePPC->ssppc_SS.ss_QueueCount) && (!(SemaphorePPC->ssppc_SS.ss_Owner == (struct Task*)myTask)))
+	if ((SemaphorePPC->ssppc_SS.ss_QueueCount) && ((SemaphorePPC->ssppc_SS.ss_Owner != (struct Task*)myTask)))
 	{
         struct SemWait myWait;
 		myWait.sw_Task = myTask;
-		myWait.sw_Semaphore = SemaphorePPC;
-		myTask->tp_Task.tc_SigRecvd |= SIGF_SINGLE;
-		myTask->tp_Task.tc_SigRecvd ^= SIGF_SINGLE;
+		myTask->tp_Task.tc_SigRecvd &= ~SIGF_SINGLE;
 
 		myAddTailPPC(PowerPCBase, (struct List*)&SemaphorePPC->ssppc_SS.ss_WaitQueue, (struct Node*)&myWait);
 
@@ -956,6 +954,7 @@ PPCFUNCTION VOID myReleaseSemaphorePPC(__reg("r3") struct PrivatePPCBase* PowerP
 	if (SemaphorePPC->ssppc_SS.ss_NestCount < 0)
 	{
         FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
+        writeTest(0x6f000000, (ULONG)SemaphorePPC);
         HaltError(ERR_ESEM);
 	}
 
@@ -2731,7 +2730,8 @@ PPCFUNCTION struct MsgPortPPC* myCreateMsgPortPPC(__reg("r3") struct PrivatePPCB
 
 	if (myPort = AllocVec68K(PowerPCBase, sizeof(struct MsgPortPPC), MEMF_PUBLIC | MEMF_CLEAR | MEMF_PPC))
 	{
-		if ((signal = myAllocSignalPPC(PowerPCBase, -1) != -1))
+        signal = myAllocSignalPPC(PowerPCBase, -1);
+        if (signal != -1)
 		{
 			if (result = myInitSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&myPort->mp_Semaphore))
 			{
@@ -2903,9 +2903,9 @@ PPCFUNCTION VOID myPutMsgPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __r
     args.db_Arg[0] = (ULONG)port;
     args.db_Arg[1] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
-    
-    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore); 
-    
+
+    myObtainSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore);
+
     message->mn_Node.ln_Type = NT_MESSAGE;
 
     myAddTailPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList, (struct Node*)message);
