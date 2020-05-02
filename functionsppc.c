@@ -2903,7 +2903,9 @@ PPCFUNCTION VOID myPutMsgPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __r
     args.db_Arg[0] = (ULONG)port;
     args.db_Arg[1] = (ULONG)message;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
-
+    
+    myReleaseSemaphorePPC(PowerPCBase, (struct SignalSemaphorePPC*)&port->mp_Semaphore); 
+    
     message->mn_Node.ln_Type = NT_MESSAGE;
 
     myAddTailPPC(PowerPCBase, (struct List*)&port->mp_Port.mp_MsgList, (struct Node*)message);
