@@ -260,7 +260,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         case VEC_ALIGNMENT:
         {
 
-            if (PowerPCBase->pp_EnAlignExc)
+            if ((PowerPCBase->pp_EnAlignExc) || (iframe->if_Context.ec_DAR < 0x200000))
             {
                 CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcAlign);
             }
@@ -859,6 +859,9 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     struct MsgFrame* myFrame = libCreateMsgFramePPC();
     myFrame->mf_Identifier = ID_CRSH;
     libSendMsgFramePPC(myFrame);
+
+    while(1);
+
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
     SwitchPPC(PowerPCBase, iframe);
