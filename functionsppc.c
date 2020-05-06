@@ -250,7 +250,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
     while (nextPool = (struct poolHeader*)currPool->ph_Node.mln_Succ)
     {
-        if ((currPool->ph_ThresholdSize == 0x40000) && (currPool->ph_Requirements == flags))
+        if ((currPool->ph_ThresholdSize == 0x40020) && (currPool->ph_Requirements == flags))
         {
             break;
         }
@@ -269,7 +269,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     }
     if (!(nextPool))
     {
-        currPool = myCreatePoolPPC(PowerPCBase, flags, 0x80000, 0x40000);
+        currPool = myCreatePoolPPC(PowerPCBase, flags, 0x80200, 0x40020);
     }
     if (currPool)
     {
@@ -279,14 +279,6 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     {
         ULONG origmem = (ULONG)mem;
         mem = (APTR)(((ULONG)mem + 31 + align) & (-align));
-        if (flags & MEMF_CLEAR)
-        {
-            UBYTE* buffer = mem;
-            for (int i=0; i < size; i++)
-            {
-                buffer[i] = 0;
-            }
-        }
         ULONG* values = mem;
         values[-1] = size;
         values[-2] = (ULONG)currPool;
@@ -1680,245 +1672,14 @@ PPCFUNCTION VOID mySetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
     args.db_Arg[2] = length;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
-    ULONG value, key;
+    struct SysCall sc;
+    sc.sc_Function = SC_SETCACHE;
+    sc.sc_Arg[0] = flags;
+    sc.sc_Arg[1] = (ULONG)start;
+    sc.sc_Arg[2] = length;
 
-    switch (flags)
-    {
-        case CACHE_DCACHEOFF:
-        {
-            if (!(PowerPCBase->pp_CacheDState))
-            {
-                FlushDCache(PowerPCBase);
+    SystemCall(&sc);
 
-                key = mySuper(PowerPCBase);
-                value = getHID0();
-                value &= ~HID0_DCE;
-                setHID0(value);
-                PowerPCBase->pp_CacheDState = -1;
-                myUser(PowerPCBase, key);
-            }
-            break;
-        }
-        case CACHE_DCACHEON:
-        {
-            PowerPCBase->pp_CacheDState = 0;
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value |= HID0_DCE;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-
-            break;
-        }
-        case CACHE_DCACHELOCK:
-        {
-            if ((start) && (length) && !(PowerPCBase->pp_CacheDLockState))
-            {
-                FlushDCache(PowerPCBase);
-                ULONG iterations = (ULONG)start + length;
-                ULONG mask = -32;
-                start = (APTR)((ULONG)start & mask);
-                ULONG mem = (ULONG)start;
-                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
-
-                for (int i = 0; i < iterations; i++)
-                {
-                    loadWord(mem);
-                    mem += CACHELINE_SIZE;
-                }
-
-                key = mySuper(PowerPCBase);
-                value = getHID0();
-                value |= HID0_DLOCK;
-                setHID0(value);
-                PowerPCBase->pp_CacheDLockState = -1;
-                myUser(PowerPCBase, key);
-            }
-            break;
-        }
-        case CACHE_DCACHEUNLOCK:
-        {
-            PowerPCBase->pp_CacheDLockState = 0;
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value &= ~HID0_DLOCK;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-            break;
-        }
-        case CACHE_DCACHEFLUSH:
-        {
-            if (!(PowerPCBase->pp_CacheDState) && !(PowerPCBase->pp_CacheDLockState))
-            {
-                if ((start) && (length))
-                {
-                    key = mySuper(PowerPCBase);
-                    ULONG iterations = (ULONG)start + length;
-                    ULONG mask = -32;
-                    start = (APTR)((ULONG)start & mask);
-                    ULONG mem = (ULONG)start;
-                    iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
-
-                    for (int i = 0; i < iterations; i++)
-                    {
-                        dFlush(mem);
-                        mem += CACHELINE_SIZE;
-                    }
-                    sync();
-                    myUser(PowerPCBase, key);
-                }
-                else                
-                {
-                    FlushDCache(PowerPCBase);
-                }
-            }
-            break;
-        }
-        case CACHE_ICACHEOFF:
-        {
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value &= ~HID0_ICE;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-            break;
-        }
-        case CACHE_ICACHEON:
-        {
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value |= HID0_ICE;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-            break;
-        }
-        case CACHE_ICACHELOCK:
-        {
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value |= HID0_ILOCK;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-            break;
-        }
-        case CACHE_ICACHEUNLOCK:
-        {
-            key = mySuper(PowerPCBase);
-            value = getHID0();
-            value &= ~HID0_ILOCK;
-            setHID0(value);
-            myUser(PowerPCBase, key);
-            break;
-        }
-        case CACHE_ICACHEINV:
-        {
-            key = mySuper(PowerPCBase);
-            if ((start) && (length))
-            {
-                ULONG iterations = (ULONG)start + length;
-                ULONG mask = -32;
-                start = (APTR)((ULONG)start & mask);
-                ULONG mem = (ULONG)start;
-                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
-
-                for (int i = 0; i < iterations; i++)
-                {
-                    iInval(mem);
-                    mem += CACHELINE_SIZE;
-                }
-                isync();
-            }
-            else
-            {
-                FlushICache();
-            }
-            myUser(PowerPCBase, key);
-            break;
-        }
-    }
-    switch (flags) //To prevent SDA_BASE
-    {
-        case CACHE_DCACHEINV:
-        {
-            if ((start) && (length))
-            {
-                key = mySuper(PowerPCBase);
-                ULONG iterations = (ULONG)start + length;
-                ULONG mask = -32;
-                start = (APTR)((ULONG)start & mask);
-                ULONG mem = (ULONG)start;
-                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
-
-                for (int i = 0; i < iterations; i++)
-                {
-                    dInval(mem);
-                    mem += CACHELINE_SIZE;
-                }
-                sync();
-                myUser(PowerPCBase, key);
-            }
-            break;
-        }
-        case  CACHE_L2CACHEON:
-        {
-            if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
-            {
-                key = mySuper(PowerPCBase);
-                value = getL2State();
-                value |= L2CR_L2E;
-                setL2State(value);
-                myUser(PowerPCBase, key);
-                PowerPCBase->pp_CurrentL2Size = PowerPCBase->pp_L2Size;
-            }
-            break;
-        }
-        case CACHE_L2CACHEOFF:
-        {
-            if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
-            {
-                FlushDCache(PowerPCBase);
-                key = mySuper(PowerPCBase);
-                value = getL2State();
-                value &= ~L2CR_L2E;
-                setL2State(value);
-                myUser(PowerPCBase, key);
-                PowerPCBase->pp_CurrentL2Size = 0;
-            }
-            break;
-        }
-        case CACHE_L2WTON:
-        {
-            if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
-            {
-                key = mySuper(PowerPCBase);
-                value = getL2State();
-                value |= L2CR_L2WT;
-                setL2State(value);
-                myUser(PowerPCBase, key);
-            }
-            break;
-        }
-        case CACHE_L2WTOFF:
-        {
-            if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
-            {
-                key = mySuper(PowerPCBase);
-                value = getL2State();
-                value &= ~L2CR_L2WT;
-                setL2State(value);
-                myUser(PowerPCBase, key);
-            }
-            break;
-        }
-        case CACHE_TOGGLEDFLUSH:
-        {
-            if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
-            {
-                PowerPCBase->pp_CacheDisDFlushAll = !PowerPCBase->pp_CacheDisDFlushAll;
-            }
-            break;
-        }
-    }
     return;
 }
 
@@ -4345,11 +4106,13 @@ PPCFUNCTION VOID myCauseInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBase
     {
         ULONG key = mySuper(PowerPCBase);
 
-        PowerPCBase->pp_ExternalInt = -1;
+        PowerPCBase->pp_ExceptionMode = -1;
 
-		setDEC(10);
+		setDEC(50);
 
         myUser(PowerPCBase, key);
+
+        while (PowerPCBase->pp_ExceptionMode);
     }
     return;
 }

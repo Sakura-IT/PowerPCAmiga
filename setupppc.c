@@ -120,7 +120,6 @@ PPCSETUP void setupPT(void)
         ptLoc      = memSize - ptSize;
     }
 
-//    ULONG ptLoc    = memSize - ptSize;
     LONG  HTABMASK = 0xffff;
     ULONG mask     = (HTABMASK <<16);
     ULONG HTABORG  = (ptLoc & mask);
@@ -445,8 +444,7 @@ PPCSETUP void initSema(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4
 PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     ULONG value0 = getHID0();
-    value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
-    setHID0(value0);
+
 
     ULONG value1 = getHID1();
 
@@ -456,10 +454,14 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
     {
         case DEVICE_HARRIER:
         {
+            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
+            setHID0(value0);
             break;
         }
         case DEVICE_MPC8343E:
         {
+            value0 |= HID0_ICE | HID0_DCE;
+            setHID0(value0);
             PowerPCBase->pp_L2Size = 0;
             PowerPCBase->pp_CurrentL2Size = 0;
             pll = (value1 >> 25) & 0x7f;
@@ -479,10 +481,11 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
         }
         case DEVICE_MPC107:
         {
+            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
+            setHID0(value0);
             break;
         }
     }
-
     return;
 }
 

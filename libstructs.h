@@ -45,6 +45,10 @@ ULONG               db_Function;
 ULONG               db_Arg[4];
 };
 
+struct SysCall {
+ULONG               sc_Function;
+ULONG               sc_Arg[4];
+};
 
 struct MirrorTask {
 struct MinNode      mt_Node;
@@ -180,9 +184,8 @@ ULONG                       pp_AlignmentExcLow;
 ULONG                       pp_DataExcHigh;
 ULONG                       pp_DataExcLow;
 struct MsgPortPPC*          pp_CurrentPort;
-UBYTE                       pp_ExternalInt;
 UBYTE                       pp_EnAltivec;
-UBYTE                       pp_ExceptionMode;
+volatile UBYTE              pp_ExceptionMode;
 UBYTE                       pp_CacheDisDFlushAll;
 UBYTE                       pp_CacheDState;
 UBYTE                       pp_CacheDLockState;
@@ -191,7 +194,7 @@ UBYTE                       pp_FlagForbid;
 UBYTE                       pp_FlagWait;
 UBYTE                       pp_FlagPortInUse;  //for nt_IntPort....not used
 UBYTE                       pp_BusyCounter;
-UBYTE                       pp_BytePad;
+UBYTE                       pp_BytePad[2];
 ULONG                       pp_NumAllTasks;
 ULONG                       pp_StartTBL;
 ULONG                       pp_CurrentTBL;

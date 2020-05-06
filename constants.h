@@ -18,7 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#define CUSTOMBASE             0xdff000
+#define CUSTOMBASE              0xdff000
+
+#define SC_CREATEMSG            0x80000001
+#define SC_GETMSG               0x80000002
+#define SC_SENDMSG              0x80000003
+#define SC_FREEMSG              0x80000004
+#define SC_FLUSHDC              0x80000005
+#define SC_SETCACHE             0x80000006
 
 #define PPC_VECLEN              3           //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49

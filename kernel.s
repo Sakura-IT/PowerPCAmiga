@@ -21,6 +21,7 @@
 .include    constantsppc.i
 
 .global     _Exception_Entry, _SmallExcHandler, _DoAlign, _DoDataStore, _FinDataStore
+.global     _FlushICache
 
 .section "kernel","acrx"
 
@@ -58,6 +59,12 @@ _ExcCommon:
         stw     r0,0(r1)                                   #Make room for struct iframe and align on 0x20
 
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
+
+        lwz     r4,0xb0(r0)
+        addi    r4,r4,1
+        stw     r4,0xb0(r0)
+        stw     r4,0xb4(r0)
+
         mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
@@ -83,25 +90,21 @@ _ExcCommon:
 
         bl      _Exception_Entry
 
+        stw     r1,0xc0(r0)
+
         la      r31,IF_GAP+IF_CONTEXT(r1)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
-        b       .Mojo1                                     #Some L1 mojo
+        bl      _FlushICache
 
-.Mojo2: mfspr   r0,HID0
-        ori     r0,r0,HID0_ICFI
-        mtspr   HID0,r0
-        xori    r0,r0,HID0_ICFI
-        mtspr   HID0,r0
-        sync
-        b       .Mojo3
-
-.Mojo1: b       .Mojo2
-
-.Mojo3: lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
+        lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
-.skop2: lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
+
+        li      r0,0xff
+        stw     r0,0xb4(r0)
+
+        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
         lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
 
@@ -813,6 +816,7 @@ isi1:
 		xoris	r0,r0,PSL_TGPR@h        #flip the msr<tgpr> bit
 		mtcrf	0x80,r3                 #restore CR0
 		mtmsr	r0                      #flip back to the native gprs
+        isync
 		ba      0x400                   #go to instr. access interrupt
 
 #********************************************************************************************
@@ -946,5 +950,26 @@ dsi2:
 		sync
 		sync
 		ba      0x300                   #branch to DSI interrupt
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_FlushICache:
+        b       .Mojo1					#Some L1 mojo
+
+.Mojo2: mfspr   r0,HID0
+        ori     r0,r0,HID0_ICFI
+        mtspr   HID0,r0
+        xori    r0,r0,HID0_ICFI
+        mtspr   HID0,r0
+        sync
+        b       .Mojo3
+
+.Mojo1: b       .Mojo2
+
+.Mojo3: blr
 
 #********************************************************************************************

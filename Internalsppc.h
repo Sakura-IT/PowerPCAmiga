@@ -35,21 +35,11 @@ void counter(ULONG) = "\tlwzx\tr4,r0,r3\n\taddi\tr4,r4,1\n\tstwx\tr4,r0,r3\n";
 #define _LVOAllocVec        -684
 #define _LVOAllocMem        -198
 #define _LVOStricmp         -162
-
-struct MsgFrame* __CreateMsgFramePPC(void *)="\tlwz\tr0,-868(r3)\n\tmtlr\tr0\n\tblrl";
-#define libCreateMsgFramePPC() __CreateMsgFramePPC(PowerPCBase)
-struct MsgFrame* __GetMsgFramePPC(void *)="\tlwz\tr0,-874(r3)\n\tmtlr\tr0\n\tblrl";
-#define libGetMsgFramePPC() __GetMsgFramePPC(PowerPCBase)
-VOID __SendMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-880(r3)\n\tmtlr\tr0\n\tblrl";
-#define libSendMsgFramePPC(msgframe) __SendMsgFramePPC(PowerPCBase, (msgframe))
-VOID __FreeMsgFramePPC(void *, struct MsgFrame* msgframe)="\tlwz\tr0,-886(r3)\n\tmtlr\tr0\n\tblrl";
-#define libFreeMsgFramePPC(msgframe) __FreeMsgFramePPC(PowerPCBase, (msgframe))
-
 #define _LVOInsertPPC       -402
 #define _LVOFindNamePPC     -444
-#define _LVOSystemStart     -894
-#define _LVOStartTask       -900
-#define _LVOEndTask         -906
+#define _LVOSystemStart     -870
+#define _LVOStartTask       -876
+#define _LVOEndTask         -882
 
 #undef TASKPPCB_ATOMIC      //TasksPPC.h is wrong. See TasksPPC.i
 #undef TASKPPCF_ATOMIC
@@ -66,6 +56,7 @@ void        Reset  (void);
 ULONG   GetExcTable(void);
 ULONG   GetVecEntry(void);
 
+ULONG SystemCall(APTR)                    = "\tsc\n";
 ULONG getLeadZ(ULONG value)               = "\tcntlzw\tr3,r3\n";
 ULONG getPVR(void)                        = "\tmfpvr\tr3\n";
 ULONG getSDR1(void)                       = "\tmfsdr1\tr3\n";
@@ -241,6 +232,7 @@ ULONG myWaitPPC(struct PrivatePPCBase* PowerPCBase, ULONG signals);
 LONG mySetTaskPriPPC(struct PrivatePPCBase* PowerPCBase, struct TaskPPC* task, LONG pri);
 VOID mySignal68K(struct PrivatePPCBase* PowerPCBase, struct Task* task, ULONG signals);
 VOID mySetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR start, ULONG length);
+VOID KSetCache(struct PrivatePPCBase* PowerPCBase, ULONG flags, APTR start, ULONG length);
 APTR mySetExcHandler(struct PrivatePPCBase* PowerPCBase, struct TagItem* taglist);
 VOID myRemExcHandler(struct PrivatePPCBase* PowerPCBase, APTR xlock);
 ULONG mySuper(struct PrivatePPCBase* PowerPCBase);
@@ -316,6 +308,10 @@ struct MsgFrame* CreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
 struct MsgFrame* GetMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
 VOID SendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 VOID FreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+struct MsgFrame* KCreateMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
+struct MsgFrame* KGetMsgFramePPC(struct PrivatePPCBase* PowerPCBase);
+VOID KSendMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
+VOID KFreeMsgFramePPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 LONG StricmpPPC(STRPTR string1, STRPTR string2);
 VOID CauseDECInterrupt(struct PrivatePPCBase* PowerPCBase);
 VOID InsertOnPri(struct PrivatePPCBase* PowerPCBase, struct List* list, struct TaskPPC* myTask);
@@ -329,6 +325,7 @@ void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
 VOID FlushDCache(struct PrivatePPCBase* PowerPCBase);
+VOID KFlushDCache(struct PrivatePPCBase* PowerPCBase);
 VOID EndTask(VOID);
 ULONG GetLen(STRPTR string);
 STRPTR CopyStr(APTR source, APTR dest);
@@ -352,8 +349,6 @@ VOID FreeAllExcMem(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo);
 VOID AddExcList(struct PrivatePPCBase* PowerPCBase, struct ExcInfo* excInfo, struct ExcData* newData, ULONG* currExc, ULONG flag);
 VOID FPE_Enable(ULONG value);
 VOID FPE_Disable(ULONG value);
-VOID EnablePPC(VOID);
-VOID DisablePPC(VOID);
 VOID ForbidPPC(struct PrivatePPCBase* PowerPCBase);
 VOID PermitPPC(struct PrivatePPCBase* PowerPCBase);
 VOID RunCPP(struct iframe* frame, ULONG Code, APTR args);

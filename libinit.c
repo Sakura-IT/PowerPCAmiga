@@ -740,13 +740,13 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
-
+#if 0
     if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
         return NULL;
     }
-
+//#if 0
     struct Library* ppcemu;
 
     if (ppcemu = OpenLibrary("ppc.library", 46L))
@@ -757,7 +757,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
     }
-
+#endif
     return PowerPCBase;
 }
 
@@ -926,13 +926,9 @@ static const APTR LibVectors[] =
 	(APTR)myAddUniqueSemaphorePPC,
 	(APTR)myIsExceptionMode,
 
-    (APTR)CreateMsgFramePPC,     //Table of private PPC functions
-    (APTR)GetMsgFramePPC,
-    (APTR)SendMsgFramePPC,
-    (APTR)FreeMsgFramePPC,
-    (APTR)SystemStart,
-    (APTR)StartTask,             //Should not be jumped to, just a holder for the address
-    (APTR)EndTask,
+    (APTR)SystemStart,           //PRIVATE
+    (APTR)StartTask,             //PRIVATE Should not be jumped to, just a holder for the address
+    (APTR)EndTask,               //PRIVATE
 
     (APTR) -1
 };

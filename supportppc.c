@@ -104,10 +104,11 @@ PPCFUNCTION APTR AllocVec68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __r
 	{
 		flags = (flags & ~MEMF_CHIP) | MEMF_PPC;
 		memBlock = (APTR)myRun68KLowLevel(PowerPCBase, (ULONG)PowerPCBase, _LVOAllocVec32, 0, 0, size, flags);
-		if (memBlock)
-		{
-			mySetCache(PowerPCBase, CACHE_DCACHEINV, memBlock, size);
-		}
+	
+        if (memBlock)
+	    {
+            mySetCache(PowerPCBase, CACHE_DCACHEINV, memBlock, size); //no longer working...have to check
+	    }
 	}
 	return memBlock;
 }
@@ -133,72 +134,10 @@ PPCFUNCTION VOID FreeVec68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
 
 PPCFUNCTION VOID FlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
-    ULONG key = mySuper(PowerPCBase);
-    ULONG cacheSize;
+    struct SysCall sc;
+    sc.sc_Function = SC_FLUSHDC;
 
-    DisablePPC();
-
-    if (PowerPCBase->pp_CacheDisDFlushAll)
-    {
-        cacheSize = 0;
-    }
-    else
-    {
-        cacheSize = PowerPCBase->pp_CurrentL2Size;
-    }
-
-    cacheSize = (cacheSize >> 5) + CACHE_L1SIZE;
-    ULONG mem = ((PowerPCBase->pp_PPCMemSize - 0x400000) + PowerPCBase->pp_PPCMemBase);
-
-    ULONG mem2 = mem;
-
-    for (int i = 0; i < cacheSize; i++)
-    {
-        loadWord(mem);
-        mem += CACHELINE_SIZE;
-    }
-
-    for (int i = 0; i < cacheSize; i++)
-    {
-        dFlush(mem2);
-        mem2 += CACHELINE_SIZE;
-    }
-
-    setDEC(PowerPCBase->pp_Quantum);
-
-    EnablePPC();
-
-    myUser(PowerPCBase, key);
-
-    return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
-PPCFUNCTION VOID DisablePPC(VOID)
-{
-    ULONG msrbits = getMSR();
-    msrbits &= ~PSL_EE;
-    setMSR(msrbits);
-
-    return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
-PPCFUNCTION VOID EnablePPC(VOID)
-{
-    ULONG msrbits = getMSR();
-    msrbits |= PSL_EE;
-    setMSR(msrbits);
+    SystemCall(&sc);
 
     return;
 }
@@ -237,45 +176,11 @@ PPCFUNCTION VOID PermitPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 
 PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
-	ULONG key;
-    ULONG msgFrame = 0;
+	struct SysCall sc;
+    sc.sc_Function = SC_CREATEMSG;
 
-	if (!(PowerPCBase->pp_ExceptionMode))
-    {
-        key = mySuper(PowerPCBase);
-	    DisablePPC();
-    }
+    ULONG msgFrame = SystemCall(&sc);
 
-	switch (PowerPCBase->pp_DeviceID)
-	{
-		case DEVICE_HARRIER:
-		{
-			break;
-		}
-
-		case DEVICE_MPC8343E:
-		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-			msgFrame = *((ULONG*)(myFIFO->kf_MIOFT));
-			myFIFO->kf_MIOFT = (myFIFO->kf_MIOFT + 4) & 0xffff3fff;
-			break;
-		}
-
-		case DEVICE_MPC107:
-		{
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
-    if (!(PowerPCBase->pp_ExceptionMode))
-    {
-	    EnablePPC();
-	    myUser(PowerPCBase, key);
-    }
 //#if 0
     if (msgFrame)
     {
@@ -298,49 +203,11 @@ PPCFUNCTION struct MsgFrame* CreateMsgFramePPC(__reg("r3") struct PrivatePPCBase
 
 PPCFUNCTION struct MsgFrame* GetMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
-	ULONG key;
-    ULONG msgFrame = 0;
+    struct SysCall sc;
+    sc.sc_Function = SC_GETMSG;
 
-	if (!(PowerPCBase->pp_ExceptionMode))
-    {
-	    key = mySuper(PowerPCBase);
-	    DisablePPC();
-    }
-	
-    switch (PowerPCBase->pp_DeviceID)
-	{
-		case DEVICE_HARRIER:
-		{
-			break;
-		}
+    ULONG msgFrame = SystemCall(&sc);
 
-		case DEVICE_MPC8343E:
-		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-			if (myFIFO->kf_MIIPH != myFIFO->kf_MIIPT)
-            {
-                msgFrame = *((ULONG*)(myFIFO->kf_MIIPT));
-			    myFIFO->kf_MIIPT = (myFIFO->kf_MIIPT + 4) & 0xffff3fff;
-            }
-			break;
-		}
-
-		case DEVICE_MPC107:
-		{
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
-
-	if (!(PowerPCBase->pp_ExceptionMode))
-    {
-	    EnablePPC();
-	    myUser(PowerPCBase, key);
-    }
 	return (struct MsgFrame*)msgFrame;
 }
 
@@ -352,46 +219,11 @@ PPCFUNCTION struct MsgFrame* GetMsgFramePPC(__reg("r3") struct PrivatePPCBase* P
 
 PPCFUNCTION VOID SendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
 {
-	ULONG key;
+	struct SysCall sc;
+    sc.sc_Function = SC_SENDMSG;
+    sc.sc_Arg[0] = (ULONG)msgFrame;
 
-    if (!(PowerPCBase->pp_ExceptionMode))
-	{
-        key = mySuper(PowerPCBase);
-	    DisablePPC();
-    }
-
-	switch (PowerPCBase->pp_DeviceID)
-	{
-		case DEVICE_HARRIER:
-		{
-			break;
-		}
-
-		case DEVICE_MPC8343E:
-		{
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
-			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
-			storePCI(IMMR_ADDR_DEFAULT, IMMR_OMR0, (ULONG)msgFrame);
-            break;
-		}
-
-		case DEVICE_MPC107:
-		{
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
-
-	if (!(PowerPCBase->pp_ExceptionMode))
-    {
-	    EnablePPC();
-	    myUser(PowerPCBase, key);
-    }
+    SystemCall(&sc);
 
 	return;
 }
@@ -404,47 +236,12 @@ PPCFUNCTION VOID SendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 
 PPCFUNCTION VOID FreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
 {
-	ULONG key;
+	struct SysCall sc;
+    sc.sc_Function = SC_FREEMSG;
+    sc.sc_Arg[0] = (ULONG)msgFrame;
 
-    if (!(PowerPCBase->pp_ExceptionMode))
-	{
-        key = mySuper(PowerPCBase);
-	    DisablePPC();
-    }
-	
-    //msgFrame->mf_Identifier = ID_FREE;
+    SystemCall(&sc);
 
-	switch (PowerPCBase->pp_DeviceID)
-	{
-		case DEVICE_HARRIER:
-		{
-			break;
-		}
-
-		case DEVICE_MPC8343E:
-		{
-			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-			*((ULONG*)(myFIFO->kf_MIIFH)) = (ULONG)msgFrame;
-			myFIFO->kf_MIIFH = (myFIFO->kf_MIIFH + 4) & 0xffff3fff;
-			break;
-		}
-
-		case DEVICE_MPC107:
-		{
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
-
-	if (!(PowerPCBase->pp_ExceptionMode))
-    {
-	    EnablePPC();
-	    myUser(PowerPCBase, key);
-    }
 	return;
 }
 
@@ -558,8 +355,10 @@ PPCFUNCTION VOID CauseDECInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBas
 	if (!(PowerPCBase->pp_ExceptionMode))
 	{
 		key = mySuper(PowerPCBase);
-		setDEC(10);
+        PowerPCBase->pp_ExceptionMode = -1;
+		setDEC(50);
 		myUser(PowerPCBase, key);
+        while (PowerPCBase->pp_ExceptionMode);
 	}
 	return;
 }
@@ -601,7 +400,7 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 *
 *********************************************************************************************/
 
-PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
+PPCFUNCTION APTR XAllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
 {
     struct DebugArgs args;
     args.db_Function = 66 | (2<<8) | (1<<16) | (3<<17);
@@ -640,7 +439,13 @@ PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __r
 
             if (currChunk)
             {
-                memHeader->mh_Free -= byteSize;         //clear alloc?
+                memHeader->mh_Free -= byteSize;
+
+                UBYTE* buffer = (APTR)currChunk;
+                for (int i=0; i < byteSize; i++)
+                {
+                    buffer[i] = 0;
+                }
             }
         }
     }
@@ -657,7 +462,7 @@ PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __r
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader,
+PPCFUNCTION VOID XDeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader,
                    __reg("r5") APTR memoryBlock, __reg("r6") ULONG byteSize)
 {
 	struct DebugArgs args;
@@ -667,16 +472,18 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     args.db_Arg[2] = byteSize;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
 
-
     if (byteSize)
     {
-	    ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
-	    struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
-	    ULONG freeSize = testSize + byteSize + 31;
+//	      ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
+//	      struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
+//	      ULONG freeSize = testSize + byteSize + 31;
 
-	    if (freeSize &= -32)
-        {
-	        struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
+//	      if (freeSize &= -32)
+//        {
+	        struct MemChunk* testChunk = (struct MemChunk*)memoryBlock;
+            ULONG freeSize = byteSize;
+
+            struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
 
 	        ULONG flag = 0;
 
@@ -726,7 +533,7 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 		        }
 	        }
 	        memHeader->mh_Free += freeSize;
-        }
+        //}
     }
 	return;
 }

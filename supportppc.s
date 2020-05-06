@@ -19,17 +19,220 @@
 ## SOFTWARE.
 
 .include    constantsppc.i
+.include    macros.i
 
 #********************************************************************************************
 
 .global     _LockMutexPPC, _FreeMutexPPC, _CopyMemQuickPPC, _SwapStack, _SetFPExc
-.global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _FlushICache, _RunCPP
-.global     _GetDecTable
+.global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _RunCPP, _GetDecTable
+.global     _AllocatePPC, _DeallocatePPC
 
 #********************************************************************************************
 
 .section "functions","acrx"
 
+#********************************************************************************************
+#
+#	support: memory = AllocatePPC(Memheader, byteSize) // r3=r4,r5
+#
+#********************************************************************************************
+
+_AllocatePPC:
+		prolog 228,'TOC'
+
+		stwu	r31,-4(r13)
+		stwu	r30,-4(r13)
+		stwu	r29,-4(r13)
+		stwu	r28,-4(r13)
+
+		mr.	r3,r5
+		beq-	.ExitAlloc
+
+		mr	r31,r5
+		mr	r30,r4
+		addi	r31,r31,31			#Check: Original was 7
+		loadreg	r29,0xffffffe0
+		and	r31,r31,r29
+
+		lwz	r29,MH_FREE(r30)
+		cmplw	r31,29
+		ble	.EnoughRoom
+
+		li	r3,0
+
+		b	.ExitAlloc
+
+.EnoughRoom:	la	r4,MH_FIRST(r30)
+
+.NextChunk:	lwz	r5,MC_NEXT(r4)
+		mr.	r3,r5
+
+		beq-	.ExitAlloc
+
+		lwz	r29,MC_BYTES(r5)
+		cmplw	r31,r29
+		bgt	.TooBeaucoup
+		bne	.NotPerfect
+
+		lwz	r29,MC_NEXT(r5)
+		stw	r29,MC_NEXT(r4)
+		mr	r3,r5
+
+		b	.SetFree
+
+.NotPerfect:	add	r28,r5,r31
+		lwz	r29,MC_NEXT(r5)
+		stw	r29,MC_NEXT(r28)
+		lwz	r29,MC_BYTES(r5)
+		sub	r29,r29,r31
+		stw	r29,MC_BYTES(r28)
+		stw	r28,MC_NEXT(r4)
+		mr	r3,r5
+
+		b	.SetFree
+
+.TooBeaucoup:	lwz	r4,MC_NEXT(r4)
+		mr.	r4,r4
+
+		bne	.NextChunk
+
+		li	r3,0
+
+		b	.ExitAlloc
+
+.SetFree:	lwz	r29,MH_FREE(r30)
+		sub	r29,r29,r31
+		stw	r29,MH_FREE(r30)
+
+		subi	r28,r3,1
+		mfctr	r29
+		mtctr	r31
+		li	r30,0
+.ClearAlloc:	stbu	r30,1(r28)
+		bdnz	.ClearAlloc
+		mtctr	r29
+
+.ExitAlloc:	lwz	r28,0(r13)
+		lwz	r29,4(r13)
+		lwz	r30,8(r13)
+		lwz	r31,12(r13)
+		addi	r13,r13,16
+
+		epilog 'TOC'
+
+#********************************************************************************************
+#
+#	support: void DeallocatePPC(Memheader, memoryBlock, byteSize) // r4,r5,r6(a0,a1,d0)
+#
+#********************************************************************************************
+
+_DeallocatePPC:
+		prolog 228,'TOC'
+
+		stwu	r31,-4(r13)
+		stwu	r30,-4(r13)
+		stwu	r29,-4(r13)
+		stwu	r28,-4(r13)
+		stwu	r27,-4(r13)
+		stwu	r26,-4(r13)
+
+		mr.	r31,r6
+		beq 	.ExitDealloc
+
+		mr	r29,r4
+		mr  r30,r5
+
+#        loadreg r28,-32
+#		 and r30,r5,r28
+#		 sub r5,r5,r30
+#		 add r6,r5,r31
+#		 addi	 r6,r6,31
+#		 and.	 r6,r6,r28
+
+#		 beq .ExitDealloc
+
+		la	r28,MH_FIRST(r29)
+		lwz	r27,MC_NEXT(r28)
+		mr.	r27,r27
+
+		beq	.LinkNewMC
+
+.NextMemChunk:	cmplw	r27,r30
+
+		bgt	.CorrectMC
+		beq	.GuruTime
+
+		mr	r28,r27
+		lwz	r27,MC_NEXT(r28)
+		mr.	r27,r27
+
+		bne	.NextMemChunk
+
+.CorrectMC:	la	r26,MH_FIRST(r29)
+		cmplw	r28,r26
+
+		beq	.LinkNewMC
+
+		lwz	r27,MC_BYTES(r28)
+		add	r27,r27,r28
+		cmplw	r30,r27
+
+		beq	.JoinThem
+		blt	.GuruTime
+
+.LinkNewMC:	lwz	r27,MC_NEXT(r28)
+		stw	r27,MC_NEXT(r30)
+		stw	r30,MC_NEXT(r28)
+		stw	r6,MC_BYTES(r30)
+
+		b	.DoNextMC
+
+.JoinThem:	lwz	r27,MC_BYTES(r28)
+		add	r27,r27,r6
+		stw	r27,MC_BYTES(r28)
+		mr	r30,r28
+
+.DoNextMC:	lwz	r26,MC_NEXT(r30)
+		mr.	r26,r26
+
+		beq	.UpdateFree
+
+		lwz	r27,MC_BYTES(r30)
+		add	r27,r27,r30
+		cmplw	r26,r27
+
+		blt	.GuruTime
+		bne	.UpdateFree
+
+		mr	r28,r26
+		lwz	r27,MC_NEXT(r28)
+		stw	r27,MC_NEXT(r30)
+		lwz	r27,MC_BYTES(r28)
+		lwz	r26,MC_BYTES(r30)
+		add	r27,r27,r26
+		stw	r27,MC_BYTES(r30)
+
+.UpdateFree:	lwz	r27,MH_FREE(r29)
+		add	r27,r27,r6
+		stw	r27,MH_FREE(r29)
+
+.ExitDealloc:	lwz	r26,0(r13)
+		lwz	r27,4(r13)
+		lwz	r28,8(r13)
+		lwz	r29,12(r13)
+		lwz	r30,16(r13)
+		lwz	r31,20(r13)
+		addi	r13,r13,24
+
+		epilog 'TOC'
+
+#********************************************************************************************
+
+.GuruTime:	loadreg	r0,'EMEM'
+
+		illegal
+
+.GTHalt:	b	.GTHalt			#STUB
 #********************************************************************************************
 #
 #    Function to try and lock a hardware mutex.
@@ -685,27 +888,6 @@ _FPE_Disable:
 
 .Bit_4: mtfsb0	24
         blr
-
-#********************************************************************************************
-#
-#
-#
-#********************************************************************************************
-
-_FlushICache:
-        b       .Mojo1					#Some L1 mojo
-
-.Mojo2: mfspr   r0,HID0
-        ori     r0,r0,HID0_ICFI
-        mtspr   HID0,r0
-        xori    r0,r0,HID0_ICFI
-        mtspr   HID0,r0
-        sync
-        b       .Mojo3
-
-.Mojo1: b       .Mojo2
-
-.Mojo3: blr
 
 #********************************************************************************************
 

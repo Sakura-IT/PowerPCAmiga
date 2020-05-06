@@ -65,7 +65,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                     }
                     struct MsgFrame* msgFrame;
 
-                    while (msgFrame = libGetMsgFramePPC())
+                    while (msgFrame = KGetMsgFramePPC(PowerPCBase))
                     {
                         AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
                     }
@@ -118,6 +118,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         }
         case VEC_DECREMENTER:
         {
+
             CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcDecrementer);
 
             struct ExcData* eData;
@@ -214,11 +215,11 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                     ULONG Status = DoDataStore(iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData);
                     if (Status)
                     {
-                        struct MsgFrame* myFrame = libCreateMsgFramePPC();
+                        struct MsgFrame* myFrame = KCreateMsgFramePPC(PowerPCBase);
                         myFrame->mf_Identifier = myData.dm_Type;
                         myFrame->mf_Arg[1] = myData.dm_Address;
                         myFrame->mf_Arg[0] = myData.dm_Value;
-                        libSendMsgFramePPC(myFrame);
+                        KSendMsgFramePPC(PowerPCBase, myFrame);
                         if (!(myData.dm_LoadFlag))
                         {
                             while (myFrame->mf_Identifier != ID_DONE);
@@ -229,7 +230,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                             }
                         }
                         iframe->if_Context.ec_UPC.ec_SRR0  += 4;
-                        PowerPCBase->pp_Quantum = getDEC() + 1000; //Do not start quantum all over
+                        //PowerPCBase->pp_Quantum = getDEC() + 1000; //Do not start quantum all over
                         break;
                     }
                     else
@@ -249,7 +250,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                 iframe->if_Context.ec_UPC.ec_SRR0  += 4;
                 iframe->if_Context.ec_SRR1         &= ~PSL_PR;
                 iframe->if_Context.ec_GPR[3]        = 0;            //Set SuperKey
-                PowerPCBase->pp_Quantum = getDEC() + 1000;
+                //PowerPCBase->pp_Quantum = getDEC() + 1000;
             }
             else
             {
@@ -273,7 +274,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                     {
                         PowerPCBase->pp_AlignmentExcHigh += 1;
                     }
-                    PowerPCBase->pp_Quantum = getDEC() + 1000;
+                    //PowerPCBase->pp_Quantum = getDEC() + 1000;
                 }
                 else
                 {
@@ -313,7 +314,46 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         }
         case VEC_SYSTEMCALL:
         {
-            CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcSystemCall);
+            struct SysCall* sc = (struct SysCall*)iframe->if_Context.ec_GPR[3]; //no checking of valid address
+
+            switch (sc->sc_Function)
+            {
+                case SC_CREATEMSG:
+                {
+                    iframe->if_Context.ec_GPR[3] = (ULONG)KCreateMsgFramePPC(PowerPCBase);
+                    break;
+                }
+                case SC_GETMSG:
+                {
+                    iframe->if_Context.ec_GPR[3] = (ULONG)KGetMsgFramePPC(PowerPCBase);
+                    break;
+                }
+                case SC_SENDMSG:
+                {
+                    KSendMsgFramePPC(PowerPCBase, (struct MsgFrame*)sc->sc_Arg[0]);
+                    break;
+                }
+                case SC_FREEMSG:
+                {
+                    KFreeMsgFramePPC(PowerPCBase, (struct MsgFrame*)sc->sc_Arg[0]);
+                    break;
+                }
+                case SC_FLUSHDC:
+                {
+                    KFlushDCache(PowerPCBase);
+                    break;
+                }
+                case SC_SETCACHE:
+                {
+                    KSetCache(PowerPCBase, sc->sc_Arg[0], (APTR)sc->sc_Arg[1], sc->sc_Arg[2]);
+                    break;
+                }
+                default:
+                {
+                    CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcSystemCall);
+                    break;
+                }
+            }
             break;
         }
         case VEC_TRACE:
@@ -472,7 +512,7 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
                 struct MsgFrame* oldMsg = (struct MsgFrame*)currMsg->mf_Arg[0];
 
                 RemovePPC((struct Node*)currMsg);
-                libFreeMsgFramePPC(currMsg);
+                KFreeMsgFramePPC(PowerPCBase, currMsg);
 
                 myPort = (struct MsgPortPPC*)oldMsg->mf_Message.mn_ReplyPort;
                 struct TaskPPC* sigTask = (struct TaskPPC*)myPort->mp_Port.mp_SigTask;
@@ -507,7 +547,7 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
                 struct Node* xMsg = (struct Node*)currMsg->mf_Arg[1];
 
                 RemovePPC((struct Node*)currMsg);
-                libFreeMsgFramePPC(currMsg);
+                KFreeMsgFramePPC(PowerPCBase, currMsg);
 
                 struct TaskPPC* sigTask = (struct TaskPPC*)myPort->mp_Port.mp_SigTask;
 
@@ -568,13 +608,13 @@ PPCKERNEL void HandleMsgs(__reg("r3") struct PrivatePPCBase* PowerPCBase)
                     }
                 }
                 RemovePPC((struct Node*)currMsg);
-                libFreeMsgFramePPC(currMsg);
+                KFreeMsgFramePPC(PowerPCBase, currMsg);
                 break;
             }
             default:
             {
                 RemovePPC((struct Node*)currMsg);
-                libFreeMsgFramePPC(currMsg);
+                KFreeMsgFramePPC(PowerPCBase, currMsg);
             }
         }
         currMsg = nxtMsg;
@@ -775,6 +815,438 @@ PPCKERNEL void CommonExcHandler(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 
 /********************************************************************************************
 *
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL struct MsgFrame* KCreateMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+{
+	ULONG msgFrame = 0;
+
+    switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
+			msgFrame = *((ULONG*)(myFIFO->kf_MIOFT));
+			myFIFO->kf_MIOFT = (myFIFO->kf_MIOFT + 4) & 0xffff3fff;
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+    return (struct MsgFrame*)msgFrame;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+{
+    ULONG msgFrame = 0;
+
+    switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
+			if (myFIFO->kf_MIIPH != myFIFO->kf_MIIPT)
+            {
+                msgFrame = *((ULONG*)(myFIFO->kf_MIIPT));
+			    myFIFO->kf_MIIPT = (myFIFO->kf_MIIPT + 4) & 0xffff3fff;
+            }
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	return (struct MsgFrame*)msgFrame;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL VOID KSendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
+{
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
+			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
+			myFIFO->kf_MIOPH = (myFIFO->kf_MIOPH + 4) & 0xffff3fff;
+			storePCI(IMMR_ADDR_DEFAULT, IMMR_OMR0, (ULONG)msgFrame);
+            break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* msgFrame)
+{
+    //msgFrame->mf_Identifier = ID_FREE;
+
+	switch (PowerPCBase->pp_DeviceID)
+	{
+		case DEVICE_HARRIER:
+		{
+			break;
+		}
+
+		case DEVICE_MPC8343E:
+		{
+			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
+			*((ULONG*)(myFIFO->kf_MIIFH)) = (ULONG)msgFrame;
+			myFIFO->kf_MIIFH = (myFIFO->kf_MIIFH + 4) & 0xffff3fff;
+			break;
+		}
+
+		case DEVICE_MPC107:
+		{
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+
+	return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL VOID KFlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+{
+    ULONG cacheSize;
+
+    if (PowerPCBase->pp_CacheDisDFlushAll)
+    {
+        cacheSize = 0;
+    }
+    else
+    {
+        cacheSize = PowerPCBase->pp_CurrentL2Size;
+    }
+
+    cacheSize = (cacheSize >> 5) + CACHE_L1SIZE;
+    //ULONG mem = ((PowerPCBase->pp_PPCMemSize - 0x400000) + PowerPCBase->pp_PPCMemBase);
+
+    ULONG mem = 0;
+
+    ULONG mem2 = mem;
+
+    for (int i = 0; i < cacheSize; i++)
+    {
+        loadWord(mem);
+        mem += CACHELINE_SIZE;
+    }
+
+    for (int i = 0; i < cacheSize; i++)
+    {
+        dFlush(mem2);
+        mem2 += CACHELINE_SIZE;
+    }
+
+    return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") ULONG flags, __reg("r5") APTR start, __reg("r6") ULONG length)
+{
+    ULONG value;
+
+    writeTest(0x6f000000, 0xfab4000);
+    writeTest(0x6f000004, flags);
+    writeTest(0x6f000008, (ULONG)start);
+    writeTest(0x6f00000c, length);
+
+    switch (flags)
+    {
+        case CACHE_DCACHEOFF:
+        {
+            if (!(PowerPCBase->pp_CacheDState))
+            {
+                KFlushDCache(PowerPCBase);
+
+                value = getHID0();
+                value &= ~HID0_DCE;
+                setHID0(value);
+                PowerPCBase->pp_CacheDState = -1;
+            }
+            break;
+        }
+        case CACHE_DCACHEON:
+        {
+            PowerPCBase->pp_CacheDState = 0;
+            value = getHID0();
+            value |= HID0_DCE;
+            setHID0(value);
+            break;
+        }
+        case CACHE_DCACHELOCK:
+        {
+            if ((start) && (length) && !(PowerPCBase->pp_CacheDLockState))
+            {
+                KFlushDCache(PowerPCBase);
+                ULONG iterations = (ULONG)start + length;
+                ULONG mask = -32;
+                start = (APTR)((ULONG)start & mask);
+                ULONG mem = (ULONG)start;
+                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    loadWord(mem);
+                    mem += CACHELINE_SIZE;
+                }
+
+                value = getHID0();
+                value |= HID0_DLOCK;
+                setHID0(value);
+                PowerPCBase->pp_CacheDLockState = -1;
+            }
+            break;
+        }
+        case CACHE_DCACHEUNLOCK:
+        {
+            PowerPCBase->pp_CacheDLockState = 0;
+            value = getHID0();
+            value &= ~HID0_DLOCK;
+            setHID0(value);
+            break;
+        }
+        case CACHE_DCACHEFLUSH:
+        {
+            if (!(PowerPCBase->pp_CacheDState) && !(PowerPCBase->pp_CacheDLockState))
+            {
+                if (PowerPCBase->pp_L2Size)
+                {
+                    if ((start) && (length))
+                    {
+                        ULONG iterations = (ULONG)start + length;
+                        ULONG mask = -32;
+                        start = (APTR)((ULONG)start & mask);
+                        ULONG mem = (ULONG)start;
+                        iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                        for (int i = 0; i < iterations; i++)
+                        {
+                            dFlush(mem);
+                            mem += CACHELINE_SIZE;
+                        }
+                        sync();
+                    }
+                    else
+                    {
+                        KFlushDCache(PowerPCBase);
+                    }
+                }
+                else
+                {
+                    ULONG mem = 0;
+                    for (int i = 0; i < CACHE_L1SIZE; i++)
+                    {
+                        loadWord(mem);
+                        mem += CACHELINE_SIZE;
+                    }
+                }
+            }
+            break;
+        }
+        case CACHE_ICACHEOFF:
+        {
+            value = getHID0();
+            value &= ~HID0_ICE;
+            setHID0(value);
+            break;
+        }
+        case CACHE_ICACHEON:
+        {
+            value = getHID0();
+            value |= HID0_ICE;
+            setHID0(value);
+            break;
+        }
+        case CACHE_ICACHELOCK:
+        {
+            value = getHID0();
+            value |= HID0_ILOCK;
+            setHID0(value);
+            break;
+        }
+        case CACHE_ICACHEUNLOCK:
+        {
+            value = getHID0();
+            value &= ~HID0_ILOCK;
+            setHID0(value);
+            break;
+        }
+        case CACHE_DCACHEINV:
+        {
+            if ((start) && (length))
+            {
+                if (PowerPCBase->pp_L2Size)
+                {
+                    ULONG iterations = (ULONG)start + length;
+                    ULONG mask = -32;
+                    start = (APTR)((ULONG)start & mask);
+                    ULONG mem = (ULONG)start;
+                    iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        dInval(mem);
+                        mem += CACHELINE_SIZE;
+                    }
+                    sync();
+                }
+                else
+                {
+                    ULONG mem = 0;
+                    for (int i = 0; i < CACHE_L1SIZE; i++)
+                    {
+                        loadWord(mem);
+                        mem += CACHELINE_SIZE;
+                    }
+                }
+            }
+            break;
+        }
+        case CACHE_ICACHEINV:
+        {
+            if ((start) && (length))
+            {
+                ULONG iterations = (ULONG)start + length;
+                ULONG mask = -32;
+                start = (APTR)((ULONG)start & mask);
+                ULONG mem = (ULONG)start;
+                iterations = (((iterations + 31) & mask) - (ULONG)start) >> 5;
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    iInval(mem);
+                    mem += CACHELINE_SIZE;
+                }
+                isync();
+            }
+            else
+            {
+                FlushICache();
+            }
+            break;
+        }
+    }
+    if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
+    {
+        switch (flags) //To prevent SDA_BASE
+        {
+            case  CACHE_L2CACHEON:
+            {
+                value = getL2State();
+                value |= L2CR_L2E;
+                setL2State(value);
+                PowerPCBase->pp_CurrentL2Size = PowerPCBase->pp_L2Size;
+                break;
+            }
+            case CACHE_L2CACHEOFF:
+            {
+                KFlushDCache(PowerPCBase);
+                value = getL2State();
+                value &= ~L2CR_L2E;
+                setL2State(value);
+                PowerPCBase->pp_CurrentL2Size = 0;
+                break;
+            }
+            case CACHE_L2WTON:
+            {
+                value = getL2State();
+                value |= L2CR_L2WT;
+                setL2State(value);
+                break;
+            }
+            case CACHE_L2WTOFF:
+            {
+                value = getL2State();
+                value &= ~L2CR_L2WT;
+                setL2State(value);
+                break;
+            }
+            case CACHE_TOGGLEDFLUSH:
+            {
+                PowerPCBase->pp_CacheDisDFlushAll = !PowerPCBase->pp_CacheDisDFlushAll;
+                break;
+            }
+        }
+    }
+    return;
+}
+
+/********************************************************************************************
+*
 *     Entry point to print an exception error in a window.
 *
 *********************************************************************************************/
@@ -856,9 +1328,9 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     errorData[65] = iframe->if_BATs[3].ba_dbatu;
     errorData[66] = iframe->if_BATs[3].ba_dbatl;
 
-    struct MsgFrame* myFrame = libCreateMsgFramePPC();
+    struct MsgFrame* myFrame = KCreateMsgFramePPC(PowerPCBase);
     myFrame->mf_Identifier = ID_CRSH;
-    libSendMsgFramePPC(myFrame);
+    KSendMsgFramePPC(PowerPCBase, myFrame);
 
     while(1);
 
