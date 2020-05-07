@@ -53,7 +53,8 @@
 #define EXCF_DECREMENTER        1<<9
 
 #define OPCODE_NOP              0x60000000
-#define OPCODE_BRANCH           0x4C000000  //only for backward jump
+#define OPCODE_BBRANCH          0x4C000000  //only for backward jump
+#define OPCODE_FBRANCH          0x48000000
 
 #define KILLERQUANTUM           1333333
 #define KILLERBUSCLOCK          266666666
@@ -171,6 +172,7 @@
 #define DEVICENUMBER_SHIFT      3
 #define BUSNUMBER_SHIFT         8
 #define BUSMASTER_ENABLE        1<<2
+#define MEMORYSPACE_ENABLE      1<<1
 
 #define DEVICE_MPC107           0x0004
 #define VENDOR_MOTOROLA         0x1057
@@ -400,4 +402,85 @@
 #define IMMR_SIMSR_L            0x724
 #define SIMSR_L_MU              0x04000000
 #define KILLER_RESET            0x52535445
+
+// Harrier Stuff
+
+#define PCFS_MBAR               0x10
+#define PCFS_ITBAR0             0x14
+#define PCFS_ITBAR1             0x18
+#define PCFS_ITBAR2             0x1C
+#define PCFS_MPAT               0x44
+#define PCFS_ITOFSZ0            0x48
+#define PCFS_ITAT0              0x4C
+#define PCFS_ITOFSZ1            0x50
+#define PCFS_ITAT1              0x54
+#define PCFS_ITOFSZ2            0x58
+#define PCFS_ITAT2              0x5C
+#define PCFS_MPAT_ENA           0x00000080
+#define PCFS_MPAT_GBL           0x00010000
+#define PCFS_ITAT0_ENA          0x00000080
+#define PCFS_ITAT0_GBL          0x00010000
+#define PCFS_ITAT1_ENA          0x00000080
+#define PCFS_ITAT1_WPE          0x00000020
+#define PCFS_ITAT1_RAE          0x00000010
+#define PCFS_ITAT1_GBL          0x00010000
+#define PCFS_ITSZ_4K            0x00
+#define PCFS_ITSZ_64MB          0x0e
+#define PCFS_ITSZ_128MB         0x0f
+#define PCFS_ITSZ_256MB         0x10
+#define PPC_XCSR_BASE           0xFEFF0000
+#define PPC_RAM_BASE            0x00000000
+
+#define XCSR_OTAT_ENA           0x80
+#define XCSR_OTAT_WPE           0x10
+#define XCSR_OTAT_SGE           0x08
+#define XCSR_OTAT_RAE           0x04
+#define XCSR_OTAT_MEM           0x02
+#define XCSR_XPAT_BAM_ENA       0x20000000
+#define XCSR_XPAT_AD_DELAY15    0x00F00000
+#define XCSR_SDBA_16M8          0x00050000
+#define XCSR_SDBA_32M8          0x00080000
+#define XCSR_SDBA_64M8          0x000B0000
+#define XCSR_SDBA_SIZE          0x000F0000
+#define XCSR_SDBA_ENA           0x00000100
+#define XCSR_SDGC_MXRR_7        0x30000000
+#define XCSR_SDGC_ENRV_ENA      0x00800000
+#define XCSR_SDTC_DEFAULT       0x07130000
+#define XCSR_BXCS_P0H_ENA       0x00100000
+#define XCSR_BXCS_BP0H          1<<20
+#define XCSR_MBAR_ENA           0x00010000
+#define XCSR_XARB_ENA           0x00010000
+#define XCSR_XARB_PRKCPU0       0x00200000
+#define XCSR_MBAR               0xE0
+#define XCSR_XARB               0x94
+#define XCSR_SDGC               0x100
+#define XCSR_SDTC               0x104
+#define XCSR_SDBAA              0x110
+#define XCSR_XPAT0              0x154
+#define XCSR_XPAT1              0x15C
+#define XCSR_XPAT2              0x164
+#define XCSR_XPAT3              0x16C
+#define XCSR_BXCS               0x204
+#define XCSR_OTAD0              0x220
+#define XCSR_OTAT0              0x224
+#define XCSR_OTAD1              0x228
+#define XCSR_OTAT1              0x22C
+#define XCSR_MIOFH              0x2C0
+#define XCSR_MIOPH              0x2C8
+#define XCSR_MIOPT              0x2CC
+
+#define PMEP_MIST               0x30
+#define PMEP_MIMS               0x34
+#define PMEP_MIIQ               0x40
+#define PMEP_MIOQ               0x44
+#define PMEP_MGIM0              0x2A0
+
+#define PCIMEM_4K               0x00F0FFFF
+#define PCIMEM_256KB            0x0000FCFF
+#define PCIMEM_64MB             0x000000FC
+#define PCIMEM_256MB            0x000000F0
+#define PCIBAR_0                0
+#define PCIBAR_1                1
+#define PCIBAR_2                2
+#define PCIBAR_3                3
 

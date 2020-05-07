@@ -1046,7 +1046,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
 
-    if (!(ppcmemBase = AllocPCIBAR(0xfc, 1, ppcdevice)))
+    if (!(ppcmemBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_1, ppcdevice)))
     {
         PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
         return FALSE;
@@ -1127,8 +1127,8 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         writememLong(configBase, IMMR_POCMR1, winSize);
     }
 
-    writememLong(ppcmemBase, VEC_SYSTEMRESET - 4, 0x48000000);
-    writememLong(ppcmemBase, VEC_SYSTEMRESET, 0x4bfffffc);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET - 4, OPCODE_FBRANCH);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_BBRANCH - 4);
 
     resetKiller(myConsts, configBase, ppcmemBase);
 
@@ -1153,7 +1153,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
-    writememLong(ppcmemBase, VEC_SYSTEMRESET, 0x48012f00);
+    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
     writememLong(configBase, IMMR_IMMRBAR, IMMR_ADDR_DEFAULT);
 
     resetKiller(myConsts, configBase, ppcmemBase);
@@ -1172,7 +1172,134 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
                               struct PciDevice* ppcdevice, ULONG initPointer)
 {
-    return NULL;
+    ULONG pmepBase, configBase, ppcmemBase, mpicBase, fakememBase;
+    struct InitData* harrierData;
+
+    struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+    struct ExecBase* SysBase = myConsts->ic_SysBase;
+
+    UWORD resw = (ReadConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND));
+
+    WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, resw | MEMORYSPACE_ENABLE);
+
+    ULONG resl = ReadConfigurationLong(devfuncnum, PCFS_MPAT);
+
+    WriteConfigurationLong(devfuncnum, PCFS_MPAT, resl | (PCFS_MPAT_GBL | PCFS_MPAT_ENA));
+
+    if (!(pmepBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_0, ppcdevice)))
+    {
+        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+        return FALSE;
+    }
+
+    WriteConfigurationLong(devfuncnum, PCFS_MBAR, pmepBase);
+
+    resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT0);
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITAT0, resl | (PCFS_ITAT0_GBL | PCFS_ITAT0_ENA));
+
+    resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT1);
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITAT1, resl | (PCFS_ITAT1_GBL | PCFS_ITAT1_ENA
+                           | PCFS_ITAT1_WPE | PCFS_ITAT1_RAE));
+
+    if (!(configBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_1, ppcdevice)))
+    {
+        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+        return FALSE;
+    }
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITBAR0, configBase);
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ0, (PPC_XCSR_BASE | PCFS_ITSZ_4K));
+
+    ULONG XPatSetting = (XCSR_XPAT_BAM_ENA | XCSR_XPAT_AD_DELAY15);
+    writememLong(configBase, XCSR_XPAT0, XPatSetting);
+    writememLong(configBase, XCSR_XPAT1, XPatSetting);
+    writememLong(configBase, XCSR_XPAT2, XPatSetting);
+    writememLong(configBase, XCSR_XPAT3, XPatSetting);
+
+    ULONG memSize = readmemLong(configBase, XCSR_SDBAA) & XCSR_SDBA_SIZE;
+    ULONG cpuStat = readmemLong(configBase, XCSR_BXCS) & XCSR_BXCS_BP0H;
+
+    if (!(cpuStat))
+    {
+        writememLong(configBase, XCSR_BXCS, (cpuStat | XCSR_BXCS_BP0H));
+    }
+
+    //debugdebug defaults to 256MB for now. Size is 8 x SDBA_xxM8
+    ULONG ppcmemSize = 0x10000000;
+
+    writememLong(configBase, XCSR_SDBAA, (memSize | XCSR_SDBA_32M8));
+
+    if (!(ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice)))
+    {
+        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+        return FALSE;
+    }
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITBAR1, ppcmemBase);
+
+    WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_256MB));
+
+    if (!(mpicBase = AllocPCIBAR(PCIMEM_256KB, PCIBAR_3, ppcdevice)))
+    {
+        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+        return FALSE;
+    }
+
+    writememLong(configBase, XCSR_MBAR, (mpicBase | XCSR_MBAR_ENA));
+
+    ULONG value = MediatorPCIBase->pb_MemAddress;
+    value += OFFSET_PCIMEM;
+    ULONG value2 = (value >> 16) + 0x2000;
+    value |= value2;
+
+    value2 = ((-OFFSET_PCIMEM) | XCSR_OTAT_ENA | XCSR_OTAT_WPE | XCSR_OTAT_SGE | XCSR_OTAT_RAE | XCSR_OTAT_MEM);
+
+    writememLong(configBase, XCSR_OTAD0, value);
+
+    writememLong(configBase, XCSR_OTAT0, value2);
+
+    value = XCSR_SDGC_ENRV_ENA | XCSR_SDGC_MXRR_7;
+
+    writememLong(configBase, XCSR_SDTC, XCSR_SDTC_DEFAULT);
+    writememLong(configBase, XCSR_SDBAA, XCSR_SDBA_32M8 | XCSR_SDBA_ENA);
+    writememLong(configBase, XCSR_SDGC, value);
+    writememLong(configBase, XCSR_XARB, XCSR_XARB_PRKCPU0 | XCSR_XARB_ENA);
+
+    fakememBase = ppcmemBase + OFFSET_ZEROPAGE;
+    harrierData = ((struct InitData*)(fakememBase + OFFSET_KERNEL));
+
+    ULONG segSize = *((ULONG*)(initPointer - 4));
+
+    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
+
+    CopyMemQuick((APTR)(initPointer+4), (APTR)(harrierData), segSize);
+
+    harrierData->id_Status        = 0xabcdabcd;
+    harrierData->id_MemBase       = ppcmemBase;
+    harrierData->id_MemSize       = ppcmemSize;
+    harrierData->id_GfxMemBase    = myConsts->ic_gfxMem;
+    harrierData->id_GfxMemSize    = myConsts->ic_gfxSize;
+    harrierData->id_GfxType       = myConsts->ic_gfxType;
+    harrierData->id_GfxSubType    = myConsts->ic_gfxSubType;
+    harrierData->id_GfxConfigBase = myConsts->ic_gfxConfig;
+    harrierData->id_Environment1  = myConsts->ic_env1;
+    harrierData->id_Environment2  = myConsts->ic_env2;
+    harrierData->id_Environment3  = myConsts->ic_env3;
+    harrierData->id_StartBat      = myConsts->ic_startBAT;
+    harrierData->id_SizeBat       = myConsts->ic_sizeBAT;
+
+    CacheClearU();
+
+    value = readmemLong(configBase, XCSR_BXCS);
+    value &= ~XCSR_BXCS_BP0H;
+    writememLong(configBase, XCSR_BXCS, value);
+
+    writememLong(pmepBase, PMEP_MIMS, 0);
+
+    return harrierData;
 }
 
 /********************************************************************************************

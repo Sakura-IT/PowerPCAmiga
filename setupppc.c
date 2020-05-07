@@ -523,7 +523,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     ULONG* IdleTask = (ULONG*)OFFSET_SYSMEM;
     IdleTask[0] = OPCODE_NOP;
     IdleTask[1] = OPCODE_NOP;
-    IdleTask[2] = OPCODE_BRANCH - 8;
+    IdleTask[2] = OPCODE_BBRANCH - 8;
 
     installExceptions();
 
