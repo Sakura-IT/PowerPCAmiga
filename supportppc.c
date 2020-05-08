@@ -34,18 +34,6 @@
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID writememLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offset, __reg("r5") ULONG value)
-{
-	*((ULONG*)(Base + offset)) = value;
-	return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
 PPCFUNCTION VOID InsertOnPri(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct List* list, __reg("r5") struct TaskPPC* myTask)
 {
     //myEnqueuePPC(PowerPCBase, list, (struct Node*)myTask);

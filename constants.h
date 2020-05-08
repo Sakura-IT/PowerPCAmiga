@@ -451,8 +451,23 @@
 #define XCSR_MBAR_ENA           0x00010000
 #define XCSR_XARB_ENA           0x00010000
 #define XCSR_XARB_PRKCPU0       0x00200000
-#define XCSR_MBAR               0xE0
+#define XCSR_MICT_QSZ_16K       0x00030000
+#define XCSR_MICT_ENA           0x01000000
+#define XCSR_FEEN_MIP           0x08000000
+#define XCSR_FEEN_MIM0          0x20000000
+#define XCSR_FEMA_MIPM0         0xD7000000
+#define XCSR_FEST_MIM0          0x20000000
+#define XCSR_FEST_MIP           0x08000000
+#define XCSR_FECL_MIM0          0x20000000
+#define XCSR_MCSR_OPI           0x40000000
+
+#define XCSR_FEEN               0x40
+#define XCSR_FEST               0x44
+#define XCSR_FEMA               0x48
+#define XCSR_FECL               0x4C
 #define XCSR_XARB               0x94
+#define XCSR_MBAR               0xE0
+#define XCSR_MCSR               0xE4
 #define XCSR_SDGC               0x100
 #define XCSR_SDTC               0x104
 #define XCSR_SDBAA              0x110
@@ -466,8 +481,26 @@
 #define XCSR_OTAD1              0x228
 #define XCSR_OTAT1              0x22C
 #define XCSR_MIOFH              0x2C0
+#define XCSR_MIOFT              0x2C4
 #define XCSR_MIOPH              0x2C8
 #define XCSR_MIOPT              0x2CC
+#define XCSR_MIIFH              0x2D0
+#define XCSR_MIIFT              0x2D4
+#define XCSR_MIIPH              0x2D8
+#define XCSR_MIIPT              0x2DC
+#define XCSR_MICT               0x2E0
+#define XCSR_MIQB               0x2E4
+
+#define XMPI_FREP               0x1000
+#define XMPI_GLBC               0x1020
+#define XMPI_IFEVP              0x10200
+#define XMPI_IFEDE              0x10210
+#define XMPI_P0CTP              0x20080
+#define XMPI_P0IAC              0x200A0
+#define XMPI_P0EOI              0x200B0
+#define XMPI_GLBC_RESET         0x80000000
+#define XMPI_GLBC_M             0x20000000
+#define XMPI_IFEDE_P0           0x00000001
 
 #define PMEP_MIST               0x30
 #define PMEP_MIMS               0x34

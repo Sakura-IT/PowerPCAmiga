@@ -53,7 +53,27 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 	        {
 		        case DEVICE_HARRIER:
 		        {
-			        break;
+			        if (readmemLongPPC(PPC_XCSR_BASE, XCSR_FEST) & XCSR_FEST_MIM0)
+                    {
+                        writememLongPPC(PPC_XCSR_BASE, XCSR_FECL, XCSR_FECL_MIM0);
+                        CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcInterrupt);
+                    }
+
+                    if (readmemLongPPC(PowerPCBase->pp_BridgeMPIC, XMPI_P0IAC) == 0xff)
+                    {
+                        PowerPCBase->pp_ExceptionMode = 0;
+                        setDEC(PowerPCBase->pp_Quantum);
+                        return;
+                    }
+
+                    struct MsgFrame* msgFrame;
+
+                    while (msgFrame = KGetMsgFramePPC(PowerPCBase))
+                    {
+                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
+                    }
+                    writememLongPPC(PowerPCBase->pp_BridgeMPIC, XMPI_P0EOI, 0);
+                    break;
 		        }
 
 		        case DEVICE_MPC8343E:
@@ -78,11 +98,6 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 		        }
 
 		        case DEVICE_MPC107:
-		        {
-			        break;
-		        }
-
-		        default:
 		        {
 			        break;
 		        }
@@ -819,6 +834,31 @@ PPCKERNEL void CommonExcHandler(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 *
 *********************************************************************************************/
 
+PPCKERNEL VOID writememLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offset, __reg("r5") ULONG value)
+{
+	*((ULONG*)(Base + offset)) = value;
+	return;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+PPCKERNEL ULONG readmemLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offset)
+{
+    ULONG res;
+    res = *((ULONG*)(Base + offset));
+    return res;
+}
+
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
 PPCKERNEL struct MsgFrame* KCreateMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
 	ULONG msgFrame = 0;
@@ -827,7 +867,10 @@ PPCKERNEL struct MsgFrame* KCreateMsgFramePPC(__reg("r3") struct PrivatePPCBase*
 	{
 		case DEVICE_HARRIER:
 		{
-			break;
+			ULONG msgOffset = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIOFT);
+            msgFrame = readmemLongPPC(msgOffset, 0);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOFT, (msgOffset + 4) & 0xffff3fff);
+            break;
 		}
 
 		case DEVICE_MPC8343E:
@@ -865,7 +908,14 @@ PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* Po
 	{
 		case DEVICE_HARRIER:
 		{
-			break;
+			ULONG msgOffset1 = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIPH);
+            ULONG msgOffset2 = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIPT);
+            if (readmemLongPPC(msgOffset1, 0) != readmemLongPPC(msgOffset2, 0))
+            {
+                writememLongPPC(PPC_XCSR_BASE, XCSR_MIIPT, (msgOffset2 + 4) & 0xffff3fff);
+                msgFrame = readmemLongPPC(msgOffset2, 0);
+            }
+            break;
 		}
 
 		case DEVICE_MPC8343E:
@@ -904,6 +954,9 @@ PPCKERNEL VOID KSendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 	{
 		case DEVICE_HARRIER:
 		{
+            ULONG msgOffset = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIOPH);
+            writememLongPPC(msgOffset, 0, (ULONG)msgFrame);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOPH, (msgOffset + 4) & 0xffff3fff);
 			break;
 		}
 
@@ -943,7 +996,10 @@ PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 	{
 		case DEVICE_HARRIER:
 		{
-			break;
+            ULONG msgOffset = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIFH);
+            writememLongPPC(msgOffset, 0, (ULONG)msgFrame);
+            writememLongPPC(PowerPCBase->pp_BridgeConfig, XCSR_MIIFH, (msgOffset + 4) & 0xffff3fff);
+            break;
 		}
 
 		case DEVICE_MPC8343E:
@@ -1018,11 +1074,6 @@ PPCKERNEL VOID KFlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") ULONG flags, __reg("r5") APTR start, __reg("r6") ULONG length)
 {
     ULONG value;
-
-    writeTest(0x6f000000, 0xfab4000);
-    writeTest(0x6f000004, flags);
-    writeTest(0x6f000008, (ULONG)start);
-    writeTest(0x6f00000c, length);
 
     switch (flags)
     {

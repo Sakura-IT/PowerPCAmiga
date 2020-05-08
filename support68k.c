@@ -1239,7 +1239,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
         case DEVICE_HARRIER:
         {
             ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH);
-            writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH, msgOffset + 4);
+            writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH, (msgOffset + 4) & 0xffff3fff);
             writememLong(PowerPCBase->pp_PPCMemBase, msgOffset, (ULONG)msgFrame);
             break;
         }
@@ -1291,7 +1291,7 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
                 {
                     ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT);
                     msgFrame = readmemLong(PowerPCBase->pp_PPCMemBase, msgOffset);
-                    writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT, msgOffset + 4);
+                    writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT, (msgOffset + 4) & 0xffff3fff);
                 }
                 break;
             }

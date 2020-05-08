@@ -628,6 +628,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 		{
 		    myBase->pp_BridgeConfig    = ppcdevice->pd_ABaseAddress1;
             myBase->pp_BridgeMsgs      = ppcdevice->pd_ABaseAddress0;
+            myBase->pp_BridgeMPIC      = ppcdevice->pd_ABaseAddress3;
             break;
 		}
         case DEVICE_MPC8343E:
@@ -989,12 +990,22 @@ void getENVs(struct InternalConsts* myConsts)
 *
 *********************************************************************************************/
 
+void writememLong(ULONG Base, ULONG offset, ULONG value)
+{
+    *((ULONG*)(Base + offset)) = value;
+    return;
+}
+
+/********************************************************************************************/
+
 ULONG readmemLong(ULONG Base, ULONG offset)
 {
     ULONG res;
     res = *((ULONG*)(Base + offset));
     return res;
 }
+
+/********************************************************************************************/
 
 void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmemBase)
 {
@@ -1018,12 +1029,6 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 
     writememLong(configBase, IMMR_RSR, res);
 
-    return;
-}
-
-void writememLong(ULONG Base, ULONG offset, ULONG value)
-{
-    *((ULONG*)(Base + offset)) = value;
     return;
 }
 

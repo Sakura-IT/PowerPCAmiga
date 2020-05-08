@@ -355,4 +355,6 @@ VOID RunCPP(struct iframe* frame, ULONG Code, APTR args);
 VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 VOID FlushICache(VOID);
 ULONG* GetDecTable(VOID);
+VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value);
+ULONG readmemLongPPC(ULONG Base, ULONG offset);
 
