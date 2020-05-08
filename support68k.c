@@ -970,7 +970,11 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	{
 		case DEVICE_HARRIER:
 		{
-			break;
+			if (readmemLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIST))
+            {
+                flag = 1;
+            }
+            break;
 		}
 		case DEVICE_MPC107:
 		{
@@ -983,6 +987,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
                 writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
                 flag = 1;
 			}
+            break;
 		}
 		default:
 		{
@@ -1122,45 +1127,37 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
-
+    struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
     ULONG msgFrame = NULL;
 
     Disable();
 
-    switch (PowerPCBase->pp_DeviceID)
+    while (1)
     {
-        case DEVICE_HARRIER:
+        switch (PowerPCBase->pp_DeviceID)
         {
-            break;
-        }
-
-        case DEVICE_MPC8343E:
-        {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-            while (1)
-            {                
+            case DEVICE_HARRIER:
+            {
+                msgFrame = readmemLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ);
+                break;
+            }
+            case DEVICE_MPC8343E:
+            {
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
                 myFIFO->kf_MIIFT = (myFIFO->kf_MIIFT + 4) & 0xffff3fff;
-                if (msgFrame != myFIFO->kf_CreatePrevious)
-                {
-                    myFIFO->kf_CreatePrevious = msgFrame;
-                    break;
-                }
+                break;
             }
-            break;
+            case DEVICE_MPC107:
+            {
+                break;
+            }
         }
-
-        case DEVICE_MPC107:
+        if (msgFrame != myFIFO->kf_CreatePrevious)
         {
-            break;
-        }
-
-        default:
-        {
+            myFIFO->kf_CreatePrevious = msgFrame;
             break;
         }
     }
-
     Enable();
 
 //#if 0
@@ -1193,6 +1190,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
     {
         case DEVICE_HARRIER:
         {
+            writememLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ, (ULONG)msgFrame);
             break;
         }
 
@@ -1203,7 +1201,6 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
             *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
             myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
             writememLong(PowerPCBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
-
             break;
         }
 
@@ -1241,25 +1238,20 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
     {
         case DEVICE_HARRIER:
         {
+            ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH);
+            writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH, msgOffset + 4);
+            writememLong(PowerPCBase->pp_PPCMemBase, msgOffset, (ULONG)msgFrame);
             break;
         }
-
         case DEVICE_MPC8343E:
         {
             struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
             *((ULONG*)(myFIFO->kf_MIOFH)) = (ULONG)msgFrame;
             myFIFO->kf_MIOFH = (myFIFO->kf_MIOFH + 4) & 0xffff3fff;
-
             break;
         }
-
         case DEVICE_MPC107:
-        {
-            break;
-        }
-
-        default:
         {
             break;
         }
@@ -1279,46 +1271,55 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
 {
     struct ExecBase* SysBase = PowerPCBase->pp_PowerPCBase.PPC_SysLib;
-
+    struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
     ULONG msgFrame = -1;
 
     Disable();
 
-    switch (PowerPCBase->pp_DeviceID)
+    while (1)
     {
-        case DEVICE_HARRIER:
+        switch (PowerPCBase->pp_DeviceID)
         {
-            break;
-        }
-
-        case DEVICE_MPC8343E:
-        {
-            struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
-
-            if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
+            case DEVICE_HARRIER:
+            {
+                if (readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT) ==
+                    readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPH))
+                {
+                    break;
+                }
+                else
+                {
+                    ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT);
+                    msgFrame = readmemLong(PowerPCBase->pp_PPCMemBase, msgOffset);
+                    writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT, msgOffset + 4);
+                }
+                break;
+            }
+            case DEVICE_MPC8343E:
+            {
+                if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
+                {
+                    break;
+                }
+                else
+                {
+                    msgFrame = *((ULONG*)(myFIFO->kf_MIOPT));
+                    myFIFO->kf_MIOPT = (myFIFO->kf_MIOPT + 4) & 0xffff3fff;
+                }
+                break;
+            }
+            case DEVICE_MPC107:
             {
                 break;
             }
-            while (1)
-            {
-                msgFrame = *((ULONG*)(myFIFO->kf_MIOPT));
-                myFIFO->kf_MIOPT = (myFIFO->kf_MIOPT + 4) & 0xffff3fff;
-                if (msgFrame != myFIFO->kf_GetPrevious)
-                {
-                    myFIFO->kf_GetPrevious = msgFrame;
-                    break;
-                }
-            }
-            break;
         }
-
-        case DEVICE_MPC107:
+        if (msgFrame == -1)
         {
             break;
         }
-
-        default:
+        else if (msgFrame != myFIFO->kf_GetPrevious)
         {
+            myFIFO->kf_GetPrevious = msgFrame;
             break;
         }
     }

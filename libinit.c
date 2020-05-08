@@ -626,7 +626,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     {
         case DEVICE_HARRIER:
 		{
-		    break;
+		    myBase->pp_BridgeConfig    = ppcdevice->pd_ABaseAddress1;
+            myBase->pp_BridgeMsgs      = ppcdevice->pd_ABaseAddress0;
+            break;
 		}
         case DEVICE_MPC8343E:
 		{

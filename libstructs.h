@@ -124,6 +124,7 @@ struct PPCBase              pp_PowerPCBase;
 struct MinList              pp_MirrorList;
 ULONG                       pp_DeviceID;
 ULONG                       pp_BridgeConfig;
+ULONG                       pp_BridgeMsgs;
 struct MsgPort*             pp_MasterControl;
 struct UtilityBase*         pp_UtilityBase;
 UBYTE                       pp_DebugLevel;

@@ -790,6 +790,7 @@ LIBFUNC68K void myCausePPCInterrupt(__reg("a6") struct PrivatePPCBase* PowerPCBa
     {
         case DEVICE_HARRIER:
         {
+            writememLong(PowerPCBase->pp_BridgeMsgs, PMEP_MGIM0, -1);
             break;
         }
         case DEVICE_MPC8343E:
