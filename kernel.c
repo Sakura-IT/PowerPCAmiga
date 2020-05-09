@@ -828,6 +828,8 @@ PPCKERNEL void CommonExcHandler(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
     return;
 }
 
+#if 0
+
 /********************************************************************************************
 *
 *
@@ -852,7 +854,7 @@ PPCKERNEL ULONG readmemLongPPC(__reg("r3") ULONG Base, __reg("r4") ULONG offset)
     res = *((ULONG*)(Base + offset));
     return res;
 }
-
+#endif
 /********************************************************************************************
 *
 *
