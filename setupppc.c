@@ -464,8 +464,38 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
 *
 *********************************************************************************************/
 
-void setupOpenPIC(void)
+void setupOpenPIC(__reg("r3") struct InitData* initData)
 {
+    ULONG volatile value = readmemLongPPC(initData->id_MPICBase, XMPI_GLBC);
+    writememLongPPC(initData->id_MPICBase, XMPI_GLBC, value | XMPI_GLBC_RESET);
+
+    while (1)
+    {
+        value = readmemLongPPC(initData->id_MPICBase, XMPI_GLBC);  //different in asm version
+        if (!(value & XMPI_GLBC_RESET))
+        {
+            writememLongPPC(initData->id_MPICBase, XMPI_GLBC, value | XMPI_GLBC_M);
+            break;
+        }
+    }
+
+    writememLongPPC(initData->id_MPICBase, XMPI_IFEVP, 0x00050042);
+    writememLongPPC(initData->id_MPICBase, XMPI_IFEDE, XMPI_IFEDE_P0);
+    writememLongPPC(initData->id_MPICBase, XMPI_P0CTP, 0);
+
+    value = readmemLongPPC(initData->id_MPICBase, XMPI_FREP);
+
+    while (value)
+    {
+        readmemLongPPC(initData->id_MPICBase, XMPI_P0IAC);
+        writememLongPPC(initData->id_MPICBase, XMPI_P0EOI, 0);
+        value--;
+    }
+
+    writememLongPPC(PPC_XCSR_BASE, XCSR_FEEN, XCSR_FEEN_MIP | XCSR_FEEN_MIM0);
+    writememLongPPC(PPC_XCSR_BASE, XCSR_FEMA, XCSR_FEMA_MIPM0);
+    writememLongPPC(PPC_XCSR_BASE, XCSR_MCSR, XCSR_MCSR_OPI);
+
     return;
 }
 
@@ -571,7 +601,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     {
         case DEVICE_HARRIER:
         {
-            setupOpenPIC();
+            setupOpenPIC(initData);
             break;
         }
         case DEVICE_MPC8343E:

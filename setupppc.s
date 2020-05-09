@@ -41,6 +41,7 @@
         .long   0               #Options2
         .long   0               #Options3
         .long   0               #DeviceID
+        .long   0               #MPIC
         .long   0               #StartBAT
         .long   0               #SizeBAT
 

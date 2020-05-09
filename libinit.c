@@ -1297,6 +1297,7 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     harrierData->id_Environment2  = myConsts->ic_env2;
     harrierData->id_Environment3  = myConsts->ic_env3;
     harrierData->id_DeviceID      = ppcdevice->pd_DeviceID;
+    harrierData->id_MPICBase      = ppcdevice->pd_ABaseAddress3;
     harrierData->id_StartBat      = myConsts->ic_startBAT;
     harrierData->id_SizeBat       = myConsts->ic_sizeBAT;
 
