@@ -145,6 +145,7 @@
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
 #define SIZE_KFIFO              0x10000
+#define SIZE_HFIFO              0x40000
 #define FIFO_OFFSET             0x380000
 #define FIFO_END                FIFO_OFFSET + (4 * SIZE_KFIFO)
 
@@ -460,6 +461,7 @@
 #define XCSR_FEST_MIP           0x08000000
 #define XCSR_FECL_MIM0          0x20000000
 #define XCSR_MCSR_OPI           0x40000000
+#define XCSR_MIQB_DEFAULT       0x100000
 
 #define XCSR_FEEN               0x40
 #define XCSR_FEST               0x44

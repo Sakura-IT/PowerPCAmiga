@@ -102,6 +102,7 @@ ULONG               id_GfxConfigBase;
 ULONG               id_Environment1;
 ULONG               id_Environment2;
 ULONG               id_Environment3;
+ULONG               id_DeviceID;
 ULONG               id_StartBat;
 ULONG               id_SizeBat;
 };

@@ -175,9 +175,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
     setupPT();
 
-    ULONG myPVR = getPVR();
-
-    if ((myPVR >> 16) == ID_MPC834X)
+    if (initData->id_DeviceID == DEVICE_MPC8343E)
     {
         startEffAddr = IMMR_ADDR_DEFAULT;
     }
@@ -186,6 +184,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
         initData->id_Status = ERR_PPCSETUP;
         return;
     }
+
     endEffAddr   = startEffAddr + 0x100000;
     physAddr     = startEffAddr;
     WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
@@ -377,26 +376,57 @@ PPCSETUP void installExceptions(void)
 *
 *********************************************************************************************/
 
-PPCSETUP void killerFIFOs(__reg("r3") struct InitData* initData)
+PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
 {
+    ULONG memIF, memIP, memOF, memOP;
     ULONG memBase  = initData->id_MemBase;
     ULONG memFIFO  = memBase + BASE_KMSG;
     ULONG memFIFO2 = memFIFO + SIZE_KBASE;
-    ULONG memIF    = FIFO_OFFSET;
-    ULONG memIP    = memIF + SIZE_KFIFO;
-    ULONG memOF    = memIF + (SIZE_KFIFO * 2);
-    ULONG memOP    = memIF + (SIZE_KFIFO * 3);
 
-    struct killFIFO* baseFIFO = (struct killFIFO*)(memIF + (SIZE_KFIFO *4));
+    switch (initData->id_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            memIF    = XCSR_MIQB_DEFAULT;
+            memIP    = memIF + SIZE_HFIFO;
+            memOF    = memIP + SIZE_HFIFO;
+            memOP    = memOF + SIZE_HFIFO;
 
-    baseFIFO->kf_MIIFT = memBase + memIF + 4;
-    baseFIFO->kf_MIIFH = memBase + memIF;
-    baseFIFO->kf_MIIPT = memBase + memIP;
-    baseFIFO->kf_MIIPH = memBase + memIP;
-    baseFIFO->kf_MIOFH = memBase + memOF;
-    baseFIFO->kf_MIOFT = memBase + memOF + 4;
-    baseFIFO->kf_MIOPT = memBase + memOP;
-    baseFIFO->kf_MIOPH = memBase + memOP;
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIQB, XCSR_MIQB_DEFAULT);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIIFT, 4);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIIFH, 0);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIIPT, SIZE_HFIFO);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIIPH, SIZE_HFIFO);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOFT, (SIZE_HFIFO * 2) + 4);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOFH, (SIZE_HFIFO * 2));
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOPT, (SIZE_HFIFO * 3));
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIOPH, (SIZE_HFIFO * 3));
+            break;
+        }
+        case DEVICE_MPC8343E:
+        {
+            memIF    = FIFO_OFFSET;
+            memIP    = memIF + SIZE_KFIFO;
+            memOF    = memIP + SIZE_KFIFO;
+            memOP    = memOF + SIZE_KFIFO;
+
+            struct killFIFO* baseFIFO = (struct killFIFO*)(memIF + (SIZE_KFIFO *4));
+
+            baseFIFO->kf_MIIFT = memBase + memIF + 4;
+            baseFIFO->kf_MIIFH = memBase + memIF;
+            baseFIFO->kf_MIIPT = memBase + memIP;
+            baseFIFO->kf_MIIPH = memBase + memIP;
+            baseFIFO->kf_MIOFH = memBase + memOF;
+            baseFIFO->kf_MIOFT = memBase + memOF + 4;
+            baseFIFO->kf_MIOPT = memBase + memOP;
+            baseFIFO->kf_MIOPH = memBase + memOP;
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+    }
 
     for (int i=0; i<4096; i++)
     {
@@ -413,7 +443,29 @@ PPCSETUP void killerFIFOs(__reg("r3") struct InitData* initData)
         memFIFO2 += MSGLEN;
     }
 
+    switch (initData->id_DeviceID)
+    {
+        case DEVICE_HARRIER:
+        {
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MICT, (XCSR_MICT_ENA | XCSR_MICT_QSZ_16K));
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
+    }
+    return;
+}
 
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+void setupOpenPIC(void)
+{
     return;
 }
 
@@ -511,13 +563,25 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         mem += 4;
     }
 
-    ULONG myPVR = getPVR();
-
     myZP->zp_MemSize = initData->id_MemSize;
 
-    if ((myPVR>>16) == ID_MPC834X)
+    setupFIFOs(initData);
+
+    switch (initData->id_DeviceID)
     {
-        killerFIFOs(initData);
+        case DEVICE_HARRIER:
+        {
+            setupOpenPIC();
+            break;
+        }
+        case DEVICE_MPC8343E:
+        {
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            break;
+        }
     }
 
     ULONG* IdleTask = (ULONG*)OFFSET_SYSMEM;

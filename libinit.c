@@ -1157,6 +1157,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_Environment1  = myConsts->ic_env1;
     killerData->id_Environment2  = myConsts->ic_env2;
     killerData->id_Environment3  = myConsts->ic_env3;
+    killerData->id_DeviceID      = ppcdevice->pd_DeviceID;
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
@@ -1295,6 +1296,7 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     harrierData->id_Environment1  = myConsts->ic_env1;
     harrierData->id_Environment2  = myConsts->ic_env2;
     harrierData->id_Environment3  = myConsts->ic_env3;
+    harrierData->id_DeviceID      = ppcdevice->pd_DeviceID;
     harrierData->id_StartBat      = myConsts->ic_startBAT;
     harrierData->id_SizeBat       = myConsts->ic_sizeBAT;
 
