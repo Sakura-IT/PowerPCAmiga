@@ -2032,10 +2032,6 @@ PPCFUNCTION ULONG mySetHardware(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
         setDABR(0);
         myUser(PowerPCBase, key);
     }
-    else if (flags == HW_CPUTYPE) //private
-    {
-        status = PowerPCBase->pp_CPUInfo;
-    }
     else if (flags == HW_SETDEBUGMODE) //private
     {
         ULONG level = (ULONG)param;
@@ -2373,13 +2369,28 @@ PPCFUNCTION VOID myGetInfo(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
             {
                 case GETINFO_CPU:
                 {
-                    if(PowerPCBase->pp_DeviceID == DEVICE_MPC8343E)
+                    switch (PowerPCBase->pp_DeviceID)
                     {
-                        myTagItem->ti_Data = CPUF_603E;
-                    }
-                    else
-                    {
-                        myTagItem->ti_Data = 0;
+                        case DEVICE_MPC8343E:
+                        {
+                            myTagItem->ti_Data = CPUF_603E;
+                            break;
+                        }
+                        case DEVICE_HARRIER:
+                        {
+                            myTagItem->ti_Data = CPUF_G3; //debugdebug more choices here
+                            break;
+                        }
+                        case DEVICE_MPC107:
+                        {
+                            myTagItem->ti_Data = CPUF_G3;  //debugdebug more choices here
+                            break;
+                        }
+                        default:
+                        {
+                            myTagItem->ti_Data = 0;
+                            break;
+                        }
                     }
                     break;
                 }

@@ -436,49 +436,33 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
 
 LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PrivatePPCBase* PowerPCBase)
 {
-    struct PPCArgs pa;
-    LONG status;
-    UWORD cpuType;
+    UWORD cpuType = PowerPCBase->pp_CPUInfo >> 16;
 
-	pa.PP_Code      = PowerPCBase;
-	pa.PP_Offset    = _LVOSetHardware;
-	pa.PP_Flags     = 0;
-	pa.PP_Stack     = 0;
-	pa.PP_StackSize = 0;
-	pa.PP_Regs[0]   = (ULONG) PowerPCBase;
-    pa.PP_Regs[1]   = HW_CPUTYPE;
-
-	if (!(status = myRunPPC(PowerPCBase, (APTR)&pa)))
+    switch (cpuType)
     {
-        cpuType = (pa.PP_Regs[0] >> 16);
-
-	    switch (cpuType)
+        case 0x7000:
         {
-            case 0x7000:
-            {
-                return (CPUF_G3);
-
-            }
-            case 0x8000:
-            {
-                return (CPUF_G4);
-            }
-            case 0x8083:
-            {
-                return (CPUF_603E);
-            }
+            return (CPUF_G3);
         }
-
-        switch (cpuType & 0xfff)
+        case 0x8000:
         {
-            case 8:
-            {
-                return (CPUF_G3);
-            }
-            case 0xc:
-            {
-                return (CPUF_G4);
-            }
+            return (CPUF_G3);  //debugdebug should be g4
+        }
+        case 0x8083:
+        {
+            return (CPUF_603E);
+        }
+    }
+
+    switch (cpuType & 0xfff)
+    {
+        case 8:
+        {
+            return (CPUF_G3);
+        }
+        case 0xc:
+        {
+            return (CPUF_G3);  //debugdebug should be g4 (to prevent Altivec for now)
         }
     }
     return 0;
