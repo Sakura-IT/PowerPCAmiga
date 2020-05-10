@@ -448,6 +448,7 @@
 #define XCSR_SDBA_SIZE          0x000F0000
 #define XCSR_SDBA_ENA           0x00000100
 #define XCSR_SDGC_MXRR_7        0x30000000
+#define XCSR_SDGC_DERC          0x02000000
 #define XCSR_SDGC_ENRV_ENA      0x00800000
 #define XCSR_SDTC_DEFAULT       0x07130000
 #define XCSR_BXCS_P0H_ENA       0x00100000

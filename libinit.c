@@ -1269,7 +1269,7 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     writememLong(configBase, XCSR_OTAT0, value2);
 
-    value = XCSR_SDGC_ENRV_ENA | XCSR_SDGC_MXRR_7;
+    value = XCSR_SDGC_ENRV_ENA | XCSR_SDGC_MXRR_7 | XCSR_SDGC_DERC;
 
     writememLong(configBase, XCSR_SDTC, XCSR_SDTC_DEFAULT);
     writememLong(configBase, XCSR_SDBAA, XCSR_SDBA_32M8 | XCSR_SDBA_ENA);
