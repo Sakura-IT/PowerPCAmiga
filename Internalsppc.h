@@ -76,6 +76,8 @@ void  setDEC(LONG value)                  = "\tmtdec\tr3\n";
 ULONG getDEC(void)                        = "\tmfdec\tr3\n";
 ULONG getTBU(void)                        = "\tmftbu\tr3\n";
 ULONG getTBL(void)                        = "\tmftbl\tr3\n";
+ULONG getL2CR(void)                       = "\tmfl2cr\tr3\n";
+void  setL2CR(ULONG value)                = "\tmtl2cr\tr3\n\tsync\n";
 void  tlbSync(void)                       = "\ttlbsync\n";
 void  tlbIe(ULONG value)                  = "\ttlbie\tr3\n";
 void  storeR0(ULONG value)                = "\tmr\tr0,r3\n";
@@ -358,6 +360,9 @@ VOID RunCPP(struct iframe* frame, ULONG Code, APTR args);
 VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 VOID FlushICache(VOID);
 ULONG* GetDecTable(VOID);
+ULONG* getTableFX(VOID);
+ULONG* getTable100(VOID);
+VOID getL2Size(ULONG testmem, APTR cz);
 #if 0
 VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value);
 ULONG readmemLongPPC(ULONG Base, ULONG offset);

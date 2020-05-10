@@ -39,6 +39,11 @@ ULONG               mf_Signals;
 ULONG               mf_Arg[3];
 };
 
+struct CacheSize {
+ULONG               cz_SizeBit;
+ULONG               cz_SizeBytes;
+};
+
 struct DebugArgs {
 STRPTR              db_ProcessName;
 ULONG               db_Function;

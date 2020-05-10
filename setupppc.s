@@ -23,6 +23,7 @@
 #*********************************************************
 
 .global     _setupPPC, _Reset, _GetExcTable, _GetVecEntry
+.global     _getTableFX, _getTable100, _getL2Size
 
 #*********************************************************
 
@@ -203,6 +204,87 @@ ifpdr_value:
 
         mtlr	r6
         blr
+#*********************************************************
+
+_getL2Size:
+        mr      r6,r3                   #Determine size of L2 Cache
+        mr      r3,r4
+        li      r5,0
+        mr      r8,r5
+        lis     r4,0
+
+        subis   r6,r6,0x40              #Substract 4 MB
+        lis     r5,L2_SIZE_1M_U         #Size of memory to write to
+
+.L2SzWriteLoop:
+        dcbz    r4,r6
+        stwx    r4,r4,r6
+        dcbf    r4,r6
+        addi    r4,r4,L2_ADR_INCR
+        cmpw    r4,r5
+        blt     .L2SzWriteLoop
+
+        lis     r4,0
+
+.L2SzReadLoop:
+        lwzx    r7,r4,r6
+        cmpw    r4,r7
+        bne     .L2SkipCount
+        addi    r8,r8,1                 #Count cache lines
+
+.L2SkipCount:
+        dcbi    r4,r6
+        addi    r4,r4,L2_ADR_INCR
+        cmpw    r4,r5
+        blt     .L2SzReadLoop
+
+#       lis     r7,L2CR_L2SIZ_2M@h
+#       cmpwi   r8,L2_SIZE_2M
+#       beq     .L2SizeDone
+
+        lis     r7,L2CR_L2SIZ_1M@h
+        cmpwi   r8,L2_SIZE_1M
+        beq     .L2SizeDone
+
+        lis     r7,L2CR_L2SIZ_HM@h
+        cmpwi   r8,L2_SIZE_HM
+        beq     .L2SizeDone
+
+        lis     r7,L2CR_L2SIZ_QM@h
+        cmpwi   r8,L2_SIZE_QM
+        beq     .L2SizeDone
+
+        lis     r7,0
+        mr      r8,r5
+
+.L2SizeDone:
+        stw     r7,0(r3)
+        stw     r8,4(r3)
+        blr
+
+#*********************************************************
+
+_getTable100:
+        mflr    r4
+        bl      .EndTable
+
+        .long	0b1110,350000000,0b1010,400000000
+        .long	0b0111,450000000,0b1011,500000000
+        .long	0b1001,550000000,0b1101,600000000
+        .long	0b0101,650000000,0b0010,700000000
+        .long	0b0001,750000000,0b1100,800000000
+        .long	0b0000,900000000,0
+
+#*********************************************************
+
+_getTableFX:
+        mflr    r4
+        bl      .EndTable
+
+        .long	0b01110,700000000,0b01111,750000000
+        .long	0b10000,800000000,0b10001,850000000
+        .long	0b10010,900000000,0b10011,950000000
+        .long	0b10100,1000000000,0
 
 #*********************************************************
 

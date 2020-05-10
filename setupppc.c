@@ -526,11 +526,10 @@ PPCSETUP void initSema(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4
 PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     ULONG value0 = getHID0();
-
-
     ULONG value1 = getHID1();
-
-    ULONG pll;
+    ULONG num = 0;
+    ULONG pll, l2Size, l2Setting;
+    struct CacheSize cz;
 
     switch (PowerPCBase->pp_DeviceID)
     {
@@ -538,14 +537,68 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
         {
             value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
             setHID0(value0);
+
+            if (getPVR() >> 24 == 0x70)
+            {
+                l2Size = L2_SIZE_HM;
+                l2Setting = getL2CR();
+                setL2CR(l2Setting | L2CR_L2I);
+
+                while (getL2CR() & L2CR_L2IP);
+
+                setL2CR(l2Setting | L2CR_L2E);
+
+                pll = value1 >> 27;
+
+                ULONG* pllTable = getTableFX();
+
+                while (pllTable[num])
+                {
+                    if (pllTable[num] == pll)
+                    {
+                        PowerPCBase->pp_CPUSpeed = pllTable[num+1];
+                        break;
+                    }
+                    num +=2;
+                }
+            }
+            else
+            {
+                l2Setting = L2CR_L2SIZ_1M | L2CR_L2CLK_3 | L2CR_L2RAM_BURST | L2CR_TS;
+                setL2CR(l2Setting);
+                getL2Size(PowerPCBase->pp_PPCMemBase + PowerPCBase->pp_PPCMemSize, (APTR)&cz);
+
+                l2Setting &= ~L2CR_TS;
+                if (cz.cz_SizeBit)
+                {
+                    l2Setting &= ~L2CR_L2SIZ_1M;
+                    l2Setting |= cz.cz_SizeBit;
+                }
+
+                setL2CR(l2Setting);
+                l2Size = cz.cz_SizeBytes;
+
+                pll = value1 >> 28;
+
+                ULONG* pllTable = getTable100();
+
+                while (pllTable[num])
+                {
+                    if (pllTable[num] == pll)
+                    {
+                        PowerPCBase->pp_CPUSpeed = pllTable[num+1];
+                        break;
+                    }
+                    num +=2;
+                }
+            }
             break;
         }
         case DEVICE_MPC8343E:
         {
             value0 |= HID0_ICE | HID0_DCE;
             setHID0(value0);
-            PowerPCBase->pp_L2Size = 0;
-            PowerPCBase->pp_CurrentL2Size = 0;
+            l2Size = 0;
             pll = (value1 >> 25) & 0x7f;
             switch (pll)
             {
@@ -568,6 +621,10 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             break;
         }
     }
+
+    PowerPCBase->pp_L2Size = l2Size;
+    PowerPCBase->pp_CurrentL2Size = l2Size;
+
     return;
 }
 
@@ -685,12 +742,14 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     {
         case DEVICE_HARRIER:
         {
+            quantum = QUANTUM_100;
+            busclock = BUSCLOCK_100;
             break;
         }
         case DEVICE_MPC8343E:
         {
-            quantum = KILLERQUANTUM;
-            busclock = KILLERBUSCLOCK;
+            quantum = QUANTUM_KILLER;
+            busclock = BUSCLOCK_KILLER;
 
             if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_RCWLR) & (1<<RCWLR_DDRCM))
             {

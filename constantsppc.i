@@ -103,6 +103,19 @@
 
 .set SRR1_KEY,	                0x00080000
 
+.set L2_ADR_INCR,               0x100
+.set L2_SIZE_2M,                0x2000
+.set L2_SIZE_1M,                0x1000
+.set L2_SIZE_HM,                0x800
+.set L2_SIZE_QM,                0x400
+.set L2_SIZE_1M_U,              0x0010
+.set L2_SIZE_2M_U,              0x0020
+
+.set L2CR_L2SIZ_2M,             0x00000000      # bits 2-3 2 MB; MPC7400 ONLY!
+.set L2CR_L2SIZ_1M,             0x30000000      # bits 2-3 1MB
+.set L2CR_L2SIZ_HM,             0x20000000      # bits 2-3 512K
+.set L2CR_L2SIZ_QM,             0x10000000      # bits 2-3 256K; MPC750 ONLY
+
 .set ibat4u,560
 .set ibat4l,561
 .set ibat5u,562

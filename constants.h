@@ -56,9 +56,13 @@
 #define OPCODE_BBRANCH          0x4C000000  //only for backward jump
 #define OPCODE_FBRANCH          0x48000000
 
-#define KILLERQUANTUM           1333333
-#define KILLERBUSCLOCK          266666666
+#define QUANTUM_KILLER          1333333
+#define BUSCLOCK_KILLER         266666666
 #define RCWLR_DDRCM             1
+#define BUSCLOCK_100            100000000
+#define BUSCLOCK_66             66666666
+#define QUANTUM_100             500000
+#define QUANTUM_66              333333
 
 #define PPERR_MISCERR           3
 
