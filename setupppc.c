@@ -175,14 +175,35 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
     setupPT();
 
-    if (initData->id_DeviceID == DEVICE_MPC8343E)
+    switch (initData->id_DeviceID)
     {
-        startEffAddr = IMMR_ADDR_DEFAULT;
-    }
-    else
-    {
-        initData->id_Status = ERR_PPCSETUP;
-        return;
+        case DEVICE_MPC8343E:
+        {
+            startEffAddr = IMMR_ADDR_DEFAULT;
+            break;
+        }
+        case DEVICE_HARRIER:
+        {
+            startEffAddr = initData->id_MPICBase;
+            endEffAddr   = startEffAddr + 0x400000;
+            physAddr     = startEffAddr;
+            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            ppKey        = PP_SUPERVISOR_RW;
+
+            if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+            {
+                initData->id_Status = ERR_PPCMMU;
+                return;
+            }
+
+            startEffAddr = PPC_XCSR_BASE;
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            initData->id_Status = ERR_PPCSETUP;
+            return;
+        }
     }
 
     endEffAddr   = startEffAddr + 0x100000;
