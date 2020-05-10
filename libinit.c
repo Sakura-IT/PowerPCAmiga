@@ -626,14 +626,14 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     {
         case DEVICE_HARRIER:
 		{
-		    myBase->pp_BridgeConfig    = ppcdevice->pd_ABaseAddress1;
-            myBase->pp_BridgeMsgs      = ppcdevice->pd_ABaseAddress0;
-            myBase->pp_BridgeMPIC      = ppcdevice->pd_ABaseAddress3;
+		    myBase->pp_BridgeConfig    = cardData->id_ConfigBase;
+            myBase->pp_BridgeMsgs      = cardData->id_MsgsBase;
+            myBase->pp_BridgeMPIC      = cardData->id_MPICBase;
             break;
 		}
         case DEVICE_MPC8343E:
 		{
-		    myBase->pp_BridgeConfig    = ppcdevice->pd_ABaseAddress0;
+		    myBase->pp_BridgeConfig    = cardData->id_ConfigBase;
             break;
 		}
         case DEVICE_MPC107:
@@ -1158,6 +1158,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_Environment2  = myConsts->ic_env2;
     killerData->id_Environment3  = myConsts->ic_env3;
     killerData->id_DeviceID      = ppcdevice->pd_DeviceID;
+    killerData->id_ConfigBase    = configBase;
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
@@ -1297,7 +1298,9 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     harrierData->id_Environment2  = myConsts->ic_env2;
     harrierData->id_Environment3  = myConsts->ic_env3;
     harrierData->id_DeviceID      = ppcdevice->pd_DeviceID;
-    harrierData->id_MPICBase      = ppcdevice->pd_ABaseAddress3;
+    harrierData->id_ConfigBase    = configBase;
+    harrierData->id_MsgsBase      = pmepBase;
+    harrierData->id_MPICBase      = mpicBase;
     harrierData->id_StartBat      = myConsts->ic_startBAT;
     harrierData->id_SizeBat       = myConsts->ic_sizeBAT;
 

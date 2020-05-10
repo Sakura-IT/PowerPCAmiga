@@ -108,6 +108,8 @@ ULONG               id_Environment1;
 ULONG               id_Environment2;
 ULONG               id_Environment3;
 ULONG               id_DeviceID;
+ULONG               id_ConfigBase;
+ULONG               id_MsgsBase;
 ULONG               id_MPICBase;
 ULONG               id_StartBat;
 ULONG               id_SizeBat;

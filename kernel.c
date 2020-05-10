@@ -1000,7 +1000,7 @@ PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 		{
             ULONG msgOffset = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIFH);
             writememLongPPC(msgOffset, 0, (ULONG)msgFrame);
-            writememLongPPC(PowerPCBase->pp_BridgeConfig, XCSR_MIIFH, (msgOffset + 4) & 0xffff3fff);
+            writememLongPPC(PPC_XCSR_BASE, XCSR_MIIFH, (msgOffset + 4) & 0xffff3fff);
             break;
 		}
 

@@ -31,6 +31,8 @@
 
         bl	.SkipCom		    #0x3000	System initialization
 
+        #below is a mirror of struct InitData in libstruct.h
+
         .long   0               #Used for initial communication
         .long   0               #MemStart
         .long   0               #MemLen
@@ -42,6 +44,8 @@
         .long   0               #Options2
         .long   0               #Options3
         .long   0               #DeviceID
+        .long   0               #ConfigBase
+        .long   0               #MsgBase
         .long   0               #MPIC
         .long   0               #StartBAT
         .long   0               #SizeBAT
