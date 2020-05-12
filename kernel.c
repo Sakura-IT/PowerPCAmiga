@@ -34,6 +34,8 @@
 
 PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe)
 {
+    ULONG* mem = (APTR)0xb0;
+    mem[iframe->if_ExcNum] += 1;
 
     PowerPCBase->pp_ExceptionMode = -1;
     PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
@@ -133,7 +135,6 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         }
         case VEC_DECREMENTER:
         {
-
             CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcDecrementer);
 
             struct ExcData* eData;
@@ -351,11 +352,6 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                 case SC_FREEMSG:
                 {
                     KFreeMsgFramePPC(PowerPCBase, (struct MsgFrame*)sc->sc_Arg[0]);
-                    break;
-                }
-                case SC_FLUSHDC:
-                {
-                    KFlushDCache(PowerPCBase);
                     break;
                 }
                 case SC_SETCACHE:
@@ -912,7 +908,7 @@ PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* Po
 		{
 			ULONG msgOffset1 = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIPH);
             ULONG msgOffset2 = readmemLongPPC(PPC_XCSR_BASE, XCSR_MIIPT);
-            if (readmemLongPPC(msgOffset1, 0) != readmemLongPPC(msgOffset2, 0))
+            if (msgOffset1 != msgOffset2)
             {
                 writememLongPPC(PPC_XCSR_BASE, XCSR_MIIPT, (msgOffset2 + 4) & 0xffff3fff);
                 msgFrame = readmemLongPPC(msgOffset2, 0);
@@ -1032,7 +1028,7 @@ PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 *
 *********************************************************************************************/
 
-PPCKERNEL VOID KFlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+PPCKERNEL VOID FlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     ULONG cacheSize;
 
@@ -1083,7 +1079,7 @@ PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
         {
             if (!(PowerPCBase->pp_CacheDState))
             {
-                KFlushDCache(PowerPCBase);
+                FlushDCache(PowerPCBase);
 
                 value = getHID0();
                 value &= ~HID0_DCE;
@@ -1104,7 +1100,7 @@ PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
         {
             if ((start) && (length) && !(PowerPCBase->pp_CacheDLockState))
             {
-                KFlushDCache(PowerPCBase);
+                FlushDCache(PowerPCBase);
                 ULONG iterations = (ULONG)start + length;
                 ULONG mask = -32;
                 start = (APTR)((ULONG)start & mask);
@@ -1155,7 +1151,7 @@ PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
                     }
                     else
                     {
-                        KFlushDCache(PowerPCBase);
+                        FlushDCache(PowerPCBase);
                     }
                 }
                 else
@@ -1267,7 +1263,7 @@ PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
             }
             case CACHE_L2CACHEOFF:
             {
-                KFlushDCache(PowerPCBase);
+                FlushDCache(PowerPCBase);
                 value = getL2State();
                 value &= ~L2CR_L2E;
                 setL2State(value);

@@ -24,8 +24,7 @@
 #define SC_GETMSG               0x80000002
 #define SC_SENDMSG              0x80000003
 #define SC_FREEMSG              0x80000004
-#define SC_FLUSHDC              0x80000005
-#define SC_SETCACHE             0x80000006
+#define SC_SETCACHE             0x80000005
 
 #define PPC_VECLEN              3           //Number of instructions of VecEntry (setupppc.s)
 #define NUM_OF_68K_FUNCS        49

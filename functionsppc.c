@@ -4113,6 +4113,7 @@ PPCFUNCTION VOID myNewListPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 
 PPCFUNCTION VOID myCauseInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
+    illegal();
     if (!(PowerPCBase->pp_ExceptionMode))
     {
         ULONG key = mySuper(PowerPCBase);

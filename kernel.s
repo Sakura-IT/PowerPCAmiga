@@ -60,10 +60,11 @@ _ExcCommon:
 
         stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
 
-        lwz     r4,0xb0(r0)
+        lwz     r4,0xa0(r0)
         addi    r4,r4,1
-        stw     r4,0xb0(r0)
-        stw     r4,0xb4(r0)
+        stw     r4,0xa0(r0)
+        mfsprg0 r4
+        stw     r4,0xa4(r0)
 
         mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
@@ -90,7 +91,7 @@ _ExcCommon:
 
         bl      _Exception_Entry
 
-        stw     r1,0xc0(r0)
+        stw     r1,0x90(r0)
 
         la      r31,IF_GAP+IF_CONTEXT(r1)
 
@@ -100,10 +101,6 @@ _ExcCommon:
 
         lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
-
-        li      r0,0xff
-        stw     r0,0xb4(r0)
-
         lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
         lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]

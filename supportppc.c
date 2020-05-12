@@ -120,22 +120,6 @@ PPCFUNCTION VOID FreeVec68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __re
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID FlushDCache(__reg("r3") struct PrivatePPCBase* PowerPCBase)
-{
-    struct SysCall sc;
-    sc.sc_Function = SC_FLUSHDC;
-
-    SystemCall(&sc);
-
-    return;
-}
-
-/********************************************************************************************
-*
-*
-*
-*********************************************************************************************/
-
 PPCFUNCTION VOID ForbidPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
     PowerPCBase->pp_FlagForbid = 1;
@@ -344,7 +328,7 @@ PPCFUNCTION VOID CauseDECInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBas
 	{
 		key = mySuper(PowerPCBase);
         PowerPCBase->pp_ExceptionMode = -1;
-		setDEC(50);
+		setDEC(30);
 		myUser(PowerPCBase, key);
         while (PowerPCBase->pp_ExceptionMode);
 	}
@@ -370,6 +354,8 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 		FreeMutexPPC((ULONG)&PowerPCBase->pp_Mutex);
 		return signal;
 	}
+
+    illegal();
 	myTask->tp_Task.tc_SigRecvd |= sigmask;
 	signal = signal & ~sigmask;
 	PowerPCBase->pp_TaskExcept = myTask;
