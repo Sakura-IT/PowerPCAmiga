@@ -25,7 +25,7 @@
 
 .global     _LockMutexPPC, _FreeMutexPPC, _CopyMemQuickPPC, _SwapStack, _SetFPExc
 .global     _FinalCalc, _Calculator, _FPE_Enable, _FPE_Disable, _RunCPP, _GetDecTable
-.global     _AllocatePPC, _DeallocatePPC
+.global     _xAllocatePPC, _xDeallocatePPC
 
 #********************************************************************************************
 
@@ -37,7 +37,7 @@
 #
 #********************************************************************************************
 
-_AllocatePPC:
+_xAllocatePPC:
 		prolog 228,'TOC'
 
 		stwu	r31,-4(r13)
@@ -126,7 +126,7 @@ _AllocatePPC:
 #
 #********************************************************************************************
 
-_DeallocatePPC:
+_xDeallocatePPC:
 		prolog 228,'TOC'
 
 		stwu	r31,-4(r13)

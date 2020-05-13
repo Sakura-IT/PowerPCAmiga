@@ -743,7 +743,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
-#if 0
+//#if 0
     if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
@@ -760,7 +760,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
     }
-#endif
+//#endif
     return PowerPCBase;
 }
 

@@ -280,7 +280,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         ULONG origmem = (ULONG)mem;
         mem = (APTR)(((ULONG)mem + 31 + align) & (-align));
         ULONG* values = mem;
-        values[-1] = size;
+        values[-1] = size + align + 32;
         values[-2] = (ULONG)currPool;
         values[-3] = origmem;
     }
@@ -3615,7 +3615,7 @@ PPCFUNCTION APTR myAllocPooledPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase
             memBlock->ln_Type = NT_MEMORY;
             myAddHeadPPC(PowerPCBase, (struct List*)&myHeader->ph_BlockList, memBlock);
             mem = (APTR)((ULONG)memBlock + 32);
-            (*((ULONG*)((ULONG)mem - 4))) = size + 32;
+            //(*((ULONG*)((ULONG)mem - 4))) = size + 32;
         }
     }
     else
@@ -4113,7 +4113,6 @@ PPCFUNCTION VOID myNewListPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 
 PPCFUNCTION VOID myCauseInterrupt(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 {
-    illegal();
     if (!(PowerPCBase->pp_ExceptionMode))
     {
         ULONG key = mySuper(PowerPCBase);

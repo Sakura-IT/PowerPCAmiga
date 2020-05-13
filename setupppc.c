@@ -805,6 +805,13 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         PowerPCBase->pp_SystemSegs[i] = getSRIn(i<<28);
     }
 
+
+    ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + OFFSET_SYSMEM + 0x100);
+    for (int i = 0; i < 64; i++)
+    {
+        cmem[i] = 0;
+    }
+
     setupCaches(PowerPCBase);
 
     myZP->zp_Status = STATUS_READY;

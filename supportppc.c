@@ -355,7 +355,6 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 		return signal;
 	}
 
-    illegal();
 	myTask->tp_Task.tc_SigRecvd |= sigmask;
 	signal = signal & ~sigmask;
 	PowerPCBase->pp_TaskExcept = myTask;
@@ -374,7 +373,7 @@ PPCFUNCTION ULONG CheckExcSignal(__reg("r3") struct PrivatePPCBase* PowerPCBase,
 *
 *********************************************************************************************/
 
-PPCFUNCTION APTR XAllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
+PPCFUNCTION APTR AllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader, __reg("r5") ULONG byteSize)
 {
     struct DebugArgs args;
     args.db_Function = 66 | (2<<8) | (1<<16) | (3<<17);
@@ -436,7 +435,7 @@ PPCFUNCTION APTR XAllocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 *
 *********************************************************************************************/
 
-PPCFUNCTION VOID XDeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader,
+PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MemHeader* memHeader,
                    __reg("r5") APTR memoryBlock, __reg("r6") ULONG byteSize)
 {
 	struct DebugArgs args;
@@ -520,6 +519,11 @@ PPCFUNCTION VOID XDeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 
 PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct DebugArgs* args)
 {
+    ULONG* mem = (APTR)(PowerPCBase->pp_PPCMemBase + OFFSET_SYSMEM + 0x100);
+    mem [args->db_Function & 0xff] += 1;
+    mem [-1] = (args->db_Function & 0xff);
+
+
     if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
         ULONG flag = args->db_Function & (1<<16);
