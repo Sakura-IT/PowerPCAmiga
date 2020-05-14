@@ -63,8 +63,6 @@ _ExcCommon:
         lwz     r4,0xa0(r0)
         addi    r4,r4,1
         stw     r4,0xa0(r0)
-        mfsprg0 r4
-        stw     r4,0xa4(r0)
 
         mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
@@ -95,15 +93,16 @@ _ExcCommon:
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
-        mfsrr0  r0
-        stw     r0,0x90(r0)
-
         bl      _FlushICache
 
         lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
-        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
+        mfsprg0 r0
+        mtsrr0  r0
+        mfsprg1 r0
+        mtsrr1  r0
+        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
         lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
 
         rfi
@@ -268,9 +267,9 @@ _StoreFrame:
 _LoadFrame:
 
         lwzu    r3,4(r31)
-        mtsrr0  r3
+        mtsprg0 r3
         lwzu    r3,4(r31)
-        mtsrr1  r3
+        mtsprg1 r3
         lwzu    r3,4(r31)
         mtdar   r3
         lwzu    r3,4(r31)

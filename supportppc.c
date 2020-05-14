@@ -517,11 +517,11 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
 PPCFUNCTION VOID printDebug(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct DebugArgs* args)
 {
+#if 0
     ULONG* mem = (APTR)(PowerPCBase->pp_PPCMemBase + OFFSET_SYSMEM + 0x100);
     mem [args->db_Function & 0xff] += 1;
     mem [-1] = (args->db_Function & 0xff);
-
-
+#endif
     if ((PowerPCBase->pp_DebugLevel) && (!(PowerPCBase->pp_ExceptionMode)))
     {
         ULONG flag = args->db_Function & (1<<16);
