@@ -91,11 +91,12 @@ _ExcCommon:
 
         bl      _Exception_Entry
 
-        stw     r1,0x90(r0)
-
         la      r31,IF_GAP+IF_CONTEXT(r1)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
+
+        mfsrr0  r0
+        stw     r0,0x90(r0)
 
         bl      _FlushICache
 

@@ -447,15 +447,13 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
     if (byteSize)
     {
-//	      ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
-//	      struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
-//	      ULONG freeSize = testSize + byteSize + 31;
+        ULONG testSize = (((ULONG)memoryBlock) - ((ULONG)(memoryBlock) & -32));
+        struct MemChunk* testChunk = (struct MemChunk*)((ULONG)(memoryBlock) & -32);
+        ULONG freeSize = testSize + byteSize + 31;
 
-//	      if (freeSize &= -32)
-//        {
+        if (freeSize &= -32)
+        {
 	        struct MemChunk* testChunk = (struct MemChunk*)memoryBlock;
-            ULONG freeSize = byteSize;
-
             struct MemChunk* currChunk = (struct MemChunk*)&memHeader->mh_First;
 
 	        ULONG flag = 0;
@@ -506,7 +504,7 @@ PPCFUNCTION VOID DeallocatePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 		        }
 	        }
 	        memHeader->mh_Free += freeSize;
-        //}
+        }
     }
 	return;
 }

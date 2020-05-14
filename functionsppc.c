@@ -3615,7 +3615,7 @@ PPCFUNCTION APTR myAllocPooledPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase
             memBlock->ln_Type = NT_MEMORY;
             myAddHeadPPC(PowerPCBase, (struct List*)&myHeader->ph_BlockList, memBlock);
             mem = (APTR)((ULONG)memBlock + 32);
-            //(*((ULONG*)((ULONG)mem - 4))) = size + 32;
+            (*((ULONG*)((ULONG)mem - 4))) = size + 32;
         }
     }
     else
