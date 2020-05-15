@@ -98,12 +98,15 @@ _ExcCommon:
         lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
         mtlr    r0
         lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
+        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
+        mtsprg2 r0
+        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
+
         mfsprg0 r0
         mtsrr0  r0
         mfsprg1 r0
         mtsrr1  r0
-        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
-        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
+        mfsprg2 r0
 
         rfi
 
