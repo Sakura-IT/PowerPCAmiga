@@ -562,12 +562,13 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             if (getPVR() >> 24 == 0x70)
             {
                 l2Size = L2_SIZE_HM;
-                l2Setting = getL2CR();
-                setL2CR(l2Setting | L2CR_L2I);
-
-                while (getL2CR() & L2CR_L2IP);
-
-                setL2CR(l2Setting | L2CR_L2E);
+                l2Setting = 0;
+                if (!(getL2CR() & L2CR_L2E))
+                {
+                    setL2CR(l2Setting | L2CR_L2I);
+                    while (getL2CR() & L2CR_L2IP);
+                    setL2CR(l2Setting | L2CR_L2E);
+                }
 
                 pll = value1 >> 27;
 
@@ -586,7 +587,15 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             else
             {
                 l2Setting = L2CR_L2SIZ_1M | L2CR_L2CLK_3 | L2CR_L2RAM_BURST | L2CR_TS;
-                setL2CR(l2Setting);
+
+                if (!(getL2CR() & L2CR_L2E))
+                {
+                    setL2CR(l2Setting | L2CR_L2I);
+                    while (getL2CR() & L2CR_L2IP);
+                    setL2CR(l2Setting | L2CR_L2E);
+                }
+
+                setL2CR(l2Setting | L2CR_L2E);
                 getL2Size(PowerPCBase->pp_PPCMemBase + PowerPCBase->pp_PPCMemSize, (APTR)&cz);
 
                 l2Setting &= ~L2CR_TS;
@@ -643,8 +652,8 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
         }
     }
 
-    PowerPCBase->pp_L2Size = l2Size;
-    PowerPCBase->pp_CurrentL2Size = l2Size;
+    PowerPCBase->pp_L2Size = l2Size << 8;
+    PowerPCBase->pp_CurrentL2Size = l2Size << 8;
 
     return;
 }

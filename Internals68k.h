@@ -44,13 +44,14 @@ PATCH68K APTR   patchAddTask   (__reg("a1") struct Task* myTask, __reg("a2") APT
                        __reg("a3") APTR finalPC, __reg("a6") struct ExecBase* SysBase);
 PATCH68K void   patchRemTask   (__reg("a1") struct Task* myTask, __reg("a6") struct ExecBase* SysBase);
 
+
+ULONG  readmemL (__reg("a0") ULONG base, __reg("d0") ULONG offset) = "\tmove.l\t0(a0,d0.l),d0\n";
+VOID   writememL(__reg("a0") ULONG base, __reg("d0") ULONG offset, __reg("d1") ULONG value) = "\tmove.l\td1,0(a0,d0.l)\n";
+
 struct PPCBase* LibInit(__reg("d0") struct PPCBase *ppcbase,
               __reg("a0") BPTR seglist, __reg("a6") struct ExecBase* __sys);
 
 BPTR   myExpunge(__reg("a6") struct PPCBase* PowerPCBase);
-
-void   writememLong(ULONG Base, ULONG offset, ULONG value);
-ULONG  readmemLong (ULONG Base, ULONG offset);
 
 void   getENVs      (struct InternalConsts* myConsts);
 void   PrintCrtErr  (struct InternalConsts* myConsts, UBYTE* crterrtext);

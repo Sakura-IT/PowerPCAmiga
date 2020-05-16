@@ -990,7 +990,8 @@ void getENVs(struct InternalConsts* myConsts)
 *
 *********************************************************************************************/
 
-void writememLong(ULONG Base, ULONG offset, ULONG value)
+#if 0
+void writememL(ULONG Base, ULONG offset, ULONG value)
 {
     *((ULONG*)(Base + offset)) = value;
     return;
@@ -998,13 +999,13 @@ void writememLong(ULONG Base, ULONG offset, ULONG value)
 
 /********************************************************************************************/
 
-ULONG readmemLong(ULONG Base, ULONG offset)
+ULONG readmemL(ULONG Base, ULONG offset)
 {
     ULONG res;
     res = *((ULONG*)(Base + offset));
     return res;
 }
-
+#endif
 /********************************************************************************************/
 
 void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmemBase)
@@ -1015,19 +1016,19 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 
     CacheClearU();
 
-    writememLong(configBase, IMMR_RPR, KILLER_RESET);
+    writememL(configBase, IMMR_RPR, KILLER_RESET);
 
-    res = readmemLong(configBase, IMMR_RCER);
+    res = readmemL(configBase, IMMR_RCER);
 
-    writememLong(configBase, IMMR_RCR, res);
+    writememL(configBase, IMMR_RCR, res);
 
     for (res=0; res<0x10000; res++);
 
-    writememLong(ppcmemBase, 0x1f0, 0); //force a PCI write cycle.
+    writememL(ppcmemBase, 0x1f0, 0); //force a PCI write cycle.
 
-    res = readmemLong(configBase, IMMR_RSR);
+    res = readmemL(configBase, IMMR_RSR);
 
-    writememLong(configBase, IMMR_RSR, res);
+    writememL(configBase, IMMR_RSR, res);
 
     return;
 }
@@ -1061,24 +1062,24 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     configBase = ppcdevice->pd_ABaseAddress0;
 
-    writememLong(configBase, IMMR_PIBAR0, (ppcmemBase >> 12));
+    writememL(configBase, IMMR_PIBAR0, (ppcmemBase >> 12));
 
-    writememLong(configBase, IMMR_PITAR0, 0);
-    writememLong(configBase, IMMR_PIWAR0,
+    writememL(configBase, IMMR_PITAR0, 0);
+    writememL(configBase, IMMR_PIWAR0,
                 PIWAR_EN|PIWAR_PF|PIWAR_RTT_SNOOP|
                 PIWAR_WTT_SNOOP|PIWAR_IWS_64MB);
 
-    writememLong(configBase, IMMR_POCMR0, 0);
-    writememLong(configBase, IMMR_POCMR1, 0);
-    writememLong(configBase, IMMR_POCMR2, 0);
-    writememLong(configBase, IMMR_POCMR3, 0);
-    writememLong(configBase, IMMR_POCMR4, 0);
-    writememLong(configBase, IMMR_POCMR5, 0);
+    writememL(configBase, IMMR_POCMR0, 0);
+    writememL(configBase, IMMR_POCMR1, 0);
+    writememL(configBase, IMMR_POCMR2, 0);
+    writememL(configBase, IMMR_POCMR3, 0);
+    writememL(configBase, IMMR_POCMR4, 0);
+    writememL(configBase, IMMR_POCMR5, 0);
 
     vgamemBase = (myConsts->ic_gfxMem & (~(1<<25)));
 
     startAddress = (MediatorPCIBase->pb_MemAddress);
-    writememLong(configBase, IMMR_PCILAWBAR1,
+    writememL(configBase, IMMR_PCILAWBAR1,
                 (startAddress+0x60000000));
 
     winSize = POCMR_EN|POCMR_CM_128MB;
@@ -1094,7 +1095,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
             winSize = POCMR_EN|POCMR_CM_64MB;
         }
     }
-    writememLong(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
+    writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
 
     if (myConsts->ic_gfxSize & (~(1<<27)))
     {
@@ -1104,15 +1105,15 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         }
     }
     
-    writememLong(configBase, IMMR_POBAR0, (startAddress + 0x60000000 >> 12));
-    writememLong(configBase, IMMR_POTAR0, (vgamemBase >> 12));
-    writememLong(configBase, IMMR_POCMR0, winSize);
+    writememL(configBase, IMMR_POBAR0, (startAddress + 0x60000000 >> 12));
+    writememL(configBase, IMMR_POTAR0, (vgamemBase >> 12));
+    writememL(configBase, IMMR_POCMR0, winSize);
 
     if (myConsts->ic_gfxConfig)
     {
-        writememLong(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + 0x60000000) >> 12));
-        writememLong(configBase, IMMR_POTAR2, (myConsts->ic_gfxConfig >> 12));
-        writememLong(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
+        writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + 0x60000000) >> 12));
+        writememL(configBase, IMMR_POTAR2, (myConsts->ic_gfxConfig >> 12));
+        writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
     }
 
     if (myConsts->ic_sizeBAT)
@@ -1129,13 +1130,13 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
             }
         }
 
-        writememLong(configBase, IMMR_POBAR1, ((myConsts->ic_startBAT + 0x60000000) >> 12));
-        writememLong(configBase, IMMR_POTAR1, (myConsts->ic_startBAT >> 12));
-        writememLong(configBase, IMMR_POCMR1, winSize);
+        writememL(configBase, IMMR_POBAR1, ((myConsts->ic_startBAT + 0x60000000) >> 12));
+        writememL(configBase, IMMR_POTAR1, (myConsts->ic_startBAT >> 12));
+        writememL(configBase, IMMR_POCMR1, winSize);
     }
 
-    writememLong(ppcmemBase, VEC_SYSTEMRESET - 4, OPCODE_FBRANCH);
-    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_BBRANCH - 4);
+    writememL(ppcmemBase, VEC_SYSTEMRESET - 4, OPCODE_FBRANCH);
+    writememL(ppcmemBase, VEC_SYSTEMRESET, OPCODE_BBRANCH - 4);
 
     resetKiller(myConsts, configBase, ppcmemBase);
 
@@ -1162,12 +1163,12 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
 
-    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
-    writememLong(configBase, IMMR_IMMRBAR, IMMR_ADDR_DEFAULT);
+    writememL(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
+    writememL(configBase, IMMR_IMMRBAR, IMMR_ADDR_DEFAULT);
 
     resetKiller(myConsts, configBase, ppcmemBase);
 
-    writememLong(configBase, IMMR_SIMSR_L, SIMSR_L_MU);
+    writememL(configBase, IMMR_SIMSR_L, SIMSR_L_MU);
 
     return killerData;
 }
@@ -1205,12 +1206,12 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT0);
 
-    WriteConfigurationLong(devfuncnum, PCFS_ITAT0, resl | (PCFS_ITAT0_GBL | PCFS_ITAT0_ENA));
+    WriteConfigurationLong(devfuncnum, PCFS_ITAT0, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA));
 
     resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT1);
 
-    WriteConfigurationLong(devfuncnum, PCFS_ITAT1, resl | (PCFS_ITAT1_GBL | PCFS_ITAT1_ENA
-                           | PCFS_ITAT1_WPE | PCFS_ITAT1_RAE));
+    WriteConfigurationLong(devfuncnum, PCFS_ITAT1, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
+                           | PCFS_ITAT_WPE | PCFS_ITAT_RAE));
 
     if (!(configBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_1, ppcdevice)))
     {
@@ -1222,42 +1223,185 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ0, (PPC_XCSR_BASE | PCFS_ITSZ_4K));
 
-    ULONG XPatSetting = (XCSR_XPAT_BAM_ENA | XCSR_XPAT_AD_DELAY15);
-    writememLong(configBase, XCSR_XPAT0, XPatSetting);
-    writememLong(configBase, XCSR_XPAT1, XPatSetting);
-    writememLong(configBase, XCSR_XPAT2, XPatSetting);
-    writememLong(configBase, XCSR_XPAT3, XPatSetting);
-
-    ULONG memSize = readmemLong(configBase, XCSR_SDBAA) & XCSR_SDBA_SIZE;
-    ULONG cpuStat = readmemLong(configBase, XCSR_BXCS) & XCSR_BXCS_BP0H;
-
-    if (!(cpuStat))
-    {
-        writememLong(configBase, XCSR_BXCS, (cpuStat | XCSR_BXCS_BP0H));
-    }
-
-    //debugdebug defaults to 256MB for now. Size is 8 x SDBA_xxM8
-    ULONG ppcmemSize = 0x10000000;
-
-    writememLong(configBase, XCSR_SDBAA, (memSize | XCSR_SDBA_32M8));
-
-    if (!(ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice)))
-    {
-        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-        return FALSE;
-    }
-
-    WriteConfigurationLong(devfuncnum, PCFS_ITBAR1, ppcmemBase);
-
-    WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_256MB));
-
     if (!(mpicBase = AllocPCIBAR(PCIMEM_256KB, PCIBAR_3, ppcdevice)))
     {
         PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
         return FALSE;
     }
 
-    writememLong(configBase, XCSR_MBAR, (mpicBase | XCSR_MBAR_ENA));
+    writememL(configBase, XCSR_MBAR, (mpicBase | XCSR_MBAR_ENA));
+
+    ULONG XPatSetting = (XCSR_XPAT_BAM_ENA | XCSR_XPAT_AD_DELAY15);
+    writememL(configBase, XCSR_XPAT0, XPatSetting);
+    writememL(configBase, XCSR_XPAT1, XPatSetting);
+    writememL(configBase, XCSR_XPAT2, XPatSetting);
+    writememL(configBase, XCSR_XPAT3, XPatSetting);
+
+    ULONG valueSDBAA = readmemL(configBase, XCSR_SDBAA);
+    ULONG memSize = valueSDBAA & XCSR_SDBA_SIZE;
+    ULONG cpuStat = readmemL(configBase, XCSR_BXCS);
+    ULONG ppcmemSize = 0;
+    ULONG baseAlt;
+
+    if (!(cpuStat & XCSR_BXCS_BP0H))
+    {
+        writememL(configBase, XCSR_BXCS, (cpuStat | XCSR_BXCS_BP0H));
+    }
+
+    switch (memSize)
+    {
+        case XCSR_SDBA_32M8:
+        {
+            if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x10000000;
+            }
+            else if (ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x8000000;
+                if (baseAlt = AllocPCIBAR(PCIMEM_64MB, PCIBAR_4, ppcdevice))
+                {
+                    if (baseAlt + 0x4000000 == ppcmemBase)
+                    {
+                        ppcmemSize += 0x4000000;
+                        ppcmemBase = baseAlt;
+                    }
+                    else
+                    {
+                        FreePCIBAR(PCIBAR_4, ppcdevice);
+                    }
+                }
+            }
+            break;
+        }
+        case XCSR_SDBA_16M8:
+        {
+            if (ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x8000000;
+            }
+            break;
+        }
+        case XCSR_SDBA_64M8:
+        {
+            if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x10000000;
+                break; //debugdebug
+                if (baseAlt = AllocPCIBAR(PCIMEM_128MB, PCIBAR_4, ppcdevice))
+                {
+                    if (baseAlt + 0x8000000 == ppcmemBase)
+                    {
+                        ppcmemSize += 0x8000000;
+                        ppcmemBase = baseAlt;
+                    }
+                    else
+                    {
+                        FreePCIBAR(PCIBAR_4, ppcdevice);
+                    }
+                }
+                else if (baseAlt = AllocPCIBAR(PCIMEM_64MB, PCIBAR_4, ppcdevice))
+                {
+                    if (baseAlt + 0x4000000 == ppcmemBase)
+                    {
+                        ppcmemSize += 0x4000000;
+                        ppcmemBase = baseAlt;
+                    }
+                    else
+                    {
+                        FreePCIBAR(PCIBAR_4, ppcdevice);
+                    }
+                }
+            }
+            else if (ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x8000000;
+            }
+            break;
+        }
+        case 0:
+        {
+            if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x10000000;
+                valueSDBAA |= XCSR_SDBA_32M8;
+            }
+            else if (ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice))
+            {
+                ppcmemSize = 0x8000000;
+                valueSDBAA |= XCSR_SDBA_16M8;
+            }
+            else
+            {
+                break;
+            }
+            writememL(configBase, XCSR_SDTC, XCSR_SDTC_DEFAULT);
+            writememL(configBase, XCSR_SDGC, XCSR_SDGC_MXRR_7 | XCSR_SDGC_DERC);
+            break;
+
+        }
+        default:
+        {
+            PrintCrtErr(myConsts, "Could not determine size of PPC memory");
+            return FALSE;
+        }
+    }
+
+    writememL(configBase, XCSR_SDBAA, (valueSDBAA | XCSR_SDBA_ENA));
+    WriteConfigurationLong(devfuncnum, PCFS_ITBAR1, ppcmemBase);
+
+    switch (ppcmemSize)
+    {
+        case 0x10000000:
+        {
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_256MB));
+            break;
+        }
+        case 0x8000000:
+        {
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_128MB));
+            break;
+        }
+        case 0x18000000:
+        {
+            resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT2);
+            WriteConfigurationLong(devfuncnum, PCFS_ITAT2, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
+                           | PCFS_ITAT_WPE | PCFS_ITAT_RAE));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_128MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ2, (PPC_RAM_BASE + 0x8000000 | PCFS_ITSZ_256MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITBAR2, ppcmemBase + 0x8000000);
+            break;
+        }
+        case 0x14000000:
+        {
+            resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT2);
+            WriteConfigurationLong(devfuncnum, PCFS_ITAT2, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
+                           | PCFS_ITAT_WPE | PCFS_ITAT_RAE));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_64MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ2, ((PPC_RAM_BASE + 0x4000000) | PCFS_ITSZ_256MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITBAR2, ppcmemBase + 0x4000000);
+            break;
+        }
+        case 0xC000000:
+        {
+            resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT2);
+            WriteConfigurationLong(devfuncnum, PCFS_ITAT2, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
+                           | PCFS_ITAT_WPE | PCFS_ITAT_RAE));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_64MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ2, ((PPC_RAM_BASE + 0x4000000) | PCFS_ITSZ_128MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITBAR2, ppcmemBase + 0x4000000);
+            break;
+        }
+        default:
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return FALSE;
+        }
+    }
+
+    ULONG valueSDGC = readmemL(configBase, XCSR_SDGC);
+    writememL(configBase, XCSR_SDGC, valueSDGC | XCSR_SDGC_ENRV_ENA);
+    writememL(configBase, XCSR_XARB, XCSR_XARB_PRKCPU0 | XCSR_XARB_ENA);
 
     ULONG value = MediatorPCIBase->pb_MemAddress;
     value += OFFSET_PCIMEM;
@@ -1265,24 +1409,30 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     value |= value2;
 
     value2 = ((-OFFSET_PCIMEM) | XCSR_OTAT_ENA | XCSR_OTAT_WPE | XCSR_OTAT_SGE | XCSR_OTAT_RAE | XCSR_OTAT_MEM);
+    writememL(configBase, XCSR_OTAD0, value);
+    writememL(configBase, XCSR_OTAT0, value2);
 
-    writememLong(configBase, XCSR_OTAD0, value);
-
-    writememLong(configBase, XCSR_OTAT0, value2);
-
-    value = XCSR_SDGC_ENRV_ENA | XCSR_SDGC_MXRR_7 | XCSR_SDGC_DERC;
-
-    writememLong(configBase, XCSR_SDTC, XCSR_SDTC_DEFAULT);
-    writememLong(configBase, XCSR_SDBAA, XCSR_SDBA_32M8 | XCSR_SDBA_ENA);
-    writememLong(configBase, XCSR_SDGC, value);
-    writememLong(configBase, XCSR_XARB, XCSR_XARB_PRKCPU0 | XCSR_XARB_ENA);
+    if ((ppcmemSize == 0x10000000) && !(memSize))
+    {
+        writememL(ppcmemBase, 0x8000000, SUPERKEY);
+        if (readmemL(ppcmemBase, 0) == SUPERKEY)
+        {
+            FreePCIBAR(PCIBAR_2, ppcdevice);
+            ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice);
+            ppcmemSize = 0x8000000;
+            valueSDBAA &= ~XCSR_SDBA_SIZE;
+            writememL(configBase, XCSR_SDBAA, (valueSDBAA | XCSR_SDBA_16M8 | XCSR_SDBA_ENA));
+            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_128MB));
+            WriteConfigurationLong(devfuncnum, PCFS_ITBAR1, ppcmemBase);
+        }
+    }
 
     fakememBase = ppcmemBase + OFFSET_ZEROPAGE;
     harrierData = ((struct InitData*)(fakememBase + OFFSET_KERNEL));
 
     ULONG segSize = *((ULONG*)(initPointer - 4));
 
-    writememLong(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
+    writememL(ppcmemBase, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_ZEROPAGE + OFFSET_KERNEL - VEC_SYSTEMRESET);
 
     CopyMemQuick((APTR)(initPointer+4), (APTR)(harrierData), segSize);
 
@@ -1306,11 +1456,11 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     CacheClearU();
 
-    value = readmemLong(configBase, XCSR_BXCS);
+    value = readmemL(configBase, XCSR_BXCS);
     value &= ~XCSR_BXCS_BP0H;
-    writememLong(configBase, XCSR_BXCS, value);
+    writememL(configBase, XCSR_BXCS, value);
 
-    writememLong(pmepBase, PMEP_MIMS, 0);
+    writememL(pmepBase, PMEP_MIMS, 0);
 
     return harrierData;
 }

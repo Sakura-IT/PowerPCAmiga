@@ -970,7 +970,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 	{
 		case DEVICE_HARRIER:
 		{
-			if (readmemLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIST))
+			if (readmemL(PowerPCBase->pp_BridgeMsgs, PMEP_MIST))
             {
                 flag = 1;
             }
@@ -982,9 +982,9 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		}
 		case DEVICE_MPC8343E:
 		{
-			if ((data == (APTR)SUPERKEY) || (readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
+			if ((data == (APTR)SUPERKEY) || (readmemL(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
 			{
-                writememLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
+                writememL(PowerPCBase->pp_BridgeConfig, IMMR_OMISR, IMMR_OMISR_OM0I);
                 flag = 1;
 			}
             break;
@@ -1104,7 +1104,7 @@ FUNC68K ULONG ZenInt(__reg("a1") APTR data, __reg("a5") APTR code)
 
 	ULONG configBase = PowerPCBase->pp_BridgeConfig;
 
-	if (!(readmemLong(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
+	if (!(readmemL(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
 	{
 		struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 		if (myFIFO->kf_MIOPT != myFIFO->kf_MIOPH)
@@ -1138,7 +1138,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
         {
             case DEVICE_HARRIER:
             {
-                msgFrame = readmemLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ);
+                msgFrame = readmemL(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ);
                 break;
             }
             case DEVICE_MPC8343E:
@@ -1190,7 +1190,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
     {
         case DEVICE_HARRIER:
         {
-            writememLong(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ, (ULONG)msgFrame);
+            writememL(PowerPCBase->pp_BridgeMsgs, PMEP_MIIQ, (ULONG)msgFrame);
             break;
         }
 
@@ -1200,7 +1200,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
             *((ULONG*)(myFIFO->kf_MIIPH)) = (ULONG)msgFrame;
             myFIFO->kf_MIIPH = (myFIFO->kf_MIIPH + 4) & 0xffff3fff;
-            writememLong(PowerPCBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
+            writememL(PowerPCBase->pp_BridgeConfig, IMMR_IMR0, (ULONG)msgFrame);
             break;
         }
 
@@ -1238,9 +1238,9 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
     {
         case DEVICE_HARRIER:
         {
-            ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH);
-            writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH, (msgOffset + 4) & 0xffff3fff);
-            writememLong(PowerPCBase->pp_PPCMemBase, msgOffset, (ULONG)msgFrame);
+            ULONG msgOffset = readmemL(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH);
+            writememL(PowerPCBase->pp_BridgeConfig, XCSR_MIOFH, (msgOffset + 4) & 0xffff3fff);
+            writememL(PowerPCBase->pp_PPCMemBase, msgOffset, (ULONG)msgFrame);
             break;
         }
         case DEVICE_MPC8343E:
@@ -1282,16 +1282,16 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
         {
             case DEVICE_HARRIER:
             {
-                if (readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT) ==
-                    readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPH))
+                if (readmemL(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT) ==
+                    readmemL(PowerPCBase->pp_BridgeConfig, XCSR_MIOPH))
                 {
                     break;
                 }
                 else
                 {
-                    ULONG msgOffset = readmemLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT);
-                    msgFrame = readmemLong(PowerPCBase->pp_PPCMemBase, msgOffset);
-                    writememLong(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT, (msgOffset + 4) & 0xffff3fff);
+                    ULONG msgOffset = readmemL(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT);
+                    msgFrame = readmemL(PowerPCBase->pp_PPCMemBase, msgOffset);
+                    writememL(PowerPCBase->pp_BridgeConfig, XCSR_MIOPT, (msgOffset + 4) & 0xffff3fff);
                 }
                 break;
             }

@@ -421,12 +421,10 @@
 #define PCFS_ITAT2              0x5C
 #define PCFS_MPAT_ENA           0x00000080
 #define PCFS_MPAT_GBL           0x00010000
-#define PCFS_ITAT0_ENA          0x00000080
-#define PCFS_ITAT0_GBL          0x00010000
-#define PCFS_ITAT1_ENA          0x00000080
-#define PCFS_ITAT1_WPE          0x00000020
-#define PCFS_ITAT1_RAE          0x00000010
-#define PCFS_ITAT1_GBL          0x00010000
+#define PCFS_ITAT_ENA           0x00000080
+#define PCFS_ITAT_WPE           0x00000020
+#define PCFS_ITAT_RAE           0x00000010
+#define PCFS_ITAT_GBL           0x00010000
 #define PCFS_ITSZ_4K            0x00
 #define PCFS_ITSZ_64MB          0x0e
 #define PCFS_ITSZ_128MB         0x0f
@@ -516,9 +514,11 @@
 #define PCIMEM_4K               0x00F0FFFF
 #define PCIMEM_256KB            0x0000FCFF
 #define PCIMEM_64MB             0x000000FC
+#define PCIMEM_128MB            0x000000F8
 #define PCIMEM_256MB            0x000000F0
 #define PCIBAR_0                0
 #define PCIBAR_1                1
 #define PCIBAR_2                2
 #define PCIBAR_3                3
+#define PCIBAR_4                4
 
