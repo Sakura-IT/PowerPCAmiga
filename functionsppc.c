@@ -2469,7 +2469,7 @@ PPCFUNCTION VOID myGetInfo(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
                 }
                 case GETINFO_L2STATE:
                 {
-                    myTagItem->ti_Data = PowerPCBase->pp_L2State;
+                    myTagItem->ti_Data = PowerPCBase->pp_L2State & L2CR_L2E;
                     break;
                 }
                 case GETINFO_L2SIZE:

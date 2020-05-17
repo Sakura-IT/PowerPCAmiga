@@ -1287,7 +1287,6 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
             if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
             {
                 ppcmemSize = 0x10000000;
-                break; //debugdebug
                 if (baseAlt = AllocPCIBAR(PCIMEM_128MB, PCIBAR_4, ppcdevice))
                 {
                     if (baseAlt + 0x8000000 == ppcmemBase)

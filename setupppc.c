@@ -562,12 +562,12 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
             if (getPVR() >> 24 == 0x70)
             {
                 l2Size = L2_SIZE_HM;
-                l2Setting = 0;
+
                 if (!(getL2CR() & L2CR_L2E))
                 {
-                    setL2CR(l2Setting | L2CR_L2I);
+                    setL2CR(L2CR_L2I);
                     while (getL2CR() & L2CR_L2IP);
-                    setL2CR(l2Setting | L2CR_L2E);
+                    setL2CR(L2CR_L2E);
                 }
 
                 pll = value1 >> 27;
@@ -595,7 +595,9 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
                     setL2CR(l2Setting | L2CR_L2E);
                 }
 
-                setL2CR(l2Setting | L2CR_L2E);
+                l2Setting |= L2CR_L2E;
+
+                setL2CR(l2Setting);
                 getL2Size(PowerPCBase->pp_PPCMemBase + PowerPCBase->pp_PPCMemSize, (APTR)&cz);
 
                 l2Setting &= ~L2CR_TS;
