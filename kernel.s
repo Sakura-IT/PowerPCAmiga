@@ -75,7 +75,6 @@ _ExcCommon:
         li      r3,1
         rlwnm   r0,r3,r0,0,31
         stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID (EXCF)
-        la      r3,IF_CONTEXT(r4)
         mfsprg2 r0
         stw     r0,-8(r4)                                  #LR
 
@@ -89,7 +88,7 @@ _ExcCommon:
 
         bl      _Exception_Entry
 
-        la      r31,IF_GAP+IF_CONTEXT(r1)
+        la      r31,IF_GAP(r1)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
@@ -113,8 +112,86 @@ _ExcCommon:
 #********************************************************************************************
 
 _StoreFrame:
+        mfcr    r0
+        mtsprg2 r0
+        mfsprg1 r0
+        andis.  r0,r0,PSL_VEC@h
+        bne     .DoVMX
+        la      r3,IF_CONTEXT(r4)
+        b       .NoVMX
 
-        stfd    f0,IF_CONTEXT_FPR-IF_CONTEXT(r3)
+.DoVMX: mr      r3,r4
+        stvx	v0,r0,r3
+		addi	r3,r3,16
+		stvx	v1,r0,r3
+		addi	r3,r3,16
+		stvx	v2,r0,r3
+		addi	r3,r3,16
+		stvx	v3,r0,r3
+		addi	r3,r3,16
+		stvx	v4,r0,r3
+		addi	r3,r3,16
+		stvx	v5,r0,r3
+		addi	r3,r3,16
+		stvx	v6,r0,r3
+		addi	r3,r3,16
+		stvx	v7,r0,r3
+		addi	r3,r3,16
+		stvx	v8,r0,r3
+		addi	r3,r3,16
+		stvx	v9,r0,r3
+		addi	r3,r3,16
+		stvx	v10,r0,r3
+		addi	r3,r3,16
+		stvx	v11,r0,r3
+		addi	r3,r3,16
+		stvx	v12,r0,r3
+		addi	r3,r3,16
+		stvx	v13,r0,r3
+		addi	r3,r3,16
+		stvx	v14,r0,r3
+		addi	r3,r3,16
+		stvx	v15,r0,r3
+		addi	r3,r3,16
+		stvx	v16,r0,r3
+		addi	r3,r3,16
+		stvx	v17,r0,r3
+		addi	r3,r3,16
+		stvx	v18,r0,r3
+		addi	r3,r3,16
+		stvx	v19,r0,r3
+		addi	r3,r3,16
+		stvx	v20,r0,r3
+		addi	r3,r3,16
+		stvx	v21,r0,r3
+		addi	r3,r3,16
+		stvx	v22,r0,r3
+		addi	r3,r3,16
+		stvx	v23,r0,r3
+		addi	r3,r3,16
+		stvx	v24,r0,r3
+		addi	r3,r3,16
+		stvx	v25,r0,r3
+		addi	r3,r3,16
+		stvx	v26,r0,r3
+		addi	r3,r3,16
+		stvx	v27,r0,r3
+		addi	r3,r3,16
+		stvx	v28,r0,r3
+		addi	r3,r3,16
+		stvx	v29,r0,r3
+		addi	r3,r3,16
+		stvx	v30,r0,r3
+		addi	r3,r3,16
+		stvx	v31,r0,r3
+        mfvscr  v0
+        addi    r3,r3,16
+        stvx    v0,r0,r3
+		mfspr	r0,VRSAVE
+		stwu    r0,16(r3)
+        addi    r3,r3,8
+
+.NoVMX: stfd    f0,IF_CONTEXT_FPR-IF_CONTEXT(r3)
         mfsprg0 r0
         stwu    r0,4(r3)
         mfsprg1 r0
@@ -123,7 +200,7 @@ _StoreFrame:
         stwu    r0,4(r3)
         mfdsisr r0
         stwu    r0,4(r3)
-        mfcr    r0
+        mfsprg2 r0
         stwu    r0,4(r3)
         mfctr   r0
         stwu    r0,4(r3)
@@ -268,8 +345,84 @@ _StoreFrame:
 #********************************************************************************************
 
 _LoadFrame:
+        mfsprg1 r3
+        andis.  r3,r3,PSL_VEC@h
+        bne     .DoAV
+        la      r31,IF_CONTEXT(r31)
+        b       .NoAV
 
-        lwzu    r3,4(r31)
+.DoAV:  lvx     v0,r0,r31
+		addi    r31,r31,16
+		lvx     v1,r0,r31
+		addi    r31,r31,16
+		lvx     v2,r0,r31
+		addi    r31,r31,16
+		lvx     v3,r0,r31
+		addi    r31,r31,16
+		lvx     v4,r0,r31
+		addi    r31,r31,16
+		lvx     v5,r0,r31
+		addi    r31,r31,16
+		lvx     v6,r0,r31
+		addi    r31,r31,16
+		lvx     v7,r0,r31
+		addi    r31,r31,16
+		lvx     v8,r0,r31
+		addi    r31,r31,16
+		lvx     v9,r0,r31
+		addi    r31,r31,16
+		lvx     v10,r0,r31
+		addi    r31,r31,16
+		lvx     v11,r0,r31
+		addi    r31,r31,16
+		lvx     v12,r0,r31
+		addi    r31,r31,16
+		lvx     v13,r0,r31
+		addi    r31,r31,16
+		lvx     v14,r0,r31
+		addi    r31,r31,16
+		lvx     v15,r0,r31
+		addi    r31,r31,16
+		lvx     v16,r0,r31
+		addi    r31,r31,16
+		lvx     v17,r0,r31
+		addi    r31,r31,16
+		lvx     v18,r0,r31
+		addi    r31,r31,16
+		lvx     v19,r0,r31
+		addi    r31,r31,16
+		lvx     v20,r0,r31
+		addi    r31,r31,16
+		lvx     v21,r0,r31
+		addi    r31,r31,16
+		lvx     v22,r0,r31
+		addi    r31,r31,16
+		lvx     v23,r0,r31
+		addi    r31,r31,16
+		lvx     v24,r0,r31
+		addi    r31,r31,16
+		lvx     v25,r0,r31
+		addi    r31,r31,16
+		lvx     v26,r0,r31
+		addi    r31,r31,16
+		lvx     v27,r0,r31
+		addi    r31,r31,16
+		lvx     v28,r0,r31
+		addi    r31,r31,16
+		lvx     v29,r0,r31
+		addi    r31,r31,16
+		lvx     v30,r0,r31
+        addi    r31,r31,32
+        lvx     v31,r0,r31
+        mtvscr  v31
+		subi    r31,r31,16
+		lvx     v31,r0,r31
+        lwzu    r3,32(r31)
+		mtspr	VRSAVE,r3
+        addi    r31,r31,8
+
+
+.NoAV:  lwzu    r3,4(r31)
         mtsprg0 r3
         lwzu    r3,4(r31)
         mtsprg1 r3
@@ -445,7 +598,7 @@ _SmallExcHandler:
 
         stwu    r1,-512(r1)                  #Enough?
 
-        la      r31,IF_CONTEXT(r4)
+        mr      r31,r4
         mtsprg0 r4
         mtsprg3 r3
         mflr    r3

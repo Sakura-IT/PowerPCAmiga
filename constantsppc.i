@@ -53,6 +53,8 @@
 .set IF_EXCNUM,                 IF_EXCEPTIONVECTOR+4
 .set IF_SIZE,                   IF_EXCNUM+4
 
+.set VRSAVE,                    256
+
 .set PP_FLAGS,                  8
 .set PP_STACK,                  12
 .set PP_STACKSIZE,              16
@@ -77,6 +79,7 @@
 .set HID0,                      1008
 .set HID0_NHR,	                0x00010000
 
+.set PSL_VEC,	                0x02000000	      #/* ..6. AltiVec vector unit available */
 .set PSL_FP,	                0x00002000        #/* B.6. floating point enable */
 .set PSL_IP,	                0x00000040        #/* ..6. interrupt prefix */
 .set PSL_TGPR,               	0x00020000        #/* ..6. temp. gpr remapping (mpc603e) */
