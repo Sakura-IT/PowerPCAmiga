@@ -358,6 +358,7 @@ VOID PermitPPC(struct PrivatePPCBase* PowerPCBase);
 VOID RunCPP(struct iframe* frame, ULONG Code, APTR args);
 VOID SetupRunPPC(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 VOID FlushICache(VOID);
+VOID ClearVectors(VOID);
 ULONG* GetDecTable(VOID);
 ULONG* getTableFX(VOID);
 ULONG* getTable100(VOID);

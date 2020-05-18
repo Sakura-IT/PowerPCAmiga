@@ -2378,7 +2378,16 @@ PPCFUNCTION VOID myGetInfo(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
                         }
                         case DEVICE_HARRIER:
                         {
-                            myTagItem->ti_Data = CPUF_G3; //debugdebug more choices here
+                            if (PowerPCBase->pp_CPUInfo >> 24 == 0x70)
+                            {
+                                myTagItem->ti_Data = CPUF_G3;
+                                break;
+                            }
+                            if ((PowerPCBase->pp_CPUInfo >> 12 & 0xff) == 0xc1)
+                            {
+                                myTagItem->ti_Data = CPUF_7410 | CPUF_7400;
+                                break;
+                            }
                             break;
                         }
                         case DEVICE_MPC107:

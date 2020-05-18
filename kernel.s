@@ -21,7 +21,7 @@
 .include    constantsppc.i
 
 .global     _Exception_Entry, _SmallExcHandler, _DoAlign, _DoDataStore, _FinDataStore
-.global     _FlushICache
+.global     _FlushICache, _ClearVectors
 
 .section "kernel","acrx"
 
@@ -66,6 +66,10 @@ _ExcCommon:
 
         mfsprg3 r0
         la      r4,IF_GAP(r1)                              #iFrame
+
+        stw     r4,0xa4(r0)
+
+
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
         stw     r0,IF_CONTEXT_GPR+GPR0(r4)                 #GPR[0]
         mflr    r3
@@ -114,13 +118,18 @@ _ExcCommon:
 _StoreFrame:
         mfcr    r0
         mtsprg2 r0
-        mfsprg1 r0
-        andis.  r0,r0,PSL_VEC@h
+        mfsprg1 r3
+        andis.  r3,r3,PSL_VEC@h
         bne     .DoVMX
+
         la      r3,IF_CONTEXT(r4)
         b       .NoVMX
 
-.DoVMX: mr      r3,r4
+.DoVMX: mfmsr   r0
+        mr      r3,r4
+        oris    r0,r0,PSL_VEC@h
+        mtmsr   r0
+        isync
         stvx	v0,r0,r3
 		addi	r3,r3,16
 		stvx	v1,r0,r3
@@ -351,7 +360,11 @@ _LoadFrame:
         la      r31,IF_CONTEXT(r31)
         b       .NoAV
 
-.DoAV:  lvx     v0,r0,r31
+.DoAV:  mfmsr   r0
+        oris    r0,r0,PSL_VEC@h
+        mtmsr   r0
+        isync
+        lvx     v0,r0,r31
 		addi    r31,r31,16
 		lvx     v1,r0,r31
 		addi    r31,r31,16
@@ -586,6 +599,55 @@ _LoadFrame:
         isync
 
         mr      r31,r0
+        blr
+
+#********************************************************************************************
+#
+#
+#
+#********************************************************************************************
+
+_ClearVectors:
+        mfmsr   r0
+        oris    r0,r0,PSL_VEC@h
+        mtmsr   r0
+        isync
+        vxor    v0,v0,v0
+        vxor    v1,v1,v1
+        vxor    v2,v2,v2
+        vxor    v3,v3,v3
+        vxor    v4,v4,v4
+        vxor    v5,v5,v5
+        vxor    v6,v6,v6
+        vxor    v7,v7,v7
+        vxor    v8,v8,v8
+        vxor    v9,v9,v9
+        vxor    v10,v10,v10
+        vxor    v11,v11,v11
+        vxor    v12,v12,v12
+        vxor    v13,v13,v13
+        vxor    v14,v14,v14
+        vxor    v15,v15,v15
+        vxor    v16,v16,v16
+        vxor    v17,v17,v17
+        vxor    v18,v18,v18
+        vxor    v19,v19,v19
+        vxor    v20,v20,v20
+        vxor    v21,v21,v21
+        vxor    v22,v22,v22
+        vxor    v23,v23,v23
+        vxor    v24,v24,v24
+        vxor    v25,v25,v25
+        vxor    v26,v26,v26
+        vxor    v27,v27,v27
+        vxor    v28,v28,v28
+        vxor    v29,v29,v29
+        vxor    v30,v30,v30
+        vxor    v31,v31,v31
+        mtvscr  v0
+        li      r0,0
+        mtspr   VRSAVE,r0
+
         blr
 
 #********************************************************************************************

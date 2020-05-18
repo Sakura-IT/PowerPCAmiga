@@ -446,7 +446,7 @@ LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PrivatePPCBase* PowerPCBase)
         }
         case 0x8000:
         {
-            return (CPUF_G3);  //debugdebug should be g4
+            return (CPUF_G4);
         }
         case 0x8083:
         {
@@ -462,7 +462,7 @@ LIBFUNC68K ULONG myGetCPU(__reg("a6") struct PrivatePPCBase* PowerPCBase)
         }
         case 0xc:
         {
-            return (CPUF_G3);  //debugdebug should be g4 (to prevent Altivec for now)
+            return (CPUF_G4);
         }
     }
     return 0;

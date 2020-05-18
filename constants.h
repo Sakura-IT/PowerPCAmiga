@@ -65,6 +65,9 @@
 
 #define PPERR_MISCERR           3
 
+#define CPUF_7410               0x00800000
+#define CPUF_7400               0x00400000
+
 #define TS_ATOMIC               8
 
 #define SIGF_WAIT               1<<10

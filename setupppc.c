@@ -776,6 +776,10 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         {
             quantum = QUANTUM_100;
             busclock = BUSCLOCK_100;
+            if ((PowerPCBase->pp_CPUInfo >> 16 & 0xfff) == 0xc)
+            {
+                PowerPCBase->pp_EnAltivec = -1;
+            }
             break;
         }
         case DEVICE_MPC8343E:
