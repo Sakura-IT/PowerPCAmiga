@@ -28,12 +28,7 @@
 	.endif
 .endm
 
-.set IF_GAP,                    256
-.set IF_VPR,                    0                 #Align this with the if_Frame struct in libstructs.h
-.set IF_VSCR,                   32*16
-.set IF_VRSAVE,                 IF_VSCR+16
-.set IF_PAD,                    IF_VRSAVE+4
-.set IF_CONTEXT,                IF_PAD+4
+.set IF_CONTEXT,                0                 #Align this with the if_Frame struct in libstructs.h
 .set IF_CONTEXT_EXCID,          IF_CONTEXT
 .set IF_CONTEXT_SRR0,           IF_CONTEXT+4
 .set IF_CONTEXT_SRR1,           IF_CONTEXT+8
@@ -46,11 +41,13 @@
 .set IF_CONTEXT_FPSCR,          IF_CONTEXT+36
 .set IF_CONTEXT_GPR,            IF_CONTEXT+40
 .set IF_CONTEXT_FPR,            IF_CONTEXT+40+128
-.set IF_BATS,                   IF_CONTEXT+40+128+256
-.set IF_SEGMENTS,               IF_CONTEXT+40+128+256+64
-.set IF_ALIGNSTORE,             IF_SEGMENTS+64
-.set IF_EXCEPTIONVECTOR,        IF_ALIGNSTORE+8
-.set IF_EXCNUM,                 IF_EXCEPTIONVECTOR+4
+.set IF_ALIGNSTORE,             IF_CONTEXT+40+128+256
+.set IF_VSCR,                   IF_ALIGNSTORE+8
+.set IF_VPR,                    IF_VSCR+16
+.set IF_VRSAVE,                 IF_VPR+(32*16)
+.set IF_BATS,                   IF_VRSAVE+4
+.set IF_SEGMENTS,               IF_BATS+64
+.set IF_EXCNUM,                 IF_SEGMENTS+64
 .set IF_SIZE,                   IF_EXCNUM+4
 
 .set VRSAVE,                    256
@@ -73,8 +70,10 @@
 .set GPR3,                      3*4
 .set GPR4,                      4*4
 
-.set PPC_VECLEN,                3
 .set PowerPCBase,               16                #Align this number with the zp struct in libstructs.h
+.set POWERPCBASE_THISPPCTASK,   0x94              #debugdebug need to find to link this to libstruct.h
+.set PPCTASK_CONTEXMEM,         0x64
+.set PPCMEMHEADER,              8
 
 .set HID0,                      1008
 .set HID0_NHR,	                0x00010000

@@ -820,6 +820,12 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         PowerPCBase->pp_SystemSegs[i] = getSRIn(i<<28);
     }
 
+    ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + MEM_GAP - 0x4000);
+    for (int i = 0; i < 0x1000; i++)
+    {
+        cmem[i] = 0;
+    }
+
 #if 0
     ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + OFFSET_SYSMEM + 0x100);
     for (int i = 0; i < 64; i++)

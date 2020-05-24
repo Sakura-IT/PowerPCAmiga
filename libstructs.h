@@ -241,15 +241,13 @@ ULONG                       kf_MIIPT;
 };
 
 struct iframe {
-ULONG                       if_regAltivec[32*4];
-ULONG                       if_VSCR[4];
-ULONG                       if_VRSAVE;
-ULONG                       if_Pad;         //16 bit alignment for FP regs
 struct EXCContext           if_Context;
+ULONG                       if_AlignStore[2];
+ULONG                       if_VSCR[4];
+ULONG                       if_regAltivec[32*4];
+ULONG                       if_VRSAVE;
 struct BATArray             if_BATs[4];
 ULONG                       if_Segments[16];
-DOUBLE                      if_AlignStore;
-ULONG                       if_ExceptionVector;
 ULONG                       if_ExcNum;
 };
 

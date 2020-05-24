@@ -21,7 +21,7 @@
 .include    constantsppc.i
 
 .global     _Exception_Entry, _SmallExcHandler, _DoAlign, _DoDataStore, _FinDataStore
-.global     _FlushICache, _ClearVectors
+.global     _FlushICache
 
 .section "kernel","acrx"
 
@@ -37,9 +37,6 @@ _ExcCommon:
         b       ExcDLoadTLBMiss
         b       ExcDStoreTLBMiss
 
-
-        #256 nothing 512 altivec 24 altivec support 40 EXC header 128 GPR 256 FPR 64 BATs 64 Segments
-
         mtsprg2 r0                                         #LR; sprg3 = r0
 
         mfsrr0  r0
@@ -53,62 +50,78 @@ _ExcCommon:
         sync                                               #Also reenable FPU
         isync
 
-        mr      r0,r1
-        subi    r1,r1,2048
-        rlwinm  r1,r1,0,0,26
-        stw     r0,0(r1)                                   #Make room for struct iframe and align on 0x20
+        stwu    r1,-2048(r1)
 
-        stw     r4,IF_GAP+IF_CONTEXT_GPR+GPR4(r1)          #GPR[4]
+        mfcr    r0
+        stw     r0,104(r1)
+        stw     r4,108(r1)
 
         lwz     r4,0xa0(r0)
         addi    r4,r4,1
         stw     r4,0xa0(r0)
 
-        mfsprg3 r0
-        la      r4,IF_GAP(r1)                              #iFrame
+        lwz     r4,PowerPCBase(r0)
+        lwz     r4,POWERPCBASE_THISPPCTASK(r4)
+        mr.     r4,r4
+        bne     .NoIdl
 
-        stw     r4,0xa4(r0)
+        lwz     r3,PPCMEMHEADER(r0)
+        subi    r4,r3,0x2000
+        subi    r3,r4,0x5000
+        subi    r3,r3,0x5000                               #coming from idle, just dump everything.
+        stw     r4,0(r1)
+        mr      r4,r3
+        b       .DoExc
 
-
+.NoIdl: lwz     r4,PPCTASK_CONTEXMEM(r4)                   #iFrame
+        lwz     r0,108(r1)
+        stw     r0,IF_CONTEXT_GPR+GPR4(r4)                 #GPR[4]
         stw     r3,IF_CONTEXT_GPR+GPR3(r4)                 #GPR[3]
+        mfsprg3 r0
         stw     r0,IF_CONTEXT_GPR+GPR0(r4)                 #GPR[0]
-        mflr    r3
-        rlwinm  r0,r3,24,24,31
-        stw     r3,-4(r4)
-        stw     r0,IF_EXCNUM(r4)                           #EXCB
-        li      r3,1
-        rlwnm   r0,r3,r0,0,31
-        stw     r0,IF_CONTEXT_EXCID(r4)                    #EXC_ID (EXCF)
-        mfsprg2 r0
-        stw     r0,-8(r4)                                  #LR
+        mr      r3,r4
+
+.DoExc: mflr    r0
+        stw     r0,IF_CONTEXT(r3)
+        stw     r3,0xb0(r0)
 
         bl      _StoreFrame                  #r0, r3 and r4 are skipped in this routine and were saved above
 
-        la      r4,IF_GAP(r1)                              #iFrame
-        lwz     r5,-4(r4)
-        subi    r5,r5,PPC_VECLEN*4
-        stw     r5,IF_EXCEPTIONVECTOR(r4)                  #if_ExceptionVector
         lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
-
         bl      _Exception_Entry
 
-        la      r31,IF_GAP(r1)
+        lwz     r31,PowerPCBase(r0)
+        lwz     r31,POWERPCBASE_THISPPCTASK(r31)
+        mr.     r31,r31
+        bne     .NI2                                       #trash everything, is idle task.
+
+        lwz     r31,PPCMEMHEADER(r0)
+        subi    r31,r31,0x7000
+        subi    r31,r31,0x5000                             #go to idle, don't care about registers
+        b       .Idle
+
+.NI2:   lwz     r31,PPCTASK_CONTEXMEM(r31)
+.Idle:  mr      r1,r31
+
+        stw     r31,0xb4(r0)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
         bl      _FlushICache
 
-        lwz     r0,IF_GAP+IF_CONTEXT_LR(r1)                #EXC_LR
-        mtlr    r0
-        lwz     r3,IF_GAP+IF_CONTEXT_GPR+GPR3(r1)          #GPR[3]
-        lwz     r0,IF_GAP+IF_CONTEXT_GPR+GPR0(r1)          #GPR[0]
+        lwz     r0,IF_CONTEXT_CR(r1)
+        mtcr    r0
+        lwz     r3,IF_CONTEXT_GPR+GPR3(r1)                 #GPR[3]
+        lwz     r0,IF_CONTEXT_GPR+GPR0(r1)                 #GPR[0]
         mtsprg2 r0
-        lwz     r1,IF_GAP+IF_CONTEXT_GPR+GPR1(r1)          #GPR[1]
+        lwz     r1,IF_CONTEXT_GPR+GPR1(r1)                 #GPR[1]
 
         mfsprg0 r0
         mtsrr0  r0
         mfsprg1 r0
         mtsrr1  r0
+        mfsprg3 r0
+        mtlr    r0
         mfsprg2 r0
 
         rfi
@@ -116,91 +129,8 @@ _ExcCommon:
 #********************************************************************************************
 
 _StoreFrame:
-        mfcr    r0
-        mtsprg2 r0
-        mfsprg1 r3
-        andis.  r3,r3,PSL_VEC@h
-        bne     .DoVMX
 
-        la      r3,IF_CONTEXT(r4)
-        b       .NoVMX
-
-.DoVMX: mfmsr   r0
-        mr      r3,r4
-        oris    r0,r0,PSL_VEC@h
-        mtmsr   r0
-        isync
-        stvx	v0,r0,r3
-		addi	r3,r3,16
-		stvx	v1,r0,r3
-		addi	r3,r3,16
-		stvx	v2,r0,r3
-		addi	r3,r3,16
-		stvx	v3,r0,r3
-		addi	r3,r3,16
-		stvx	v4,r0,r3
-		addi	r3,r3,16
-		stvx	v5,r0,r3
-		addi	r3,r3,16
-		stvx	v6,r0,r3
-		addi	r3,r3,16
-		stvx	v7,r0,r3
-		addi	r3,r3,16
-		stvx	v8,r0,r3
-		addi	r3,r3,16
-		stvx	v9,r0,r3
-		addi	r3,r3,16
-		stvx	v10,r0,r3
-		addi	r3,r3,16
-		stvx	v11,r0,r3
-		addi	r3,r3,16
-		stvx	v12,r0,r3
-		addi	r3,r3,16
-		stvx	v13,r0,r3
-		addi	r3,r3,16
-		stvx	v14,r0,r3
-		addi	r3,r3,16
-		stvx	v15,r0,r3
-		addi	r3,r3,16
-		stvx	v16,r0,r3
-		addi	r3,r3,16
-		stvx	v17,r0,r3
-		addi	r3,r3,16
-		stvx	v18,r0,r3
-		addi	r3,r3,16
-		stvx	v19,r0,r3
-		addi	r3,r3,16
-		stvx	v20,r0,r3
-		addi	r3,r3,16
-		stvx	v21,r0,r3
-		addi	r3,r3,16
-		stvx	v22,r0,r3
-		addi	r3,r3,16
-		stvx	v23,r0,r3
-		addi	r3,r3,16
-		stvx	v24,r0,r3
-		addi	r3,r3,16
-		stvx	v25,r0,r3
-		addi	r3,r3,16
-		stvx	v26,r0,r3
-		addi	r3,r3,16
-		stvx	v27,r0,r3
-		addi	r3,r3,16
-		stvx	v28,r0,r3
-		addi	r3,r3,16
-		stvx	v29,r0,r3
-		addi	r3,r3,16
-		stvx	v30,r0,r3
-		addi	r3,r3,16
-		stvx	v31,r0,r3
-        mfvscr  v0
-        addi    r3,r3,16
-        stvx    v0,r0,r3
-		mfspr	r0,VRSAVE
-		stwu    r0,16(r3)
-        addi    r3,r3,8
-
-.NoVMX: stfd    f0,IF_CONTEXT_FPR-IF_CONTEXT(r3)
+        stfd    f0,IF_CONTEXT_FPR(r3)
         mfsprg0 r0
         stwu    r0,4(r3)
         mfsprg1 r0
@@ -209,12 +139,12 @@ _StoreFrame:
         stwu    r0,4(r3)
         mfdsisr r0
         stwu    r0,4(r3)
-        mfsprg2 r0
+        lwz     r0,104(r1)                   #cr
         stwu    r0,4(r3)
         mfctr   r0
         stwu    r0,4(r3)
-        lwz     r0,-8(r4)
-        stwu    r0,4(r3)                     #LR
+        mfsprg2 r0
+        stwu    r0,4(r3)                     #lr
         mffs    f0
         stfdu   f0,4(r3)
         mfxer   r0
@@ -283,8 +213,89 @@ _StoreFrame:
         stfdu   f30,8(r3)
         stfdu   f31,8(r3)
 
-        mfibatu r0,0
-        stwu    r0,8(r3)
+        mfsprg1 r0
+        andis.  r0,r0,PSL_VEC@h
+        bne     .DoVMX
+        addi    r3,r3,8+8+512+16           #f31, alignstore, vectors, vscr
+        b       .NoVMX
+
+.DoVMX: mfmsr   r0
+        oris    r0,r0,PSL_VEC@h
+        mtmsr   r0
+        isync
+
+        addi    r3,r3,32
+        stvx	v0,r0,r3
+        subi    r3,r3,16
+        mfvscr  v0
+        stvx    v0,r0,r3
+        addi    r3,r3,32
+		stvx	v1,r0,r3
+		addi	r3,r3,16
+		stvx	v2,r0,r3
+		addi	r3,r3,16
+		stvx	v3,r0,r3
+		addi	r3,r3,16
+		stvx	v4,r0,r3
+		addi	r3,r3,16
+		stvx	v5,r0,r3
+		addi	r3,r3,16
+		stvx	v6,r0,r3
+		addi	r3,r3,16
+		stvx	v7,r0,r3
+		addi	r3,r3,16
+		stvx	v8,r0,r3
+		addi	r3,r3,16
+		stvx	v9,r0,r3
+		addi	r3,r3,16
+		stvx	v10,r0,r3
+		addi	r3,r3,16
+		stvx	v11,r0,r3
+		addi	r3,r3,16
+		stvx	v12,r0,r3
+		addi	r3,r3,16
+		stvx	v13,r0,r3
+		addi	r3,r3,16
+		stvx	v14,r0,r3
+		addi	r3,r3,16
+		stvx	v15,r0,r3
+		addi	r3,r3,16
+		stvx	v16,r0,r3
+		addi	r3,r3,16
+		stvx	v17,r0,r3
+		addi	r3,r3,16
+		stvx	v18,r0,r3
+		addi	r3,r3,16
+		stvx	v19,r0,r3
+		addi	r3,r3,16
+		stvx	v20,r0,r3
+		addi	r3,r3,16
+		stvx	v21,r0,r3
+		addi	r3,r3,16
+		stvx	v22,r0,r3
+		addi	r3,r3,16
+		stvx	v23,r0,r3
+		addi	r3,r3,16
+		stvx	v24,r0,r3
+		addi	r3,r3,16
+		stvx	v25,r0,r3
+		addi	r3,r3,16
+		stvx	v26,r0,r3
+		addi	r3,r3,16
+		stvx	v27,r0,r3
+		addi	r3,r3,16
+		stvx	v28,r0,r3
+		addi	r3,r3,16
+		stvx	v29,r0,r3
+		addi	r3,r3,16
+		stvx	v30,r0,r3
+		addi	r3,r3,16
+		stvx	v31,r0,r3
+		mfspr	r0,VRSAVE
+		stwu    r0,16(r3)
+
+.NoVMX: mfibatu r0,0
+        stwu    r0,4(r3)
         mfibatl r0,0
         stwu    r0,4(r3)
         mfdbatu r0,0
@@ -354,16 +365,101 @@ _StoreFrame:
 #********************************************************************************************
 
 _LoadFrame:
+        lwzu    r3,4(r31)
+        mtsprg0 r3
+        lwzu    r3,4(r31)
+        mtsprg1 r3
+        lwzu    r3,4(r31)
+        mtdar   r3
+        lwzu    r3,4(r31)
+        mtdsisr r3
+        lwzu    r3,8(r31)                    #skip cr
+        mtctr   r3
+        lwzu    r3,4(r31)
+        mtsprg3 r3
+        lwzu    r3,4(r31)
+        mtxer   r3
+        lfd     f0,0(r31)
+        mtfsf   0xff,f0
+
+        lwzu    r2,16(r31)                   #skip r0-r1, is loaded seperately
+        lwzu    r4,8(r31)                    #skip r3, is loaded seperately
+        lwzu    r5,4(r31)
+        lwzu    r6,4(r31)
+        lwzu    r7,4(r31)
+        lwzu    r8,4(r31)
+        lwzu    r9,4(r31)
+        lwzu    r10,4(r31)
+        lwzu    r11,4(r31)
+        lwzu    r12,4(r31)
+        lwzu    r13,4(r31)
+        lwzu    r14,4(r31)
+        lwzu    r15,4(r31)
+        lwzu    r16,4(r31)
+        lwzu    r17,4(r31)
+        lwzu    r18,4(r31)
+        lwzu    r19,4(r31)
+        lwzu    r20,4(r31)
+        lwzu    r21,4(r31)
+        lwzu    r22,4(r31)
+        lwzu    r23,4(r31)
+        lwzu    r24,4(r31)
+        lwzu    r25,4(r31)
+        lwzu    r26,4(r31)
+        lwzu    r27,4(r31)
+        lwzu    r28,4(r31)
+        lwzu    r29,4(r31)
+        lwzu    r30,4(r31)
+        lwzu    r0,4(r31)                    #temp store r31 in r0
+
+        lfdu    f0,4(r31)
+        lfdu    f1,8(r31)
+        lfdu    f2,8(r31)
+        lfdu    f3,8(r31)
+        lfdu    f4,8(r31)
+        lfdu    f5,8(r31)
+        lfdu    f6,8(r31)
+        lfdu    f7,8(r31)
+        lfdu    f8,8(r31)
+        lfdu    f9,8(r31)
+        lfdu    f10,8(r31)
+        lfdu    f11,8(r31)
+        lfdu    f12,8(r31)
+        lfdu    f13,8(r31)
+        lfdu    f14,8(r31)
+        lfdu    f15,8(r31)
+        lfdu    f16,8(r31)
+        lfdu    f17,8(r31)
+        lfdu    f18,8(r31)
+        lfdu    f19,8(r31)
+        lfdu    f20,8(r31)
+        lfdu    f21,8(r31)
+        lfdu    f22,8(r31)
+        lfdu    f23,8(r31)
+        lfdu    f24,8(r31)
+        lfdu    f25,8(r31)
+        lfdu    f26,8(r31)
+        lfdu    f27,8(r31)
+        lfdu    f28,8(r31)
+        lfdu    f29,8(r31)
+        lfdu    f30,8(r31)
+        lfdu    f31,8(r31)
+
         mfsprg1 r3
         andis.  r3,r3,PSL_VEC@h
         bne     .DoAV
-        la      r31,IF_CONTEXT(r31)
+        addi    r31,r31,8+8+512+16
         b       .NoAV
 
-.DoAV:  mfmsr   r0
-        oris    r0,r0,PSL_VEC@h
-        mtmsr   r0
+.DoAV:  mfmsr   r3
+        oris    r3,r3,PSL_VEC@h
+        mtmsr   r3
         isync
+
+        addi    r31,r31,16
+        lvx     v0,r0,r31
+        mtvscr  v0
+        addi    r31,r31,16
         lvx     v0,r0,r31
 		addi    r31,r31,16
 		lvx     v1,r0,r31
@@ -425,98 +521,12 @@ _LoadFrame:
 		lvx     v29,r0,r31
 		addi    r31,r31,16
 		lvx     v30,r0,r31
-        addi    r31,r31,32
+        addi    r31,r31,16
         lvx     v31,r0,r31
-        mtvscr  v31
-		subi    r31,r31,16
-		lvx     v31,r0,r31
-        lwzu    r3,32(r31)
+        lwzu    r3,16(r31)
 		mtspr	VRSAVE,r3
-        addi    r31,r31,8
-
 
 .NoAV:  lwzu    r3,4(r31)
-        mtsprg0 r3
-        lwzu    r3,4(r31)
-        mtsprg1 r3
-        lwzu    r3,4(r31)
-        mtdar   r3
-        lwzu    r3,4(r31)
-        mtdsisr r3
-        lwzu    r3,4(r31)
-        mtcr    r3
-        lwzu    r3,4(r31)
-        mtctr   r3
-        lwzu    r3,8(r31)                    #skip lr, is loaded seperately
-        mtxer   r3
-        lfd     f0,0(r31)
-        mtfsf   0xff,f0
-
-        lwzu    r0,8(r31)
-        lwzu    r2,8(r31)                    #skip r1, is loaded seperately
-        lwzu    r4,8(r31)                    #skip r3, is loaded seperately
-        lwzu    r5,4(r31)
-        lwzu    r6,4(r31)
-        lwzu    r7,4(r31)
-        lwzu    r8,4(r31)
-        lwzu    r9,4(r31)
-        lwzu    r10,4(r31)
-        lwzu    r11,4(r31)
-        lwzu    r12,4(r31)
-        lwzu    r13,4(r31)
-        lwzu    r14,4(r31)
-        lwzu    r15,4(r31)
-        lwzu    r16,4(r31)
-        lwzu    r17,4(r31)
-        lwzu    r18,4(r31)
-        lwzu    r19,4(r31)
-        lwzu    r20,4(r31)
-        lwzu    r21,4(r31)
-        lwzu    r22,4(r31)
-        lwzu    r23,4(r31)
-        lwzu    r24,4(r31)
-        lwzu    r25,4(r31)
-        lwzu    r26,4(r31)
-        lwzu    r27,4(r31)
-        lwzu    r28,4(r31)
-        lwzu    r29,4(r31)
-        lwzu    r30,4(r31)
-        lwzu    r0,4(r31)
-
-        lfdu    f0,4(r31)
-        lfdu    f1,8(r31)
-        lfdu    f2,8(r31)
-        lfdu    f3,8(r31)
-        lfdu    f4,8(r31)
-        lfdu    f5,8(r31)
-        lfdu    f6,8(r31)
-        lfdu    f7,8(r31)
-        lfdu    f8,8(r31)
-        lfdu    f9,8(r31)
-        lfdu    f10,8(r31)
-        lfdu    f11,8(r31)
-        lfdu    f12,8(r31)
-        lfdu    f13,8(r31)
-        lfdu    f14,8(r31)
-        lfdu    f15,8(r31)
-        lfdu    f16,8(r31)
-        lfdu    f17,8(r31)
-        lfdu    f18,8(r31)
-        lfdu    f19,8(r31)
-        lfdu    f20,8(r31)
-        lfdu    f21,8(r31)
-        lfdu    f22,8(r31)
-        lfdu    f23,8(r31)
-        lfdu    f24,8(r31)
-        lfdu    f25,8(r31)
-        lfdu    f26,8(r31)
-        lfdu    f27,8(r31)
-        lfdu    f28,8(r31)
-        lfdu    f29,8(r31)
-        lfdu    f30,8(r31)
-        lfdu    f31,8(r31)
-
-        lwzu    r3,8(r31)
         mtibatu 0,r3
         lwzu    r3,4(r31)
         mtibatl 0,r3
@@ -607,56 +617,7 @@ _LoadFrame:
 #
 #********************************************************************************************
 
-_ClearVectors:
-        mfmsr   r0
-        oris    r0,r0,PSL_VEC@h
-        mtmsr   r0
-        isync
-        vxor    v0,v0,v0
-        vxor    v1,v1,v1
-        vxor    v2,v2,v2
-        vxor    v3,v3,v3
-        vxor    v4,v4,v4
-        vxor    v5,v5,v5
-        vxor    v6,v6,v6
-        vxor    v7,v7,v7
-        vxor    v8,v8,v8
-        vxor    v9,v9,v9
-        vxor    v10,v10,v10
-        vxor    v11,v11,v11
-        vxor    v12,v12,v12
-        vxor    v13,v13,v13
-        vxor    v14,v14,v14
-        vxor    v15,v15,v15
-        vxor    v16,v16,v16
-        vxor    v17,v17,v17
-        vxor    v18,v18,v18
-        vxor    v19,v19,v19
-        vxor    v20,v20,v20
-        vxor    v21,v21,v21
-        vxor    v22,v22,v22
-        vxor    v23,v23,v23
-        vxor    v24,v24,v24
-        vxor    v25,v25,v25
-        vxor    v26,v26,v26
-        vxor    v27,v27,v27
-        vxor    v28,v28,v28
-        vxor    v29,v29,v29
-        vxor    v30,v30,v30
-        vxor    v31,v31,v31
-        mtvscr  v0
-        li      r0,0
-        mtspr   VRSAVE,r0
-
-        blr
-
-#********************************************************************************************
-#
-#
-#
-#********************************************************************************************
-
-_SmallExcHandler:
+_SmallExcHandler:  #debugdebug to be redone
 
         stwu    r1,-512(r1)                  #Enough?
 

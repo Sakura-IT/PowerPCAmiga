@@ -34,9 +34,6 @@
 
 PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe)
 {
-    ULONG* mem = (APTR)0xb0;
-    mem[iframe->if_ExcNum] += 1;
-
     PowerPCBase->pp_ExceptionMode = -1;
     PowerPCBase->pp_Quantum = PowerPCBase->pp_StdQuantum;
     PowerPCBase->pp_CPUSDR1 = getSDR1();
@@ -47,7 +44,11 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         PowerPCBase->pp_L2State = getL2State();
     }
 
-    switch (iframe->if_ExceptionVector)
+    ULONG ExceptionVector = iframe->if_Context.ec_ExcID - (PPC_VECLEN * OPCODE_LEN);
+    iframe->if_ExcNum = ExceptionVector >> 8;
+    iframe->if_Context.ec_ExcID = 1 << iframe->if_ExcNum;
+
+    switch (ExceptionVector)
     {
         case VEC_EXTERNAL:
         {
@@ -306,7 +307,8 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
             if (PowerPCBase->pp_EnAltivec)
             {
                 iframe->if_Context.ec_SRR1 |= PSL_VEC;
-                ClearVectors();
+                writeTest(0xf0, iframe->if_Context.ec_UPC.ec_SRR0);
+                writeTest(0xf4, (ULONG)iframe);
             }
             else
             {
@@ -649,20 +651,17 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
         {
             if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_NewTasks))
             {
-                DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
+                DispatchPPC(PowerPCBase, (struct MsgFrame*)currTask);
                 break;
             }
             if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
             {
                 currTask->tp_Task.tc_State = TS_RUN;
                 PowerPCBase->pp_ThisPPCProc = currTask;
-                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
+                iframe = (struct iframe*)currTask->tp_ContextMem;
                 currTask->tp_Task.tc_SPReg = (APTR)iframe->if_Context.ec_GPR[1];
                 break;
             }
-            iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
-            iframe->if_Context.ec_UPC.ec_SRR0 = (ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM;
-            iframe->if_Context.ec_GPR[1] = (ULONG)(PowerPCBase->pp_PPCMemBase) + MEM_GAP - 512;
             break;
         }
         if (currTask->tp_Task.tc_State == TS_REMOVED)
@@ -674,7 +673,6 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
         else if (currTask->tp_Task.tc_State == TS_CHANGING)
         {
             currTask->tp_Task.tc_State = TS_WAIT;
-            CopyMemPPC((APTR)iframe, (APTR)currTask->tp_ContextMem, sizeof(struct iframe));
             AddTailPPC((struct List*)&PowerPCBase->pp_WaitingTasks, (struct Node*)currTask);
             currTask = NULL;
             PowerPCBase->pp_ThisPPCProc = currTask;
@@ -686,8 +684,7 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
                 struct TaskPPC* oldTask = PowerPCBase->pp_ThisPPCProc;
                 oldTask->tp_Task.tc_State = TS_READY;
                 AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
-                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
-                DispatchPPC(PowerPCBase, iframe, (struct MsgFrame*)currTask);
+                DispatchPPC(PowerPCBase, (struct MsgFrame*)currTask);
             }
             else if (currTask = (struct TaskPPC*)RemHeadPPC((struct List*)&PowerPCBase->pp_ReadyTasks))
             {
@@ -696,8 +693,7 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
                 currTask->tp_Task.tc_State = TS_RUN;
                 AddTailPPC((struct List*)&PowerPCBase->pp_ReadyTasks, (struct Node*)oldTask);
                 PowerPCBase->pp_ThisPPCProc = currTask;
-                CopyMemPPC((APTR)iframe, (APTR)oldTask->tp_ContextMem, sizeof(struct iframe));
-                CopyMemPPC((APTR)currTask->tp_ContextMem, (APTR)iframe, sizeof(struct iframe));
+                iframe = (struct iframe*)currTask->tp_ContextMem;
                 currTask->tp_Task.tc_SPReg = (APTR)iframe->if_Context.ec_GPR[1];
             }
             break;
@@ -711,7 +707,7 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
 *
 *********************************************************************************************/
 
-PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct iframe* iframe, __reg("r5") struct MsgFrame* myFrame)
+PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct MsgFrame* myFrame)
 {
     struct NewTask* newTask = (struct NewTask*)myFrame->mf_Arg[0];
 
@@ -774,8 +770,6 @@ PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
     {
         newFrame->if_Segments[i] = PowerPCBase->pp_SystemSegs[i];
     }
-
-    CopyMemPPC((APTR)newFrame, (APTR)iframe, sizeof(struct iframe));
 
     return;
 }

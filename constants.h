@@ -50,7 +50,8 @@
 
 #define EXCATTR_TIMEDREMOVAL    0x80101007
 #define EXCF_DECREMENTER        1<<9
-
+#define PPC_VECLEN              3
+#define OPCODE_LEN              4
 #define OPCODE_NOP              0x60000000
 #define OPCODE_BBRANCH          0x4C000000  //only for backward jump
 #define OPCODE_FBRANCH          0x48000000
