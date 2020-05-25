@@ -526,3 +526,14 @@
 #define PCIBAR_3                3
 #define PCIBAR_4                4
 
+// MPC107 stuff
+
+#define OMBAR                   0x300
+#define OTWR                    0x308
+#define WP_CONTROL              0xF48
+
+#define OTWR_64KB               0xf
+#define OTWR_128KB              0x10
+#define OPQI                    0x20000000
+#define WP_TRIG01               0xc0000000
+

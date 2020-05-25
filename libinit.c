@@ -484,7 +484,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
         case DEVICE_MPC107:
         {
-            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice, initPointer);
+            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice, initPointer, (ULONG)pcimemDMAnode);
             break;
         }
 
@@ -1471,9 +1471,75 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 *********************************************************************************************/
 
 struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
-                             struct PciDevice* ppcdevice, ULONG initPointer)
+                             struct PciDevice* ppcdevice, ULONG initPointer, ULONG vgamem)
 {
-    return NULL;
+    struct InitData* mpc107Data;
+    ULONG romMem, EUMBAddr, fakememBase, romMemValue, segSize;
+    UWORD res;
+
+    struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+    struct ExecBase* SysBase = myConsts->ic_SysBase;
+
+    if (vgamem)
+    {
+        if(!(romMem = (ULONG)AllocVec(0x20000, MEMF_PUBLIC | MEMF_PPC)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate VGA memory");
+            return FALSE;
+        }
+
+    }
+    else
+    {
+        if (!(myConsts->ic_gfxMem))
+        {
+            PrintCrtErr(myConsts, "Could not allocate VGA memory");
+            return FALSE;
+        }
+        romMem = myConsts->ic_gfxMem + 0x600000;   //this is soo wrong
+    }
+
+    romMem = (romMem + 0x10000) & 0xffff0000;
+    EUMBAddr = ppcdevice->pd_ABaseAddress1;
+
+    romMemValue = romMem | OTWR_64KB;
+    romMemValue = ((romMemValue >> 24) & 0xff) | ((romMemValue << 8) & 0xff0000) |
+                  ((romMemValue >> 8) & 0xff00) | ((romMemValue << 24) & 0xff000000);
+    writememL(EUMBAddr, OTWR, romMemValue);
+    writememL(EUMBAddr, OMBAR, 0x0000f0ff);
+
+    mpc107Data = ((struct InitData*)(romMem + OFFSET_KERNEL));
+
+    segSize = *((ULONG*)(initPointer - 4));
+
+    writememL(romMem, VEC_SYSTEMRESET, OPCODE_FBRANCH + OFFSET_KERNEL - VEC_SYSTEMRESET);
+
+    CopyMemQuick((APTR)(initPointer+4), (APTR)(mpc107Data), segSize);
+
+    mpc107Data->id_Status        = 0xabcdabcd;
+    mpc107Data->id_MemBase       = 0xabcdabcd;
+    mpc107Data->id_MemSize       = 0xabcdabcd;
+    mpc107Data->id_GfxMemBase    = myConsts->ic_gfxMem;
+    mpc107Data->id_GfxMemSize    = myConsts->ic_gfxSize;
+    mpc107Data->id_GfxType       = myConsts->ic_gfxType;
+    mpc107Data->id_GfxSubType    = myConsts->ic_gfxSubType;
+    mpc107Data->id_GfxConfigBase = myConsts->ic_gfxConfig;
+    mpc107Data->id_Environment1  = myConsts->ic_env1;
+    mpc107Data->id_Environment2  = myConsts->ic_env2;
+    mpc107Data->id_Environment3  = myConsts->ic_env3;
+    mpc107Data->id_DeviceID      = ppcdevice->pd_DeviceID;
+    mpc107Data->id_ConfigBase    = ppcdevice->pd_RevisionID;
+
+    CacheClearU();
+
+    res = (ReadConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND)
+          | BUSMASTER_ENABLE);
+
+    WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
+
+    writememL(EUMBAddr, WP_CONTROL, WP_TRIG01);
+
+    return mpc107Data;
 }
 
 /********************************************************************************************
