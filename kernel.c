@@ -874,7 +874,10 @@ PPCKERNEL struct MsgFrame* KCreateMsgFramePPC(__reg("r3") struct PrivatePPCBase*
 
 		case DEVICE_MPC107:
 		{
-			break;
+			ULONG msgOffset = loadPCI(PPC_EUMB_BASE, MPC107_OFTPR);
+            msgFrame = readmemLongPPC(msgOffset, 0);
+            storePCI(PPC_EUMB_BASE, MPC107_OFTPR, (((msgOffset + 4) | 0xc000) & 0xffff));
+            break;
 		}
 
 		default:
@@ -922,6 +925,13 @@ PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* Po
 
 		case DEVICE_MPC107:
 		{
+            ULONG msgOffset1 = loadPCI(PPC_EUMB_BASE, MPC107_IPHPR);
+            ULONG msgOffset2 = loadPCI(PPC_EUMB_BASE, MPC107_IPTPR);
+            if (msgOffset1 != msgOffset2)
+            {
+                storePCI(PPC_EUMB_BASE, MPC107_IPTPR, (msgOffset2 + 4) & 0xffff7fff);
+                msgFrame = readmemLongPPC(msgOffset2, 0);
+            }
 			break;
 		}
 
@@ -962,6 +972,9 @@ PPCKERNEL VOID KSendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 
 		case DEVICE_MPC107:
 		{
+            ULONG msgOffset = loadPCI(PPC_EUMB_BASE, MPC107_OPHPR);
+            writememLongPPC(msgOffset, 0, (ULONG)msgFrame);
+            storePCI(PPC_EUMB_BASE, MPC107_OPHPR, ((msgOffset + 4) & 0xbfff));
 			break;
 		}
 
@@ -1003,6 +1016,9 @@ PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 
 		case DEVICE_MPC107:
 		{
+            ULONG msgOffset = loadPCI(PPC_EUMB_BASE, MPC107_IFHPR);
+            writememLongPPC(msgOffset , 0, (ULONG)msgFrame);
+            storePCI(PPC_EUMB_BASE, MPC107_IFHPR, (msgOffset + 4) & 0x3fff);
 			break;
 		}
 

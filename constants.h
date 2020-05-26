@@ -527,6 +527,9 @@
 #define PCIBAR_4                4
 
 // MPC107 stuff
+
+#define PPC_EUMB_BASE           0xF0000000
+
 #define MPC107_OMISR            0x30
 #define MPC107_OMIMR            0x34
 #define MPC107_IFQPR            0x40
@@ -535,6 +538,18 @@
 #define MPC107_IMR1             0x54
 #define MPC107_OMR0             0x58
 #define MPC107_OMR1             0x5C
+
+#define MPC107_IFHPR            0x120            //Inbound Free_FIFO Head Pointer register
+#define MPC107_IFTPR            0x128            //Inbound Free_FIFO Tail Pointer register
+#define MPC107_IPHPR            0x130            //Inbound Post_FIFO Head Pointer register
+#define MPC107_IPTPR            0x138            //Inbound Post_FIFO Tail Pointer register
+#define MPC107_OFHPR            0x140            //Outbound Free_FIFO Head Pointer register
+#define MPC107_OFTPR            0x148            //Outbound Free_FIFO Tail Pointer register
+#define MPC107_OPHPR            0x150            //Outbound Post_FIFO Head Pointer register
+#define MPC107_OPTPR            0x158            //Outbound Post_FIFO Tail Pointer register
+#define MPC107_MUCR             0x164            //Message Unit Control register
+#define MPC107_QBAR             0x170            //Queue Base Address register
+
 #define MPC107_OMBAR            0x300
 #define MPC107_OTWR             0x308
 #define MPC107_WP_CONTROL       0xF48
@@ -543,4 +558,7 @@
 #define MPC107_OTWR_128KB       0x10
 #define MPC107_OPQI             0x20000000
 #define MPC107_WP_TRIG01        0xc0000000
+
+#define MPC107_MUCR_CQS_FIFO4K  0x00000002
+#define MPC107_MUCR_CQE_ENABLE  0x00000001
 
