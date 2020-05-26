@@ -527,13 +527,20 @@
 #define PCIBAR_4                4
 
 // MPC107 stuff
+#define MPC107_OMISR            0x30
+#define MPC107_OMIMR            0x34
+#define MPC107_IFQPR            0x40
+#define MPC107_OFQPR            0x44
+#define MPC107_IMR0             0x50
+#define MPC107_IMR1             0x54
+#define MPC107_OMR0             0x58
+#define MPC107_OMR1             0x5C
+#define MPC107_OMBAR            0x300
+#define MPC107_OTWR             0x308
+#define MPC107_WP_CONTROL       0xF48
 
-#define OMBAR                   0x300
-#define OTWR                    0x308
-#define WP_CONTROL              0xF48
-
-#define OTWR_64KB               0xf
-#define OTWR_128KB              0x10
-#define OPQI                    0x20000000
-#define WP_TRIG01               0xc0000000
+#define MPC107_OTWR_64KB        0x0F
+#define MPC107_OTWR_128KB       0x10
+#define MPC107_OPQI             0x20000000
+#define MPC107_WP_TRIG01        0xc0000000
 

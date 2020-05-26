@@ -978,7 +978,11 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 		}
 		case DEVICE_MPC107:
 		{
-			break;
+			if ((readmemL(PowerPCBase->pp_BridgeMsgs, MPC107_OMISR)) & MPC107_OPQI)
+            {
+                flag = 1;
+            }
+            break;
 		}
 		case DEVICE_MPC8343E:
 		{
@@ -1149,6 +1153,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
             }
             case DEVICE_MPC107:
             {
+                msgFrame = readmemL(PowerPCBase->pp_BridgeMsgs, MPC107_IFQPR);
                 break;
             }
         }
@@ -1206,6 +1211,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
         case DEVICE_MPC107:
         {
+            writememL(PowerPCBase->pp_BridgeMsgs, MPC107_IFQPR, (ULONG)msgFrame);
             break;
         }
 
@@ -1232,7 +1238,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
 
     Disable();
 
-    //msgFrame->mf_Identifier = ID_FREE;
+    msgFrame->mf_Identifier = ID_FREE;
 
     switch (PowerPCBase->pp_DeviceID)
     {
@@ -1253,6 +1259,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
         }
         case DEVICE_MPC107:
         {
+            writememL(PowerPCBase->pp_BridgeMsgs, MPC107_OFQPR, (ULONG)msgFrame);
             break;
         }
     }
@@ -1310,6 +1317,7 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
             }
             case DEVICE_MPC107:
             {
+                msgFrame = readmemL(PowerPCBase->pp_BridgeMsgs, MPC107_OFQPR);
                 break;
             }
         }

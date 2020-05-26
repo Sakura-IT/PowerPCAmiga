@@ -638,7 +638,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 		}
         case DEVICE_MPC107:
 		{
-		    break;
+		    myBase->pp_BridgeMsgs      = ppcdevice->pd_ABaseAddress1;
+            break;
 		}
     }
 
@@ -1502,11 +1503,11 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
     romMem = (romMem + 0x10000) & 0xffff0000;
     EUMBAddr = ppcdevice->pd_ABaseAddress1;
 
-    romMemValue = romMem | OTWR_64KB;
+    romMemValue = romMem | MPC107_OTWR_64KB;
     romMemValue = ((romMemValue >> 24) & 0xff) | ((romMemValue << 8) & 0xff0000) |
                   ((romMemValue >> 8) & 0xff00) | ((romMemValue << 24) & 0xff000000);
-    writememL(EUMBAddr, OTWR, romMemValue);
-    writememL(EUMBAddr, OMBAR, 0x0000f0ff);
+    writememL(EUMBAddr, MPC107_OTWR, romMemValue);
+    writememL(EUMBAddr, MPC107_OMBAR, 0x0000f0ff);
 
     mpc107Data = ((struct InitData*)(romMem + OFFSET_KERNEL));
 
@@ -1537,7 +1538,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
 
-    writememL(EUMBAddr, WP_CONTROL, WP_TRIG01);
+    writememL(EUMBAddr, MPC107_WP_CONTROL, MPC107_WP_TRIG01);
 
     return mpc107Data;
 }

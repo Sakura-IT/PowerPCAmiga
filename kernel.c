@@ -307,8 +307,6 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
             if (PowerPCBase->pp_EnAltivec)
             {
                 iframe->if_Context.ec_SRR1 |= PSL_VEC;
-                writeTest(0xf0, iframe->if_Context.ec_UPC.ec_SRR0);
-                writeTest(0xf4, (ULONG)iframe);
             }
             else
             {

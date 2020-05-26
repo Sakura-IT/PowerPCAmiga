@@ -784,6 +784,7 @@ LIBFUNC68K void myCausePPCInterrupt(__reg("a6") struct PrivatePPCBase* PowerPCBa
         }
         case DEVICE_MPC107:
         {
+            writememL(PowerPCBase->pp_BridgeMsgs, MPC107_IMR0, -1);
             break;
         }
     }
