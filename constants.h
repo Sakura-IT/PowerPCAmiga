@@ -529,6 +529,12 @@
 // MPC107 stuff
 
 #define PPC_EUMB_BASE           0xF0000000
+#define PPC_EUMB_EPICPROC       0xF0060000
+
+#define MPC107_LMBAR            0x10             //Local Memory Base Address register
+
+#define EPIC_IACK               0xA0
+#define EPIC_EOI                0xB0
 
 #define MPC107_OMISR            0x30
 #define MPC107_OMIMR            0x34
@@ -538,6 +544,18 @@
 #define MPC107_IMR1             0x54
 #define MPC107_OMR0             0x58
 #define MPC107_OMR1             0x5C
+#define MPC107_MSAR1            0x80             //Memory Start Address register 1
+#define MPC107_MSAR2            0x84             //Memory Start Address register 2
+#define MPC107_MESAR1           0x88             //Memory Extended Start Address register 1
+#define MPC107_MESAR2           0x8C             //Memory Extended Start Address register 2
+#define MPC107_MEAR1            0x90             //Memory End Address register 1
+#define MPC107_MEAR2            0x94             //Memory End Address register 2
+#define MPC107_MEEAR1           0x98             //Memory Extended End Address register 1
+#define MPC107_MEEAR2           0x9C             //Memory Extended End Address register 2
+#define MPC107_MBEN             0xA0             //Memory Bank Enable
+#define MPC107_PGMAX            0xA3
+#define MPC107_IMISR            0x100		     //Inbound Message Interrupt Status register
+#define MPC107_IMIMR            0x104		     //Inbound Message Interrupt Mask register
 
 #define MPC107_IFHPR            0x120            //Inbound Free_FIFO Head Pointer register
 #define MPC107_IFTPR            0x128            //Inbound Free_FIFO Tail Pointer register
@@ -561,4 +579,11 @@
 
 #define MPC107_MUCR_CQS_FIFO4K  0x00000002
 #define MPC107_MUCR_CQE_ENABLE  0x00000001
+#define MPC107_IMISR_IM0I       0x00000001		 //Inbound Message 0 Interrupt
+#define MPC107_IMISR_IM1I       0x00000002		 //Inbound Message 1 Interrupt
+#define MPC107_IMISR_IPQI       0x00000020		 //Inbound Post Queue Interrupt
+
+#define MPC107_PPC_OMBAR        0x2300           //Outbound Memory Base Address register
+#define MPC107_PPC_OTWR         0x2308           //Outbound Translation Window register
+#define MPC107_ITWR             0x2310           //Inbound Translation Window register
 

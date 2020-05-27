@@ -102,6 +102,27 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
 		        case DEVICE_MPC107:
 		        {
+                    if (loadPCI(PPC_EUMB_BASE, MPC107_IMISR) & MPC107_IMISR_IM0I)
+                    {
+                        storePCI(PPC_EUMB_BASE, MPC107_IMISR, (MPC107_IMISR_IM0I | MPC107_IMISR_IM1I));
+                        CommonExcHandler(PowerPCBase, iframe, (struct List*)&PowerPCBase->pp_ExcInterrupt);
+                    }
+
+                    if ((readmemLongPPC(PPC_EUMB_EPICPROC, EPIC_IACK) >> 24) == 0xff)
+                    {
+                        PowerPCBase->pp_ExceptionMode = 0;
+                        setDEC(PowerPCBase->pp_Quantum);
+                        return;
+                    }
+                    struct MsgFrame* msgFrame;
+
+                    while (msgFrame = KGetMsgFramePPC(PowerPCBase))
+                    {
+                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
+                    }
+
+                    storePCI(PPC_EUMB_BASE, MPC107_IMISR, MPC107_IMISR_IPQI);
+                    writememLongPPC(PPC_EUMB_EPICPROC, EPIC_EOI, 0);
 			        break;
 		        }
 	        }

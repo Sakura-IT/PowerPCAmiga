@@ -392,8 +392,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     }
     else
     {
-        myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress2;
-        myConsts->ic_gfxSize = -(((gfxdevice->pd_Size2)<<1)&-16L);
+        myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
+        myConsts->ic_gfxSize = -(((gfxdevice->pd_Size0)<<1)&-16L);
         myConsts->ic_gfxConfig = 0;
         myConsts->ic_gfxType = VENDOR_3DFX;
         if (gfxnotv45)
