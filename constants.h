@@ -153,6 +153,7 @@
 #define SIZE_KBASE              0xc0000
 #define SIZE_KFIFO              0x10000
 #define SIZE_HFIFO              0x40000
+#define SIZE_SFIFO              0x4000
 #define FIFO_OFFSET             0x380000
 #define FIFO_END                FIFO_OFFSET + (4 * SIZE_KFIFO)
 
@@ -554,6 +555,10 @@
 #define MPC107_MEEAR2           0x9C             //Memory Extended End Address register 2
 #define MPC107_MBEN             0xA0             //Memory Bank Enable
 #define MPC107_PGMAX            0xA3
+#define MPC107_MCCR1            0xF0             //#Memory Control Configuration register 1
+#define MPC107_MCCR2            0xF4             //Memory Control Configuration register 2
+#define MPC107_MCCR3            0xF8             //Memory Control Configuration register 3
+#define MPC107_MCCR4            0xFC             //Memory Control Configuration register 4
 #define MPC107_IMISR            0x100		     //Inbound Message Interrupt Status register
 #define MPC107_IMIMR            0x104		     //Inbound Message Interrupt Mask register
 
@@ -577,6 +582,7 @@
 #define MPC107_OPQI             0x20000000
 #define MPC107_WP_TRIG01        0xc0000000
 
+#define MPC107_QBAR_DEFAULT     0x100000
 #define MPC107_MUCR_CQS_FIFO4K  0x00000002
 #define MPC107_MUCR_CQE_ENABLE  0x00000001
 #define MPC107_IMISR_IM0I       0x00000001		 //Inbound Message 0 Interrupt

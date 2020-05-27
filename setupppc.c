@@ -445,6 +445,21 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC107:
         {
+            memIF    = MPC107_QBAR_DEFAULT;
+            memIP    = memIF + SIZE_SFIFO;
+            memOP    = memIP + SIZE_SFIFO;
+            memOF    = memOP + SIZE_SFIFO;
+
+            storePCI(PPC_EUMB_BASE, MPC107_QBAR, MPC107_QBAR_DEFAULT);
+            storePCI(PPC_EUMB_BASE, MPC107_IFTPR, 4);
+            storePCI(PPC_EUMB_BASE, MPC107_IFHPR, 0);
+            storePCI(PPC_EUMB_BASE, MPC107_IPTPR, SIZE_SFIFO);
+            storePCI(PPC_EUMB_BASE, MPC107_IPHPR, SIZE_SFIFO);
+            storePCI(PPC_EUMB_BASE, MPC107_OPTPR, SIZE_SFIFO * 2);
+            storePCI(PPC_EUMB_BASE, MPC107_OPHPR, SIZE_SFIFO * 2);
+            storePCI(PPC_EUMB_BASE, MPC107_OFTPR, (SIZE_SFIFO * 3) + 4);
+            storePCI(PPC_EUMB_BASE, MPC107_OFHPR, SIZE_SFIFO * 3);
+
             break;
         }
     }
@@ -473,6 +488,7 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC107:
         {
+            storePCI(PPC_EUMB_BASE, MPC107_MUCR, (MPC107_MUCR_CQS_FIFO4K | MPC107_MUCR_CQE_ENABLE));
             break;
         }
     }
@@ -672,6 +688,12 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     ULONG copySrc = 0;
     struct PPCZeroPage *myZP = 0;
 
+    while(1) //debugdebug
+    {
+        initData->id_Status = 0xfab4dead;
+        dFlush((ULONG)&initData->id_Status);
+    }
+
     initData->id_Status = STATUS_INIT;
 
     Reset();
@@ -820,19 +842,12 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         PowerPCBase->pp_SystemSegs[i] = getSRIn(i<<28);
     }
 
-    ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + MEM_GAP - 0x4000);
+    ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + MEM_GAP - 0xC000);
     for (int i = 0; i < 0x1000; i++)
     {
         cmem[i] = 0;
     }
 
-#if 0
-    ULONG* cmem = (APTR)(PowerPCBase->pp_PPCMemBase + OFFSET_SYSMEM + 0x100);
-    for (int i = 0; i < 64; i++)
-    {
-        cmem[i] = 0;
-    }
-#endif
     setupCaches(PowerPCBase);
 
     myZP->zp_Status = STATUS_READY;
