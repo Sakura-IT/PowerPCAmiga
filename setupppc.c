@@ -535,6 +535,40 @@ void setupOpenPIC(__reg("r3") struct InitData* initData)
 
     return;
 }
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
+
+void setupEPIC(void)
+{
+    writememLongPPC(PPC_EUMB_BASE, EPIC_GCR, EPIC_GCR_RESET);
+    while ((readmemLongPPC(PPC_EUMB_BASE, EPIC_GCR) & EPIC_GCR_RSTATUS));
+    writememLongPPC(PPC_EUMB_BASE, EPIC_GCR, EPIC_GCR_MIXMODE);
+
+    storePCI(PPC_EUMB_BASE, EPIC_IIVPR3, 0x80050042);
+
+    ULONG value = readmemLongPPC(PPC_EUMB_BASE, EPIC_EICR);
+    writememLongPPC(PPC_EUMB_BASE, EPIC_EICR, (value & ~(1<<20)));   //SIE = 0
+
+    value = readmemLongPPC(PPC_EUMB_BASE, EPIC_IIVPR3);
+    writememLongPPC(PPC_EUMB_BASE, EPIC_IIVPR3, (value & ~(1<<24))); //Mask M bit
+
+    writememLongPPC(PPC_EUMB_BASE, EPIC_PCTPR, 0);
+
+    value = (loadPCI(PPC_EUMB_BASE, EPIC_FRR) >> 16 & 0x7ff);
+
+    while (value)
+    {
+        ULONG value2 = readmemLongPPC(PPC_EUMB_EPICPROC, EPIC_IACK);
+        sync();
+        writememLongPPC(PPC_EUMB_EPICPROC, EPIC_EOI, 0);
+        value--;
+    }
+
+    return;
+}
 
 /********************************************************************************************
 *
@@ -721,7 +755,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC107:
         {
-            break;
+            setupEPIC();;
         }
     }
 

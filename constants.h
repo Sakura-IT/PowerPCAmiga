@@ -536,6 +536,19 @@
 
 #define EPIC_IACK               0xA0
 #define EPIC_EOI                0xB0
+#define EPIC_GCR                0x41020          //Global Configuration register
+#define EPIC_PCTPR              0x60080          //Processor Current Task Priority register
+#define EPIC_FRR                0x41000          //Feature Reporting register
+#define EPIC_GTBCR0             0x41110          //Global Timer Base Count register 0
+#define EPIC_GTVPR0             0x41120          //Global Timer Vector/Priority register 0
+#define EPIC_EICR               0x41030          //EPIC interrupt Configuration register
+#define EPIC_IVPR0              0x50200          //Interrupt Vector/Priority register 0
+#define EPIC_IVPR3              0x50260          //Interrupt Vector/Priority register 3
+#define EPIC_IVPR4              0x50280          //Interrupt Vector/Priority register 4
+#define EPIC_IIVPR3             0x510c0          //I2C Interrupt Vector/Priority register 3
+#define EPIC_GCR_RESET          0xA0
+#define EPIC_GCR_RSTATUS        0x80
+#define EPIC_GCR_MIXMODE        0x20
 
 #define MPC107_OMISR            0x30
 #define MPC107_OMIMR            0x34
