@@ -722,6 +722,54 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     ULONG copySrc = 0;
     struct PPCZeroPage *myZP = 0;
 
+    if (initData->id_DeviceID == DEVICE_MPC107)
+    {
+        ULONG MPC107_MCCR1_VALUE;
+        ULONG value28, value30, value31;
+
+        writePCI(MPC107_PICR1, MPC107_PICR1_DEFAULT);
+        writePCI(MPC107_PICR2, MPC107_PICR2_DEFAULT);
+        writePCI16(MPC107_PMCR1, MPC107_PMCR1_DEFAULT);
+        writePCI(MPC107_EUMBBAR, PPC_EUMB_BASE);
+
+        if (initData->id_ConfigBase == 0x13)
+        {
+            writePCI(MPC107_MCCR4, 0x35303232);
+            writePCI(MPC107_MCCR3, 0x78400000);
+            writePCI(MPC107_MCCR2, 0x04400700);
+
+            MPC107_MCCR1_VALUE = 0x75880000;
+            value28 = 0xaaaa;
+            value30 = 0x5555;
+            value31 = 0;
+        }
+        else
+        {
+            writePCI(MPC107_MCCR4, 0x00100000);
+            writePCI(MPC107_MCCR3, 0x0002a29c);
+            writePCI(MPC107_MCCR2, 0xe0001040); //EDO?
+            writePCI(MPC107_MCCR1, 0xffe20000);
+
+            MPC107_MCCR1_VALUE = 0xffea0000;
+            value28 = 0xffff;
+            value30 = 0xaaaa;
+            value31 = 0x5555;
+        }
+
+        writePCI(MPC107_MSAR1, 0);
+        writePCI(MPC107_MESAR1, 0);
+        writePCI(MPC107_MSAR2, 0);
+        writePCI(MPC107_MESAR2, 0);
+        writePCI(MPC107_MEAR1, 0);
+        writePCI(MPC107_MEEAR1, 0);
+        writePCI(MPC107_MEAR2, 0);
+        writePCI(MPC107_MEEAR2, 0);
+        writePCI(MPC107_MCCR1, MPC107_MCCR1_VALUE);
+
+        //detect memory size
+
+
+    }
     while(1) //debugdebug
     {
         initData->id_Status = 0xfab4dead;

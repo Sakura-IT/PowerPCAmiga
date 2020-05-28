@@ -529,6 +529,9 @@
 
 // MPC107 stuff
 
+#define CONFIG_ADDR             0xFEC00000
+#define CONFIG_DAT              0xFEE00000
+
 #define PPC_EUMB_BASE           0xF0000000
 #define PPC_EUMB_EPICPROC       0xF0060000
 
@@ -558,6 +561,7 @@
 #define MPC107_IMR1             0x54
 #define MPC107_OMR0             0x58
 #define MPC107_OMR1             0x5C
+#define MPC107_EUMBBAR          0x78
 #define MPC107_MSAR1            0x80             //Memory Start Address register 1
 #define MPC107_MSAR2            0x84             //Memory Start Address register 2
 #define MPC107_MESAR1           0x88             //Memory Extended Start Address register 1
@@ -605,4 +609,36 @@
 #define MPC107_PPC_OMBAR        0x2300           //Outbound Memory Base Address register
 #define MPC107_PPC_OTWR         0x2308           //Outbound Translation Window register
 #define MPC107_ITWR             0x2310           //Inbound Translation Window register
+
+#define MPC107_PICR1               0xA8         //Processor Interface Configuration register 1
+#define PICR1_CF_MP_MULTI          0x00000003
+#define PICR1_SPEC_PCI             0x00000004
+#define PICR1_CF_APARK             0x00000008
+#define PICR1_CF_LOOP_SNOOP        0x00000010
+#define PICR1_CF_LE_MODE           0x00000020
+#define PICR1_ST_GATH_EN           0x00000040
+#define PICR1_NO_BUS_WIDTH_CHECK   0x00000080
+#define PICR1_TEA_EN               0x00000400
+#define PICR1_MCP_EN               0x00000800
+#define PICR1_FLASH_WR_EN          0x00001000
+#define PICR1_CF_LBA_EN            0x00002000
+#define PICR1_PROC_TYPE_7XX        0x00040000
+#define MPC107_PICR1_DEFAULT       PICR1_SPEC_PCI|PICR1_CF_APARK|PICR1_CF_LOOP_SNOOP|PICR1_ST_GATH_EN|PICR1_TEA_EN|PICR1_MCP_EN|PICR1_FLASH_WR_EN|PICR1_PROC_TYPE_7XX
+
+#define MPC107_PICR2               0xAC         //Processor Interface Configuration register 2
+#define PICR2_CF_LBCLAIM_WS        0x00000600
+#define PICR2_NO_SNOOP_EN          0x08000000
+#define MPC107_PICR2_DEFAULT       PICR2_CF_LBCLAIM_WS
+
+#define MPC107_PMCR1               0x70         //Peripheral Logic Power Management Configuration register 1
+#define PMCR1_SLEEP                0x0008
+#define PMCR1_NAP                  0x0010
+#define PMCR1_DOZE                 0x0020
+#define PMCR1_BR1_WAKE             0x0040
+#define PMCR1_PM                   0x0080
+#define PMCR1_LP_REF_EN            0x1000
+#define PMCR1_NO_SLEEP_MSG         0x4000
+#define PMCR1_NO_NAP_MSG           0x8000
+#define PMCR1_NO_MSG               0xC000
+#define MPC107_PMCR1_DEFAULT       PMCR1_DOZE|PMCR1_BR1_WAKE|PMCR1_LP_REF_EN|PMCR1_NO_MSG
 
