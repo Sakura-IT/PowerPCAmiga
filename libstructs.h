@@ -115,6 +115,19 @@ ULONG               id_StartBat;
 ULONG               id_SizeBat;
 };
 
+struct MemSettings {
+ULONG               ms_msar1;
+ULONG               ms_msar2;
+ULONG               ms_mear1;
+ULONG               ms_mear2;
+ULONG               ms_mesar1;
+ULONG               ms_mesar2;
+ULONG               ms_meear1;
+ULONG               ms_meear2;
+ULONG               ms_mben;
+ULONG               ms_mccr1;
+};
+
 struct BATArray {
 ULONG                       ba_ibatu;
 ULONG                       ba_ibatl;

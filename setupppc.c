@@ -718,6 +718,7 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
 
 PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 {
+    
     ULONG mem = 0;
     ULONG copySrc = 0;
     struct PPCZeroPage *myZP = 0;
@@ -760,14 +761,47 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         writePCI(MPC107_MESAR1, 0);
         writePCI(MPC107_MSAR2, 0);
         writePCI(MPC107_MESAR2, 0);
-        writePCI(MPC107_MEAR1, 0);
+        writePCI(MPC107_MEAR1, -1);
         writePCI(MPC107_MEEAR1, 0);
-        writePCI(MPC107_MEAR2, 0);
+        writePCI(MPC107_MEAR2, -1);
         writePCI(MPC107_MEEAR2, 0);
         writePCI(MPC107_MCCR1, MPC107_MCCR1_VALUE);
 
+        struct MemSettings ms;
+
+        ms.ms_msar1 = 0;
+        ms.ms_msar2 = 0;
+        ms.ms_mear1 = 0;
+        ms.ms_mear2 = 0;
+        ms.ms_mesar1 = 0;
+        ms.ms_mesar2 = 0;
+        ms.ms_meear1 = 0;
+        ms.ms_meear2 = 0;
+        ms.ms_mben = 0;
+        ms.ms_mccr1 = 0;
+
         //detect memory size
 
+        writePCI(MPC107_MSAR1, ms.ms_msar1);
+        writePCI(MPC107_MESAR1, ms.ms_mesar1);
+        writePCI(MPC107_MSAR2, ms.ms_msar2);
+        writePCI(MPC107_MESAR2, ms.ms_mesar2);
+        writePCI(MPC107_MEAR1, ms.ms_mear1);
+        writePCI(MPC107_MEEAR1, ms.ms_meear1);
+        writePCI(MPC107_MEAR2, ms.ms_mear2);
+        writePCI(MPC107_MEEAR2, ms.ms_meear2);
+        writePCI(MPC107_MBEN, ms.ms_mben);
+
+        sync();
+
+        writePCI(MPC107_MCCR1, ms.ms_mccr1);
+
+        ULONG settle = 0x2ffff;
+
+        while (settle)
+        {
+            settle--;
+        }
 
     }
     while(1) //debugdebug
