@@ -28,6 +28,29 @@
 	.endif
 .endm
 
+.macro setpcireg pcivalue
+		ori r23,r22,\pcivalue
+.endm
+
+.macro configwrite8
+       lis      r20,CONFIG_ADDR@h
+       stwbrx   r23,0,r20
+       sync
+       andi.    r23,r23,3
+       oris     r21,r23,CONFIG_DAT@h
+       stb      r25,0(r21)
+       sync
+.endm
+
+.macro configwrite32
+       lis      r20,CONFIG_ADDR@h
+       lis      r21,CONFIG_DAT@h
+       stwbrx   r23,0,r20
+       sync
+       stwbrx   r25,0,r21
+       sync
+.endm
+
 .set IF_CONTEXT,                0                 #Align this with the if_Frame struct in libstructs.h
 .set IF_CONTEXT_EXCID,          IF_CONTEXT
 .set IF_CONTEXT_SRR0,           IF_CONTEXT+4
@@ -134,3 +157,9 @@
 .set dbat6l,573
 .set dbat7u,574
 .set dbat7l,575
+
+.set CMD_BASE,                  0x80000000
+.set CONFIG_ADDR,               0xFEC00000
+.set CONFIG_DAT,                0xFEE00000
+.set MPC107_MBEN,               0xA0
+.set MPC107_MCCR1,              0xF0

@@ -529,6 +529,7 @@
 
 // MPC107 stuff
 
+#define CMD_BASE                0x80000000
 #define CONFIG_ADDR             0xFEC00000
 #define CONFIG_DAT              0xFEE00000
 

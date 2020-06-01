@@ -126,6 +126,10 @@ ULONG               ms_meear1;
 ULONG               ms_meear2;
 ULONG               ms_mben;
 ULONG               ms_mccr1;
+ULONG               ms_mccr1testhigh;
+ULONG               ms_mccr1testlow1;
+ULONG               ms_mccr1testlow2;
+ULONG               ms_mccr1testlow3;
 };
 
 struct BATArray {

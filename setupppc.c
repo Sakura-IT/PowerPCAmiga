@@ -725,7 +725,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     if (initData->id_DeviceID == DEVICE_MPC107)
     {
-        ULONG MPC107_MCCR1_VALUE;
+        struct MemSettings ms;
         ULONG value28, value30, value31;
 
         writePCI(MPC107_PICR1, MPC107_PICR1_DEFAULT);
@@ -739,10 +739,10 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
             writePCI(MPC107_MCCR3, 0x78400000);
             writePCI(MPC107_MCCR2, 0x04400700);
 
-            MPC107_MCCR1_VALUE = 0x75880000;
-            value28 = 0xaaaa;
-            value30 = 0x5555;
-            value31 = 0;
+            ms.ms_mccr1testhigh = 0x75880000;
+            ms.ms_mccr1testlow1 = 0xaaaa;
+            ms.ms_mccr1testlow2 = 0x5555;
+            ms.ms_mccr1testlow3 = 0;
         }
         else
         {
@@ -751,10 +751,11 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
             writePCI(MPC107_MCCR2, 0xe0001040); //EDO?
             writePCI(MPC107_MCCR1, 0xffe20000);
 
-            MPC107_MCCR1_VALUE = 0xffea0000;
-            value28 = 0xffff;
-            value30 = 0xaaaa;
-            value31 = 0x5555;
+
+            ms.ms_mccr1testhigh = 0xffea0000;
+            ms.ms_mccr1testlow1 = 0xffff;
+            ms.ms_mccr1testlow2 = 0xaaaa;
+            ms.ms_mccr1testlow3 = 0x5555;
         }
 
         writePCI(MPC107_MSAR1, 0);
@@ -765,9 +766,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         writePCI(MPC107_MEEAR1, 0);
         writePCI(MPC107_MEAR2, -1);
         writePCI(MPC107_MEEAR2, 0);
-        writePCI(MPC107_MCCR1, MPC107_MCCR1_VALUE);
-
-        struct MemSettings ms;
+        writePCI(MPC107_MCCR1, ms.ms_mccr1testhigh);
 
         ms.ms_msar1 = 0;
         ms.ms_msar2 = 0;
@@ -780,7 +779,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         ms.ms_mben = 0;
         ms.ms_mccr1 = 0;
 
-        //detect memory size
+        detectMem((struct MemSettings*)&ms);
 
         writePCI(MPC107_MSAR1, ms.ms_msar1);
         writePCI(MPC107_MESAR1, ms.ms_mesar1);

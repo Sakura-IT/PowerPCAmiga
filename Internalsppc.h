@@ -363,6 +363,7 @@ ULONG* GetDecTable(VOID);
 ULONG* getTableFX(VOID);
 ULONG* getTable100(VOID);
 VOID getL2Size(ULONG testmem, APTR cz);
+VOID detectMem(struct MemSettings* ms);
 #if 0
 VOID writememLongPPC(ULONG Base, ULONG offset, ULONG value);
 ULONG readmemLongPPC(ULONG Base, ULONG offset);
@@ -370,13 +371,13 @@ ULONG readmemLongPPC(ULONG Base, ULONG offset);
 
 
 #define writePCI(address, value) \
-        storePCI(CONFIG_ADDR, 0, address); \
+        storePCI(CONFIG_ADDR, 0, CMD_BASE | address); \
         sync();                                 \
         storePCI(CONFIG_DAT, 0, value); \
         sync();
 
 #define writePCI16(address, value) \
-        storePCI(CONFIG_ADDR, 0, address); \
+        storePCI(CONFIG_ADDR, 0, CMD_BASE | address); \
         sync();                                 \
         storePCI16(CONFIG_DAT, 0, value); \
         sync();
