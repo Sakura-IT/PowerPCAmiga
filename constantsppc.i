@@ -73,6 +73,21 @@
 .set IF_EXCNUM,                 IF_SEGMENTS+64
 .set IF_SIZE,                   IF_EXCNUM+4
 
+.set MS_MSAR1,                  0
+.set MS_MSAR2,                  4
+.set MS_MEAR1,                  8
+.set MS_MEAR2,                  12
+.set MS_MESAR1,                 16
+.set MS_MESAR2,                 20
+.set MS_MEEAR1,                 24
+.set MS_MEEAR2,                 28
+.set MS_MBEN,                   32
+.set MS_MCCR1,                  36
+.set MS_MCCR1TESTHIGH,          40
+.set MS_MCCR1TESTLOW1,          44
+.set MS_MCCR1TESTLOW2,          48
+.set MS_MCCR1TESTLOW3,          52
+
 .set VRSAVE,                    256
 
 .set PP_FLAGS,                  8

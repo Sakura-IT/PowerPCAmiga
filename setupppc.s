@@ -322,434 +322,488 @@ _GetExcTable:
 #*********************************************************
 
 _detectMem:
-        mr      r15,r3
+        stwu    r1,-256(r1)
+        stw     r13,100(r1)
+        stw     r14,104(r1)
+        stw     r15,108(r1)
+        stw     r16,112(r1)
+        stw     r17,116(r1)
+        stw     r18,120(r1)
+        stw     r19,124(r1)
+        stw     r20,128(r1)
+        stw     r21,132(r1)
+        stw     r22,136(r1)
+        stw     r23,140(r1)
+        stw     r24,144(r1)
+        stw     r25,148(r1)
+        stw     r26,152(r1)
+        stw     r27,156(r1)
+        stw     r28,160(r1)
+        stw     r29,164(r1)
+        stw     r30,168(r1)
+        stw     r31,172(r1)
 
-		li	r3,0
-        lis r4,0x426f
-        ori r4,r4,0x6f6e
-		li	r5,1
-		li	r8,0
-		li	r9,0
-		li	r10,0
-		li	r11,0
-		li	r12,0
-		mr	r13,r26
-		li	r14,0
-		li	r16,0
-		li	r17,0
-		li	r18,0
-		li	r19,0
-        lis r22,CMD_BASE@h
+        mr      r15,r3
+        lwz     r26,MS_MCCR1TESTHIGH(r3)
+        lwz     r28,MS_MCCR1TESTLOW1(r3)
+        lwz     r30,MS_MCCR1TESTLOW2(r3)
+        lwz     r31,MS_MCCR1TESTLOW3(r3)
+
+		li      r3,0
+        lis     r4,0x426f
+        ori     r4,r4,0x6f6e
+		li      r5,1
+		li      r8,0
+		li      r9,0
+		li      r10,0
+		li      r11,0
+		li      r12,0
+		mr      r13,r26
+		li      r14,0
+		li      r16,0
+		li      r17,0
+		li      r18,0
+		li      r19,0
+        lis     r22,CMD_BASE@h
 
 loc_3BD8:
         setpcireg MPC107_MBEN		   #Memory Bank Enable register
-		mr	r25,r5
+		mr      r25,r5
         configwrite8                   #enable Bank as given in r5
 
-		stw	r4,0(r3)		#try to store "Boon" at address 0x0
+		stw     r4,0(r3)               #try to store "Boon" at address 0x0
 		eieio
 
-		stw	r3,4(r3)		#try to store 0x0 at 0x4
+		stw     r3,4(r3)               #try to store 0x0 at 0x4
 		eieio
-		lwz	r7,0(r3)		#read from 0x0
-		cmplw	r4,r7			#is it "Boon", long compare
-		bne	loc_4184
+		lwz     r7,0(r3)               #read from 0x0
+		cmplw   r4,r7                  #is it "Boon", long compare
+		bne     loc_4184
 
-		or	r14,r14,r5		#continue if found
-		setpcireg MPC107_MCCR1		   #0x800000f0
-		or	r25,r26,r28
+		or      r14,r14,r5             #continue if found
+		setpcireg MPC107_MCCR1         #0x800000f0
+		or      r25,r26,r28
         configwrite32                  #set all banks to 12 or 13 row bits
 
-		lis	r6,0x40
-		stw	r3,0(r6)		#set 0x400000 to 0x0
-		lis	r6,0x80
-		stw	r3,0(r6)		#set 0x800000 to 0x0
-		lis	r6,0x100
-		stw	r3,0(r6)		#set 0x1000000 to 0x0
-		lis	r6,0x200
-		stw	r3,0(r6)		#set 0x2000000 to 0x0
-		lis	r6,0x400
-		stw	r3,0(r6)		#set 0x4000000 to 0x0
-		lis	r6,0x800
-		stw	r3,0(r6)		#set 0x8000000 to 0x0
+		lis     r6,0x40
+		stw     r3,0(r6)		#set 0x400000 to 0x0
+		lis     r6,0x80
+		stw     r3,0(r6)		#set 0x800000 to 0x0
+		lis     r6,0x100
+		stw     r3,0(r6)		#set 0x1000000 to 0x0
+		lis     r6,0x200
+		stw     r3,0(r6)		#set 0x2000000 to 0x0
+		lis     r6,0x400
+		stw     r3,0(r6)		#set 0x4000000 to 0x0
+		lis     r6,0x800
+		stw     r3,0(r6)		#set 0x8000000 to 0x0
 		eieio
-		stw	r4,0(r3)		#set 0x0 to "Boon"
+		stw     r4,0(r3)		#set 0x0 to "Boon"
 		eieio
-		lis	r6,0x40
-		lwz	r7,0(r6)		#read from 0x400000
-		cmplw	r4,r7			#is it "Boon"
-		beq	loc_3CBC		#if yes goto loc_3CBC
-		lis	r6,0x80
-		lwz	r7,0(r6)		#read form 0x800000
-		cmplw	r4,r7			#is it "Boon"
-		beq	loc_3E24		#if yes goto loc_3E24
-		lis	r6,0x100
-		lwz	r7,0(r6)		#read from 0x1000000
-		cmplw	r4,r7			#is it "Boon"
-		beq	loc_3E24		#if yes goto loc_3E24
-		lis	r6,0x200
-		lwz	r7,0(r6)		#read from 0x2000000
-		cmplw	r4,r7
-		beq	loc_3E24		#if its "Boon" goto loc_3E24
-		lis	r6,0x400
-		lwz	r7,0(r6)		#read from 0x4000000
-		cmplw	r4,r7
-		beq	loc_3E24		#if its "Boon" goto loc_3E24
-		lis	r6,0x800
-		lwz	r7,0(r6)		#read from 0x8000000
-		cmplw	r4,r7
-		beq	loc_3E24		#if its "Boon" goto loc_3E24
-		lis	r6,0x1000
-		cmpwi	r7,0
-		beq	loc_3E24
-		b	loc_4184		#goto loc_4184
+		lis     r6,0x40
+		lwz     r7,0(r6)		#read from 0x400000
+		cmplw   r4,r7			#is it "Boon"
+		beq     loc_3CBC		#if yes goto loc_3CBC
+		lis     r6,0x80
+		lwz     r7,0(r6)		#read form 0x800000
+		cmplw   r4,r7			#is it "Boon"
+		beq     loc_3E24		#if yes goto loc_3E24
+		lis     r6,0x100
+		lwz     r7,0(r6)		#read from 0x1000000
+		cmplw   r4,r7			#is it "Boon"
+		beq     loc_3E24		#if yes goto loc_3E24
+		lis     r6,0x200
+		lwz     r7,0(r6)		#read from 0x2000000
+		cmplw   r4,r7
+		beq     loc_3E24		#if its "Boon" goto loc_3E24
+		lis     r6,0x400
+		lwz     r7,0(r6)		#read from 0x4000000
+		cmplw   r4,r7
+		beq     loc_3E24		#if its "Boon" goto loc_3E24
+		lis     r6,0x800
+		lwz     r7,0(r6)		#read from 0x8000000
+		cmplw   r4,r7
+		beq     loc_3E24		#if its "Boon" goto loc_3E24
+		lis     r6,0x1000
+		cmpwi   r7,0
+		beq     loc_3E24
+		b       loc_4184		#goto loc_4184
 
 #********************************************************************************************
 loc_3CBC:					#CODE XREF: findSetMem+1D0
-		or	r25,r26,r30
+		or      r25,r26,r30
         configwrite32
-		lis	r6,0x20			#continue tests
-		stw	r3,0(r6)
-		lis	r6,0x40
-		stw	r3,0(r6)
-		lis	r6,0x80
-		stw	r3,0(r6)
-		lis	r6,0x100
-		stw	r3,0(r6)
-		lis	r6,0x200
-		stw	r3,0(r6)
+		lis     r6,0x20			#continue tests
+		stw     r3,0(r6)
+		lis     r6,0x40
+		stw     r3,0(r6)
+		lis     r6,0x80
+		stw     r3,0(r6)
+		lis     r6,0x100
+		stw     r3,0(r6)
+		lis     r6,0x200
+		stw     r3,0(r6)
 		eieio
-		stw	r4,0(r3)
+		stw     r4,0(r3)
 		eieio
-		lis	r6,0x20
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3D50
-		lis	r6,0x40
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x80
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x100
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x200
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		b	loc_4184
+		lis     r6,0x20
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3D50
+		lis     r6,0x40
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x80
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x100
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x200
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		b       loc_4184
 
 #********************************************************************************************
 loc_3D50:					#CODE XREF: findSetMem+274
-		or	r25,r26,r31
+		or      r25,r26,r31
         configwrite32
-		lis	r6,0x10			#continue tests
-		stw	r3,0(r6)
-		lis	r6,0x20
-		stw	r3,0(r6)
-		lis	r6,0x40
-		stw	r3,0(r6)
-		lis	r6,0x80
-		stw	r3,0(r6)
+		lis     r6,0x10			#continue tests
+		stw     r3,0(r6)
+		lis     r6,0x20
+		stw     r3,0(r6)
+		lis     r6,0x40
+		stw     r3,0(r6)
+		lis     r6,0x80
+		stw     r3,0(r6)
 		eieio
-		stw	r4,0(r3)
+		stw     r4,0(r3)
 		eieio
-		lis	r6,0x10
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3DCC
-		lis	r6,0x20
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x40
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x80
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		b	loc_4184
+		lis     r6,0x10
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3DCC
+		lis     r6,0x20
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x40
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x80
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		b       loc_4184
 
 #********************************************************************************************
 loc_3DCC:					#CODE XREF: findSetMem+300
-		lis	r6,8
-		stw	r3,0(r6)
-		lis	r6,0x10
-		stw	r3,0(r6)
-		lis	r6,0x20
-		stw	r3,0(r6)
+		lis     r6,8
+		stw     r3,0(r6)
+		lis     r6,0x10
+		stw     r3,0(r6)
+		lis     r6,0x20
+		stw     r3,0(r6)
 		eieio
-		stw	r4,0(r3)
+		stw     r4,0(r3)
 		eieio
-		lis	r6,8
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_4184
-		lis	r6,0x10
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		lis	r6,0x20
-		lwz	r7,0(r6)
-		cmplw	r4,r7
-		beq	loc_3E24
-		b	loc_4184
+		lis     r6,8
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_4184
+		lis     r6,0x10
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		lis     r6,0x20
+		lwz     r7,0(r6)
+		cmplw   r4,r7
+		beq     loc_3E24
+		b       loc_4184
 
 #********************************************************************************************
 loc_3E24:					#CODE XREF: findSetMem+1E0
 						#findSetMem+1F0 ...
-		cmplwi	r5,1
-		bne	loc_3E84
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		or	r9,r9,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		or	r16,r16,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		or	r11,r11,r7
-		mr	r7,r8
-		addi	r7,r7,0xFF
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		or	r18,r18,r7
-		andi.	r25,r25,3
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,1
+		bne     loc_3E84
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		or      r9,r9,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		or      r16,r16,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		or      r11,r11,r7
+		mr      r7,r8
+		addi    r7,r7,0xFF
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		or      r18,r18,r7
+		andi.   r25,r25,3
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_3E84:					#CODE XREF: findSetMem+394
-		cmplwi	r5,2
-		bne	loc_3EF4
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,8
-		or	r9,r9,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,8
-		or	r16,r16,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,8
-		or	r11,r11,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,8
-		or	r18,r18,r7
-		andi.	r25,r25,0xC
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,2
+		bne     loc_3EF4
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,8
+		or      r9,r9,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,8
+		or      r16,r16,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,8
+		or      r11,r11,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,8
+		or      r18,r18,r7
+		andi.   r25,r25,0xC
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_3EF4:					#CODE XREF: findSetMem+3F4
-		cmplwi	r5,4
-		bne	loc_3F64
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,16
-		or	r9,r9,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,16
-		or	r16,r16,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,16
-		or	r11,r11,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,16
-		or	r18,r18,r7
-		andi.	r25,r25,0x30
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,4
+		bne     loc_3F64
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,16
+		or      r9,r9,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,16
+		or      r16,r16,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,16
+		or      r11,r11,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,16
+		or      r18,r18,r7
+		andi.   r25,r25,0x30
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_3F64:					#CODE XREF: findSetMem+464
-		cmplwi	r5,8
-		bne	loc_3FD4
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,24
-		or	r9,r9,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,24
-		or	r16,r16,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,24
-		or	r11,r11,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,24
-		or	r18,r18,r7
-		andi.	r25,r25,0xC0
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,8
+		bne     loc_3FD4
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,24
+		or      r9,r9,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,24
+		or      r16,r16,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,24
+		or      r11,r11,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,24
+		or      r18,r18,r7
+		andi.   r25,r25,0xC0
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_3FD4:					#CODE XREF: findSetMem+4D4
-		cmplwi	r5,0x10
-		bne	loc_4034
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		or	r10,r10,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		or	r17,r17,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		or	r12,r12,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		or	r19,r19,r7
-		andi.	r25,r25,0x300
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,0x10
+		bne     loc_4034
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		or      r10,r10,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		or      r17,r17,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		or      r12,r12,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		or      r19,r19,r7
+		andi.   r25,r25,0x300
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_4034:
-		cmplwi	r5,0x20
-
-		bne	loc_40A4
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,8
-		or	r10,r10,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,8
-		or	r17,r17,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,8
-		or	r12,r12,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,8
-		or	r19,r19,r7
-		andi.	r25,r25,0xC00
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,0x20
+		bne     loc_40A4
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,8
+		or      r10,r10,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,8
+		or      r17,r17,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,8
+		or      r12,r12,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,8
+		or      r19,r19,r7
+		andi.   r25,r25,0xC00
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_40A4:
-		cmplwi	r5,0x40
-		bne	loc_4114
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,16
-		or	r10,r10,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,16
-		or	r17,r17,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,16
-		or	r12,r12,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,16
-		or	r19,r19,r7
-		andi.	r25,r25,0x3000
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,0x40
+		bne     loc_4114
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,16
+		or      r10,r10,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,16
+		or      r17,r17,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,16
+		or      r12,r12,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,16
+		or	    r19,r19,r7
+		andi.   r25,r25,0x3000
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_4114:
-		cmplwi	r5,0x80
-		bne	loc_4184
-		mr	r7,r8
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,24
-		or	r10,r10,r7
-		mr	r7,r8
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,24
-		or	r17,r17,r7
-		add	r8,r8,r6
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,20
-		andi.	r7,r7,0xFF
-		slwi	r7,r7,24
-		or	r12,r12,r7
-		mr	r7,r8
-		addi	r7,r7,-1
-		srwi	r7,r7,28
-		andi.	r7,r7,3
-		slwi	r7,r7,24
-		or	r19,r19,r7
-		andi.	r25,r25,0xc000
-		or	r13,r13,r25
-		b	loc_4184
+		cmplwi  r5,0x80
+		bne     loc_4184
+		mr      r7,r8
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,24
+		or      r10,r10,r7
+		mr      r7,r8
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,24
+		or      r17,r17,r7
+		add     r8,r8,r6
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,20
+		andi.   r7,r7,0xFF
+		slwi    r7,r7,24
+		or      r12,r12,r7
+		mr      r7,r8
+		addi    r7,r7,-1
+		srwi    r7,r7,28
+		andi.   r7,r7,3
+		slwi    r7,r7,24
+		or      r19,r19,r7
+		andi.   r25,r25,0xc000
+		or      r13,r13,r25
+		b       loc_4184
 
 #********************************************************************************************
 loc_4184:
-		slwi	r5,r5,1
-		cmplwi	r5,0x100
-		bne	loc_3BD8
+		slwi    r5,r5,1
+		cmplwi  r5,0x100
+		bne     loc_3BD8
 
 
+        stw     r9,MS_MSAR1(r15)
+        stw     r10,MS_MSAR2(r15)
+        stw     r11,MS_MEAR1(r15)
+        stw     r12,MS_MEAR2(r15)
+        stw     r16,MS_MESAR1(r15)
+        stw     r17,MS_MESAR2(r15)
+        stw     r18,MS_MEEAR1(r15)
+        stw     r19,MS_MEEAR2(r15)
+        stw     r14,MS_MBEN(r15)
+
+        lwz     r13,100(r1)
+        lwz     r14,104(r1)
+        lwz     r15,108(r1)
+        lwz     r16,112(r1)
+        lwz     r17,116(r1)
+        lwz     r18,120(r1)
+        lwz     r19,124(r1)
+        lwz     r20,128(r1)
+        lwz     r21,132(r1)
+        lwz     r22,136(r1)
+        lwz     r23,140(r1)
+        lwz     r24,144(r1)
+        lwz     r25,148(r1)
+        lwz     r26,152(r1)
+        lwz     r27,156(r1)
+        lwz     r28,160(r1)
+        lwz     r29,164(r1)
+        lwz     r30,168(r1)
+        lwz     r31,172(r1)
+        lwz     r1,0(r1)
 
 		blr
 
