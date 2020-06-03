@@ -773,7 +773,6 @@ loc_4184:
 		cmplwi  r5,0x100
 		bne     loc_3BD8
 
-
         stw     r9,MS_MSAR1(r15)
         stw     r10,MS_MSAR2(r15)
         stw     r11,MS_MEAR1(r15)
@@ -783,6 +782,7 @@ loc_4184:
         stw     r18,MS_MEEAR1(r15)
         stw     r19,MS_MEEAR2(r15)
         stw     r14,MS_MBEN(r15)
+        stw     r8,MS_MEMSIZE(r15)
 
         lwz     r13,100(r1)
         lwz     r14,104(r1)

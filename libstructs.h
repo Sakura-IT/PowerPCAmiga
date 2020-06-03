@@ -130,6 +130,7 @@ ULONG               ms_mccr1testhigh;
 ULONG               ms_mccr1testlow1;
 ULONG               ms_mccr1testlow2;
 ULONG               ms_mccr1testlow3;
+ULONG               ms_memsize;
 };
 
 struct BATArray {

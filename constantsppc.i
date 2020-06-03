@@ -87,6 +87,7 @@
 .set MS_MCCR1TESTLOW1,          44
 .set MS_MCCR1TESTLOW2,          48
 .set MS_MCCR1TESTLOW3,          52
+.set MS_MEMSIZE,                56
 
 .set VRSAVE,                    256
 

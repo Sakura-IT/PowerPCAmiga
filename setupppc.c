@@ -802,11 +802,16 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
             settle--;
         }
 
-    }
-    while(1) //debugdebug
-    {
-        initData->id_Status = 0xfab4dead;
-        dFlush((ULONG)&initData->id_Status);
+        initData->id_MemSize = ms.ms_memsize;
+
+        //ITWR, LMBAR, membase
+
+        while(1) //debugdebug
+        {
+            initData->id_Status = 0xfab4dead;
+            dFlush((ULONG)&initData->id_Status);
+        }
+
     }
 
     initData->id_Status = STATUS_INIT;
