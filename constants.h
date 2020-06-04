@@ -148,6 +148,7 @@
 
 #define STATUS_INIT             0x494E4954
 #define STATUS_READY            0x52454459
+#define STATUS_MEM              0x4D454D00
 
 #define BASE_KMSG               0x200000
 #define SIZE_KBASE              0xc0000
@@ -593,6 +594,7 @@
 
 #define MPC107_OMBAR            0x300
 #define MPC107_OTWR             0x308
+#define MPC107_ITWR             0x310
 #define MPC107_WP_CONTROL       0xF48
 
 #define MPC107_OTWR_64KB        0x0F
@@ -609,7 +611,7 @@
 
 #define MPC107_PPC_OMBAR        0x2300           //Outbound Memory Base Address register
 #define MPC107_PPC_OTWR         0x2308           //Outbound Translation Window register
-#define MPC107_ITWR             0x2310           //Inbound Translation Window register
+#define MPC107_PPC_ITWR         0x2310           //Inbound Translation Window register
 
 #define MPC107_PICR1               0xA8         //Processor Interface Configuration register 1
 #define PICR1_CF_MP_MULTI          0x00000003

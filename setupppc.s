@@ -782,6 +782,7 @@ loc_4184:
         stw     r18,MS_MEEAR1(r15)
         stw     r19,MS_MEEAR2(r15)
         stw     r14,MS_MBEN(r15)
+        stw     r13,MS_MCCR1(r15)
         stw     r8,MS_MEMSIZE(r15)
 
         lwz     r13,100(r1)

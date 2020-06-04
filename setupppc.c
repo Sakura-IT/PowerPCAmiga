@@ -804,13 +804,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
         initData->id_MemSize = ms.ms_memsize;
 
-        //ITWR, LMBAR, membase
-
-        while(1) //debugdebug
-        {
-            initData->id_Status = 0xfab4dead;
-            dFlush((ULONG)&initData->id_Status);
-        }
+        //copy stuff into place
 
     }
 
@@ -822,6 +816,12 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     {
         *((ULONG*)(mem)) = 0;
         mem += 4;
+    }
+
+    if (initData->id_DeviceID == DEVICE_MPC107)
+    {
+        while (initData->id_Status != STATUS_MEM);
+        while (1); //debugdebug
     }
 
     myZP->zp_MemSize = initData->id_MemSize;

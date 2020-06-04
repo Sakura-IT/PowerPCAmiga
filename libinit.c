@@ -562,6 +562,67 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
     }
 
+
+    if (ppcdevice->pd_DeviceID == DEVICE_MPC107)
+    {
+        ULONG memAvail = 0x10000000;
+        ULONG memBase;
+        if (cardData->id_MemSize > 0x8000000)
+        {
+            if (!(memBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_0, ppcdevice)))
+            {
+                memAvail = 0x8000000;
+                if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
+                {
+                    memAvail = 0x4000000;
+                    if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+                    {
+                        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+                        return NULL;
+                    }
+                }
+            }
+        }
+        else if (cardData->id_MemSize > 0x4000000)
+        {
+            memAvail = 0x8000000;
+            if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
+            {
+                memAvail = 0x4000000;
+                if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+                {
+                    PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+                    return NULL;
+                }
+             }
+        }
+        else
+        {
+            memAvail = 0x4000000;
+            if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+            {
+                PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+                return NULL;
+            }
+        }
+
+        if (cardData->id_MemSize > memAvail)
+        {
+            cardData->id_MemSize = memAvail;
+        }
+
+        cardData->id_MemBase = memBase;
+
+        cardData->id_Status = STATUS_MEM;
+
+        while (1); //debugdebug
+
+        //itwr lmbar
+
+    }
+
+
+
     myZeroPage = (struct PPCZeroPage*)cardData->id_MemBase;
     myConsts->ic_MemBase = (ULONG)myZeroPage;
 
