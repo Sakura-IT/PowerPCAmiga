@@ -803,9 +803,6 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         }
 
         initData->id_MemSize = ms.ms_memsize;
-
-        //copy stuff into place
-
     }
 
     initData->id_Status = STATUS_INIT;
@@ -821,7 +818,6 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     if (initData->id_DeviceID == DEVICE_MPC107)
     {
         while (initData->id_Status != STATUS_MEM);
-        while (1); //debugdebug
     }
 
     myZP->zp_MemSize = initData->id_MemSize;

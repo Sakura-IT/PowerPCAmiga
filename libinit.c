@@ -671,7 +671,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     CacheClearU();
 
-
     struct Interrupt* myInt = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     myInt->is_Code = (APTR)&GortInt;
     myInt->is_Data = NULL;
