@@ -597,8 +597,11 @@
 #define MPC107_ITWR             0x310
 #define MPC107_WP_CONTROL       0xF48
 
-#define MPC107_OTWR_64KB        0x0F
-#define MPC107_OTWR_128KB       0x10
+#define MPC107_TWR_64KB         0x0F
+#define MPC107_TWR_128KB        0x10
+#define MPC107_TWR_64MB         0x19
+#define MPC107_TWR_128MB        0x1A
+#define MPC107_TWR_256MB        0x1B
 #define MPC107_OPQI             0x20000000
 #define MPC107_WP_TRIG01        0xc0000000
 

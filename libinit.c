@@ -562,67 +562,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
     }
 
-
-    if (ppcdevice->pd_DeviceID == DEVICE_MPC107)
-    {
-        ULONG memAvail = 0x10000000;
-        ULONG memBase;
-        if (cardData->id_MemSize > 0x8000000)
-        {
-            if (!(memBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_0, ppcdevice)))
-            {
-                memAvail = 0x8000000;
-                if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
-                {
-                    memAvail = 0x4000000;
-                    if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
-                    {
-                        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-                        return NULL;
-                    }
-                }
-            }
-        }
-        else if (cardData->id_MemSize > 0x4000000)
-        {
-            memAvail = 0x8000000;
-            if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
-            {
-                memAvail = 0x4000000;
-                if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
-                {
-                    PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-                    return NULL;
-                }
-             }
-        }
-        else
-        {
-            memAvail = 0x4000000;
-            if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
-            {
-                PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-                return NULL;
-            }
-        }
-
-        if (cardData->id_MemSize > memAvail)
-        {
-            cardData->id_MemSize = memAvail;
-        }
-
-        cardData->id_MemBase = memBase;
-
-        cardData->id_Status = STATUS_MEM;
-
-        while (1); //debugdebug
-
-        //itwr lmbar
-
-    }
-
-
-
     myZeroPage = (struct PPCZeroPage*)cardData->id_MemBase;
     myConsts->ic_MemBase = (ULONG)myZeroPage;
 
@@ -1564,10 +1503,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
     romMem = (romMem + 0x10000) & 0xffff0000;
     EUMBAddr = ppcdevice->pd_ABaseAddress1;
 
-    romMemValue = romMem | MPC107_OTWR_64KB;
-    romMemValue = ((romMemValue >> 24) & 0xff) | ((romMemValue << 8) & 0xff0000) |
-                  ((romMemValue >> 8) & 0xff00) | ((romMemValue << 24) & 0xff000000);
-    writememL(EUMBAddr, MPC107_OTWR, romMemValue);
+    writememL(EUMBAddr, MPC107_OTWR, swap32(romMem | MPC107_TWR_64KB));
     writememL(EUMBAddr, MPC107_OMBAR, 0x0000f0ff);
 
     mpc107Data = ((struct InitData*)(romMem + OFFSET_KERNEL));
@@ -1600,6 +1536,77 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
     WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
 
     writememL(EUMBAddr, MPC107_WP_CONTROL, MPC107_WP_TRIG01);
+
+    ULONG timer = 0xEC0000;
+    while (timer)
+    {
+        if (mpc107Data->id_Status == STATUS_INIT)
+        {
+            break;
+        }
+        timer--;
+    }
+    if (!(timer))
+    {
+        PrintCrtErr(myConsts, "PowerPC CPU not responding");
+        return FALSE;
+    }
+
+    ULONG itwrSize = MPC107_TWR_256MB;
+    ULONG memBase;
+    if (mpc107Data->id_MemSize > 0x8000000)
+    {
+        if (!(memBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_0, ppcdevice)))
+        {
+            itwrSize = MPC107_TWR_128MB;
+            if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
+            {
+                itwrSize = MPC107_TWR_64MB;
+                if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+                {
+                    PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+                    return NULL;
+                }
+            }
+        }
+    }
+    else if (mpc107Data->id_MemSize > 0x4000000)
+    {
+        itwrSize = MPC107_TWR_128MB;
+        if (!(memBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_0, ppcdevice)))
+        {
+            itwrSize = MPC107_TWR_64MB;
+            if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+            {
+                PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+                return NULL;
+            }
+         }
+    }
+    else
+    {
+        itwrSize = MPC107_TWR_64MB;
+        if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return NULL;
+        }
+    }
+
+    ULONG memAvail = 1 << (itwrSize + 1);
+
+    if (mpc107Data->id_MemSize > memAvail)
+    {
+        mpc107Data->id_MemSize = memAvail;
+    }
+
+    mpc107Data->id_MemBase = memBase;
+
+    mpc107Data->id_Status = STATUS_MEM;
+
+    writememL(EUMBAddr, MPC107_ITWR, swap32(itwrSize));
+
+    WriteConfigurationLong(devfuncnum, MPC107_LMBAR, memBase);
 
     return mpc107Data;
 }

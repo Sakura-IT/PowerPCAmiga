@@ -20,6 +20,8 @@
 
 void illegal(void) = "\tillegal\n";           //debug function
 
+ULONG swap32(__reg("d0")ULONG) = "\trol.w\t#8,d0\n\tswap\td0\n\trol.w\t#8,d0\n";
+
 static const APTR LibVectors[TOTAL_FUNCS+1];
 static const APTR WarpVectors[5];
 
