@@ -201,8 +201,8 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC107:
         {
-            initData->id_Status = ERR_PPCSETUP;
-            return;
+            startEffAddr = PPC_EUMB_BASE;
+            break;
         }
     }
 
