@@ -207,6 +207,9 @@ ifpdr_value:
         sync
         sync
 
+        mttbu   r3
+        mttbl   r3
+
         mtlr	r6
         blr
 #*********************************************************
