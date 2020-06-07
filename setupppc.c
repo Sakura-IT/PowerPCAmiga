@@ -944,7 +944,6 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     PowerPCBase->pp_PPCMemSize = initData->id_MemSize;
     PowerPCBase->pp_IdUsrTasks = 100;
-    PowerPCBase->pp_EnAltivec = 1;
     PowerPCBase->pp_BusyCounter = 24;
     PowerPCBase->pp_LowActivityPri = 6000;
     PowerPCBase->pp_EnAlignExc = initData->id_Environment1 >> 8;
@@ -985,6 +984,10 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
             {
                 quantum = QUANTUM_66;
                 busclock = BUSCLOCK_66;
+            }
+            if ((PowerPCBase->pp_CPUInfo >> 16 & 0xfff) == 0xc)
+            {
+                PowerPCBase->pp_EnAltivec = -1;
             }
             break;
         }
