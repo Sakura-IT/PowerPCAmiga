@@ -56,9 +56,9 @@ _ExcCommon:
         stw     r0,104(r1)
         stw     r4,108(r1)
 
-        lwz     r4,0xa0(r0)
+        lwz     r4,0x24(r0)
         addi    r4,r4,1
-        stw     r4,0xa0(r0)
+        stw     r4,0x24(r0)
 
         lwz     r4,PowerPCBase(r0)
         lwz     r4,POWERPCBASE_THISPPCTASK(r4)
@@ -83,8 +83,6 @@ _ExcCommon:
 
 .DoExc: mflr    r0
         stw     r0,IF_CONTEXT(r3)
-        stw     r3,0xb0(r0)
-
         bl      _StoreFrame                  #r0, r3 and r4 are skipped in this routine and were saved above
 
         lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
@@ -102,8 +100,6 @@ _ExcCommon:
 
 .NI2:   lwz     r31,PPCTASK_CONTEXMEM(r31)
 .Idle:  mr      r1,r31
-
-        stw     r31,0xb4(r0)
 
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 

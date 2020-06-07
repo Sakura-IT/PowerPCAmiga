@@ -602,6 +602,7 @@
 #define MPC107_TWR_64MB         0x19
 #define MPC107_TWR_128MB        0x1A
 #define MPC107_TWR_256MB        0x1B
+#define MPC107_TWR_512MB        0x1C
 #define MPC107_OPQI             0x20000000
 #define MPC107_WP_TRIG01        0xc0000000
 

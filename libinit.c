@@ -738,6 +738,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
         case DEVICE_MPC107:
         {
+            while (!(myZeroPage->zp_DECCounter));
+
             ULONG otwrValue = (swap32(myConsts->ic_gfxMem | MPC107_TWR_512MB)) & -2;
             writememL(ppcdevice->pd_ABaseAddress1, MPC107_OTWR, otwrValue);
             writememL(ppcdevice->pd_ABaseAddress1, MPC107_OMBAR, otwrValue + (OFFSET_PCIMEM >> 24));

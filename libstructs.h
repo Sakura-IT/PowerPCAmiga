@@ -72,6 +72,7 @@ struct PPCBase*     zp_PowerPCBase;         //Also used in kernel.s as 16(r0)!
 ULONG               zp_PageTableSize;
 ULONG               zp_CacheGap[2];
 ULONG               zp_MemSize;
+volatile ULONG      zp_DECCounter;
 };
 
 struct InternalConsts {
