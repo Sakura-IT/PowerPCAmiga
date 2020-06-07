@@ -595,7 +595,7 @@ PPCSETUP void initSema(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4
 *
 *********************************************************************************************/
 
-PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("r4") struct InitData* initData)
 {
     ULONG value0 = getHID0();
     ULONG value1 = getHID1();
@@ -701,6 +701,52 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase)
         {
             value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
             setHID0(value0);
+
+            l2Setting = L2CR_L2SIZ_1M | L2CR_L2CLK_3 | L2CR_L2RAM_BURST | L2CR_TS;
+
+            if (!(getL2CR() & L2CR_L2E))
+            {
+                setL2CR(l2Setting | L2CR_L2I);
+                while (getL2CR() & L2CR_L2IP);
+                setL2CR(l2Setting | L2CR_L2E);
+            }
+
+            l2Setting |= L2CR_L2E;
+
+            setL2CR(l2Setting);
+            getL2Size(PowerPCBase->pp_PPCMemBase + PowerPCBase->pp_PPCMemSize, (APTR)&cz);
+
+            l2Setting &= ~L2CR_TS;
+            if (cz.cz_SizeBit)
+            {
+                l2Setting &= ~L2CR_L2SIZ_1M;
+                l2Setting |= cz.cz_SizeBit;
+            }
+
+            setL2CR(l2Setting);
+            l2Size = cz.cz_SizeBytes;
+
+            ULONG* pllTable;
+            pll = value1 >> 28;
+
+            if (initData->id_ConfigBase == 0x13)
+            {
+                pllTable = getTable100();
+            }
+            else
+            {
+                pllTable = getTable66();
+            }
+
+            while (pllTable[num])
+            {
+                if (pllTable[num] == pll)
+                {
+                    PowerPCBase->pp_CPUSpeed = pllTable[num+1];
+                    break;
+                }
+                num +=2;
+            }
             break;
         }
     }
@@ -970,7 +1016,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         cmem[i] = 0;
     }
 
-    setupCaches(PowerPCBase);
+    setupCaches(PowerPCBase, initData);
 
     myZP->zp_Status = STATUS_READY;
 

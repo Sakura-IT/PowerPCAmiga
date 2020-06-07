@@ -362,6 +362,7 @@ VOID FlushICache(VOID);
 ULONG* GetDecTable(VOID);
 ULONG* getTableFX(VOID);
 ULONG* getTable100(VOID);
+ULONG* getTable66(VOID);
 VOID getL2Size(ULONG testmem, APTR cz);
 VOID detectMem(struct MemSettings* ms);
 #if 0

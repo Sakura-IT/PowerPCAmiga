@@ -23,8 +23,8 @@
 #*********************************************************
 
 .global     _setupPPC, _Reset, _GetExcTable, _GetVecEntry
-.global     _getTableFX, _getTable100, _getL2Size
-.global     _detectMem
+.global     _getTableFX, _getTable100, _getTable66
+.global     _getL2Size, _detectMem
 
 #*********************************************************
 
@@ -296,6 +296,15 @@ _getTableFX:
 
 #*********************************************************
 
+_getTable66:
+        mflr    r4
+        bl      .EndTable
+
+        .long	0b1101,400000000,0b0001,500000000
+        .long	0b0101,433333333,0b0010,466666666
+        .long	0b1100,533333333,0
+
+#*********************************************************
 
 _GetVecEntry:
         mflr    r4
