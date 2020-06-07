@@ -723,16 +723,26 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
-    struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
-
-    if (myBase->pp_DeviceID == DEVICE_MPC8343E)
+    switch (myBase->pp_DeviceID)
     {
-        myInt2->is_Code = (APTR)&ZenInt;
-        myInt2->is_Data = NULL;
-        myInt2->is_Node.ln_Pri = -50;
-        myInt2->is_Node.ln_Name = "Zen\0";
-        myInt2->is_Node.ln_Type = NT_INTERRUPT;
-        AddIntServer(INTB_VERTB, myInt2);
+        case DEVICE_MPC8343E:
+        {
+            struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
+            myInt2->is_Code = (APTR)&ZenInt;
+            myInt2->is_Data = NULL;
+            myInt2->is_Node.ln_Pri = -50;
+            myInt2->is_Node.ln_Name = "Zen\0";
+            myInt2->is_Node.ln_Type = NT_INTERRUPT;
+            AddIntServer(INTB_VERTB, myInt2);
+            break;
+        }
+        case DEVICE_MPC107:
+        {
+            ULONG otwrValue = (swap32(myConsts->ic_gfxMem | MPC107_TWR_512MB)) & -2;
+            writememL(ppcdevice->pd_ABaseAddress1, MPC107_OTWR, otwrValue);
+            writememL(ppcdevice->pd_ABaseAddress1, MPC107_OMBAR, otwrValue + (OFFSET_PCIMEM >> 24));
+            break;
+        }
     }
 
     struct TagItem myTags[] =
