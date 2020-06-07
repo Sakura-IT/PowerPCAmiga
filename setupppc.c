@@ -818,6 +818,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     if (initData->id_DeviceID == DEVICE_MPC107)
     {
         while (initData->id_Status != STATUS_MEM);
+        initData->id_Status = STATUS_INIT;
     }
 
     myZP->zp_MemSize = initData->id_MemSize;
@@ -905,15 +906,13 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     PowerPCBase->pp_CPUInfo = getPVR();
     PowerPCBase->pp_PageTableSize = myZP->zp_PageTableSize;
 
-    ULONG quantum = 0;
-    ULONG busclock = 0;
+    ULONG quantum = QUANTUM_100;
+    ULONG busclock = BUSCLOCK_100;
 
     switch (PowerPCBase->pp_DeviceID)
     {
         case DEVICE_HARRIER:
         {
-            quantum = QUANTUM_100;
-            busclock = BUSCLOCK_100;
             if ((PowerPCBase->pp_CPUInfo >> 16 & 0xfff) == 0xc)
             {
                 PowerPCBase->pp_EnAltivec = -1;
@@ -934,6 +933,11 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC107:
         {
+            if (initData->id_ConfigBase != 0x13)
+            {
+                quantum = QUANTUM_66;
+                busclock = BUSCLOCK_66;
+            }
             break;
         }
     }
