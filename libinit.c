@@ -1563,6 +1563,12 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
         return FALSE;
     }
 
+    if (!(mpc107Data->id_MemSize))
+    {
+        PrintCrtErr(myConsts, "No PPC memory detected");
+        return FALSE;
+    }
+
     ULONG itwrSize = MPC107_TWR_256MB;
     ULONG memBase;
     if (mpc107Data->id_MemSize > 0x8000000)
@@ -1576,7 +1582,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
                 if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
                 {
                     PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-                    return NULL;
+                    return FALSE;
                 }
             }
         }
@@ -1590,7 +1596,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
             if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
             {
                 PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-                return NULL;
+                return FALSE;
             }
          }
     }
@@ -1600,7 +1606,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
         if (!(memBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_0, ppcdevice)))
         {
             PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-            return NULL;
+            return FALSE;
         }
     }
 
