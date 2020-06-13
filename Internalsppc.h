@@ -100,7 +100,8 @@ void  TaskHalt(void)                      = ".l1:\tb\t.l1\n";
 
 ULONG loadPCI(ULONG base, ULONG offset)                    = "\tlwbrx\tr3,r3,r4\n";
 void  storePCI(ULONG base, ULONG offset, LONG value)       = "\tstwbrx\tr5,r3,r4\n";
-void  storePCI16(ULONG base, ULONG offset, LONG value)       = "\tsthbrx\tr5,r3,r4\n";
+void  storePCI16(ULONG base, ULONG offset, LONG value)     = "\tsthbrx\tr5,r3,r4\n";
+void  storePCI8(ULONG base, ULONG offset, LONG value)      = "\tstbx\tr5,r3,r4\n";
 
 ULONG readmemLongPPC(ULONG base, ULONG offset)                    = "\tlwzx\tr3,r3,r4\n";
 void  writememLongPPC(ULONG base, ULONG offset, LONG value)       = "\tstwx\tr5,r3,r4\n";
@@ -382,3 +383,10 @@ ULONG readmemLongPPC(ULONG Base, ULONG offset);
         sync();                                 \
         storePCI16(CONFIG_DAT, 0, value); \
         sync();
+
+#define writePCI8(address, value) \
+        storePCI(CONFIG_ADDR, 0, CMD_BASE | address); \
+        sync();                                 \
+        storePCI8(CONFIG_DAT | (address & 0x3), 0, value); \
+        sync();
+

@@ -42,6 +42,15 @@
        sync
 .endm
 
+.macro configwrite16
+       lis      r20,CONFIG_ADDR@h
+       lis      r21,CONFIG_DAT@h
+       stwbrx   r23,0,r20
+       sync
+       sthbrx   r25,0,r21
+       sync
+.endm
+
 .macro configwrite32
        lis      r20,CONFIG_ADDR@h
        lis      r21,CONFIG_DAT@h
@@ -109,7 +118,7 @@
 .set GPR3,                      3*4
 .set GPR4,                      4*4
 
-.set PowerPCBase,               16                #Align this number with the zp struct in libstructs.h
+.set POWERPCBASE,               0x10              #Align this number with the zp struct in libstructs.h
 .set POWERPCBASE_THISPPCTASK,   0x94              #debugdebug need to find to link this to libstruct.h
 .set PPCTASK_CONTEXMEM,         0x64
 .set PPCMEMHEADER,              8
@@ -179,3 +188,4 @@
 .set CONFIG_DAT,                0xFEE00000
 .set MPC107_MBEN,               0xA0
 .set MPC107_MCCR1,              0xF0
+

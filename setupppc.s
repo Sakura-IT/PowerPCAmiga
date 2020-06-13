@@ -58,7 +58,11 @@
         subi    r3,r3,4         #Points to initialization data
         subi    r1,r3,256       #0x3000 bytes of initial stack
 
-        b   _setupPPC
+        bl   _setupPPC
+
+        lwz     r1,8(r0)
+        subi    r1,r1,0x20
+        rfi
 
 #*********************************************************
 
@@ -212,6 +216,7 @@ ifpdr_value:
 
         mtlr	r6
         blr
+
 #*********************************************************
 
 _getL2Size:

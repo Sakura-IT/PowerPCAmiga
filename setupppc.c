@@ -166,9 +166,10 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
     ULONG startEffAddr, endEffAddr, physAddr, WIMG, ppKey;
     struct PPCZeroPage *myZP = 0;
     ULONG PTSizeShift        = (ULONG)(myZP->zp_MemSize);
-    ULONG shiftVal           = 24;
+    ULONG shiftVal           = 23;
 
-    leadZeros   = getLeadZ(PTSizeShift);
+    leadZeros = getLeadZ(PTSizeShift);
+
     PTSizeShift = shiftVal - leadZeros;
 
     myZP->zp_PageTableSize = (1<<PTSizeShift);
@@ -294,12 +295,6 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             setBAT1(ibatl, ibatu, dbatl, ibatu);
             mSync();
 
-            break;
-        }
-
-        default:
-        {
-            //error
             break;
         }
     }
@@ -699,9 +694,10 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
         }
         case DEVICE_MPC107:
         {
-            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
+//            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
+            value0 |= HID0_ICE;
             setHID0(value0);
-
+#if 0
             l2Setting = L2CR_L2SIZ_1M | L2CR_L2CLK_3 | L2CR_L2RAM_BURST | L2CR_TS;
 
             if (!(getL2CR() & L2CR_L2E))
@@ -725,6 +721,8 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
 
             setL2CR(l2Setting);
             l2Size = cz.cz_SizeBytes;
+#endif
+            l2Size = 0;
 
             ULONG* pllTable;
             pll = value1 >> 28;
@@ -763,7 +761,7 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
 *
 *********************************************************************************************/
 
-PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
+PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
 {
     
     ULONG mem = 0;
@@ -773,8 +771,8 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
     if (initData->id_DeviceID == DEVICE_MPC107)
     {
         struct MemSettings ms;
-        ULONG value28, value30, value31;
 
+//#if 0
         writePCI(MPC107_PICR1, MPC107_PICR1_DEFAULT);
         writePCI(MPC107_PICR2, MPC107_PICR2_DEFAULT);
         writePCI16(MPC107_PMCR1, MPC107_PMCR1_DEFAULT);
@@ -815,6 +813,8 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         writePCI(MPC107_MEEAR2, 0);
         writePCI(MPC107_MCCR1, ms.ms_mccr1testhigh);
 
+//#endif
+
         ms.ms_msar1 = 0;
         ms.ms_msar2 = 0;
         ms.ms_mear1 = 0;
@@ -828,6 +828,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
         detectMem((struct MemSettings*)&ms);
 
+//#if 0
         writePCI(MPC107_MSAR1, ms.ms_msar1);
         writePCI(MPC107_MESAR1, ms.ms_mesar1);
         writePCI(MPC107_MSAR2, ms.ms_msar2);
@@ -836,12 +837,13 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
         writePCI(MPC107_MEEAR1, ms.ms_meear1);
         writePCI(MPC107_MEAR2, ms.ms_mear2);
         writePCI(MPC107_MEEAR2, ms.ms_meear2);
-        writePCI(MPC107_MBEN, ms.ms_mben);
+        writePCI8(MPC107_PGMAX, 0x32);
+        writePCI8(MPC107_MBEN, ms.ms_mben);
 
         sync();
 
         writePCI(MPC107_MCCR1, ms.ms_mccr1);
-
+//#endif
         ULONG settle = 0x2ffff;
 
         while (settle)
@@ -856,7 +858,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     Reset();
 
-    for (LONG i=0; i<64; i++)
+    for (LONG i=0; i<0x64; i++)
     {
         *((ULONG*)(mem)) = 0;
         mem += 4;
@@ -864,6 +866,7 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     if (initData->id_DeviceID == DEVICE_MPC107)
     {
+        dInval(0);
         while (initData->id_Status != STATUS_MEM);
         initData->id_Status = STATUS_INIT;
     }
@@ -903,7 +906,10 @@ PPCSETUP __interrupt void setupPPC(__reg("r3") struct InitData* initData)
 
     initData->id_Status = ERR_PPCOK;
 
-    while (myZP->zp_Status != STATUS_INIT);
+    while (myZP->zp_Status != STATUS_INIT)
+    {
+        dInval(0);
+    }
 
     struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
 
