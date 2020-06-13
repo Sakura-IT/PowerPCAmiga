@@ -35,6 +35,7 @@
 #include "internals68k.h"
 
 extern APTR OldRemTask;
+extern struct ExecBase* mySysBase;
 
 /********************************************************************************************
 *
@@ -539,7 +540,7 @@ LIBFUNC68K APTR myAllocVec32(__reg("a6") struct PPCBase* PowerPCBase, __reg("d0"
     }
     else
     {
-        SysBase = *((struct ExecBase **)4UL);
+        SysBase = mySysBase;
     }
 
     attributes &= (MEMF_CLEAR | MEMF_REVERSE);

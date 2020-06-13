@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <stdarg.h>
+
 #include <libraries/mediatorpci.h>
 
 #include <proto/exec.h>
@@ -50,6 +52,7 @@
 
 APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
 struct PPCBase* myPPCBase;
+struct ExecBase* mySysBase;
 
 /********************************************************************************************
 *
@@ -105,6 +108,47 @@ static const ULONG atiList[] =
     DEVICE_RV280SE,
     0
 };
+
+/********************************************************************************************
+*
+*	Debug routines. Use as D(("format",value1, ...));
+*
+*********************************************************************************************/
+
+#ifdef DEBUG
+
+APTR __DRawPutChar(__reg("a6") void *, __reg("d0") UBYTE MyChar)="\tjsr\t-516(a6)";
+
+#define DRawPutChar(MyChar) __DRawPutChar(SysBase, (MyChar))
+
+void DPutChProc(__reg("d0") UBYTE mychar, __reg("a3") APTR PutChData)
+{
+    struct ExecBase* SysBase = (struct ExecBase*)PutChData;
+    DRawPutChar(mychar);
+    return;
+}
+
+void kprintf(STRPTR format, ...)
+{
+    if (format)
+    {
+        struct ExecBase* SysBase = mySysBase;
+        va_list args;
+        va_start(args, format);
+        RawDoFmt(format, (APTR)args, &DPutChProc, (APTR)SysBase);
+        va_end(args);
+    }
+    return;
+}
+
+#define D(x) do { kprintf x; } while (0)
+
+#else
+
+#define D(x) do { } while (0)
+
+#endif
+
 
 /********************************************************************************************
 *
@@ -245,9 +289,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct InternalConsts *myConsts = &consts;
 
     SysBase = __sys;
+    mySysBase = __sys;
 
     myConsts->ic_SysBase = __sys;
     myConsts->ic_SegList = seglist;
+
+    D(("Started Library Init routine\n"));
 
     if (!(SysBase->AttnFlags & (AFF_68040|AFF_68060)))
     {
@@ -755,7 +802,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
-//#if 0
+#if 0
     if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
@@ -772,7 +819,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
     }
-//#endif
+#endif
     return PowerPCBase;
 }
 

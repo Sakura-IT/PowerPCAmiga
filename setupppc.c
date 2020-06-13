@@ -772,7 +772,6 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
     {
         struct MemSettings ms;
 
-//#if 0
         writePCI(MPC107_PICR1, MPC107_PICR1_DEFAULT);
         writePCI(MPC107_PICR2, MPC107_PICR2_DEFAULT);
         writePCI16(MPC107_PMCR1, MPC107_PMCR1_DEFAULT);
@@ -813,8 +812,6 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
         writePCI(MPC107_MEEAR2, 0);
         writePCI(MPC107_MCCR1, ms.ms_mccr1testhigh);
 
-//#endif
-
         ms.ms_msar1 = 0;
         ms.ms_msar2 = 0;
         ms.ms_mear1 = 0;
@@ -828,7 +825,6 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
 
         detectMem((struct MemSettings*)&ms);
 
-//#if 0
         writePCI(MPC107_MSAR1, ms.ms_msar1);
         writePCI(MPC107_MESAR1, ms.ms_mesar1);
         writePCI(MPC107_MSAR2, ms.ms_msar2);
@@ -843,7 +839,7 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
         sync();
 
         writePCI(MPC107_MCCR1, ms.ms_mccr1);
-//#endif
+
         ULONG settle = 0x2ffff;
 
         while (settle)
@@ -858,7 +854,7 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
 
     Reset();
 
-    for (LONG i=0; i<0x64; i++)
+    for (LONG i=0; i<0x40; i++)
     {
         *((ULONG*)(mem)) = 0;
         mem += 4;
