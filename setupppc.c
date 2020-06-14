@@ -357,6 +357,7 @@ PPCSETUP void installExceptions(void)
     for (int i=0; i<0x20; i++)
     {
         excVector = *((UWORD*)(ExcDataTable+(i*2)));
+
         if (excVector == 0xffff)
         {
             break;

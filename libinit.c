@@ -115,6 +115,8 @@ static const ULONG atiList[] =
 *
 *********************************************************************************************/
 
+#define DEBUG 1
+
 #ifdef DEBUG
 
 APTR __DRawPutChar(__reg("a6") void *, __reg("d0") UBYTE MyChar)="\tjsr\t-516(a6)";
@@ -372,6 +374,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
     }
 
+    D(("Opening of support libraries completed\n"));
+
     for (i=0; i<MAX_PCI_SLOTS; i++)
     {
         devfuncnum = i<<DEVICENUMBER_SHIFT;
@@ -436,6 +440,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
         myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
         myConsts->ic_gfxType = VENDOR_ATI;
+        D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
     }
     else
     {
@@ -451,6 +456,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         {
             myConsts->ic_gfxSubType = DEVICE_VOODOO45;
         }
+        D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
     }
 
     if ((!(medflag)) && (myConsts->ic_gfxMem >>31))
@@ -547,6 +553,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         return NULL;
     }
 
+    D(("Waiting on PPC card to respond\n"));
+
     for (i=0; i<0xEC0000; i++)
     {
         status = cardData->id_Status;
@@ -639,6 +647,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     myPPCMemHeader = (struct MemHeader*)((ULONG)myZeroPage + MEM_GAP);
 
+    D(("Accessible PPC memory set up with header at %08lx\n", myPPCMemHeader));
+
     if (ppcdevice->pd_DeviceID == DEVICE_MPC8343E)
     {
         myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize));
@@ -670,11 +680,15 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
+    D(("Inserted PPC memory into Exec memory list\n"));
+
     if (!(PowerPCBase))
     {
         PrintCrtErr(myConsts, "Error during library function setup");
         return NULL;
     }
+
+    D(("Library base set up at %08lx\n", PowerPCBase));
 
     PowerPCBase->PPC_DosLib  = (APTR)DOSBase;
     PowerPCBase->PPC_SegList = (APTR)seglist;
@@ -733,6 +747,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     CacheClearU();
 
+    D(("Copied PPC kernel code into place\n"));
+
     struct Interrupt* myInt = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     myInt->is_Code = (APTR)&GortInt;
     myInt->is_Data = NULL;
@@ -741,6 +757,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     myInt->is_Node.ln_Type = NT_INTERRUPT;
     AddInterrupt(ppcdevice, myInt);
     SetInterrupt(ppcdevice);
+
+    D(("Gort 68K interrupt now running at %08lx\n", myInt));
 
     if(!(myProc = CreateNewProcTags(
                            NP_Entry, (ULONG)&MasterControl,
@@ -752,6 +770,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         PrintCrtErr(myConsts, "Error setting up 68K MasterControl process");
         return NULL;
     }
+
+    D(("MasterControl now running at %08lx\n", myProc));
 
     myProc->pr_Task.tc_UserData = (APTR)myConsts;
     Signal((struct Task*)myProc, SIGBREAKF_CTRL_F);
@@ -785,6 +805,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     Enable();
 
+    D(("Completed adding various patches to Exec library\n"));
+
     switch (myBase->pp_DeviceID)
     {
         case DEVICE_MPC8343E:
@@ -796,6 +818,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             myInt2->is_Node.ln_Name = "Zen\0";
             myInt2->is_Node.ln_Type = NT_INTERRUPT;
             AddIntServer(INTB_VERTB, myInt2);
+            D(("Zen support interrupt now running at %08lx\n", myInt2));
             break;
         }
         case DEVICE_MPC107:
@@ -817,12 +840,13 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
-#if 0
+//#if 0
     if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
         return NULL;
     }
+    D(("Started Kryten PPC cleanup task\n"));
 //#if 0
     struct Library* ppcemu;
 
@@ -833,8 +857,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             PrintError(SysBase, "Phase 5 ppc.library detected. Please remove it");
             return NULL;
         }
+    D(("Opened ppc.library emulator for PowerUP support\n"));
     }
-#endif
+   
+//#endif
     return PowerPCBase;
 }
 
@@ -1116,6 +1142,7 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
                              struct PciDevice* ppcdevice, ULONG initPointer)
 {
+    D(("Detected Killer M1/K1 PPC PCI card\n"));
     UWORD res;
     ULONG ppcmemBase, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize;
     struct InitData* killerData;
@@ -1134,7 +1161,11 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         return FALSE;
     }
 
+    D(("Setting up 64MB of PPC memory at %08lx\n", ppcmemBase));
+
     configBase = ppcdevice->pd_ABaseAddress0;
+
+    D(("Setting up card config base at %08lx\n",configBase));
 
     writememL(configBase, IMMR_PIBAR0, (ppcmemBase >> 12));
 
@@ -1259,6 +1290,8 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     ULONG pmepBase, configBase, ppcmemBase, mpicBase, fakememBase;
     struct InitData* harrierData;
 
+    D(("Detected Harrier based PPC PCI card\n"));
+
     struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
     struct ExecBase* SysBase = myConsts->ic_SysBase;
 
@@ -1275,6 +1308,8 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
         return FALSE;
     }
+
+    D(("Setting PMEP base at %08lx\n", pmepBase));
 
     WriteConfigurationLong(devfuncnum, PCFS_MBAR, pmepBase);
 
@@ -1293,6 +1328,8 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         return FALSE;
     }
 
+    D(("Setting up Harrier config base at %08lx\n", configBase));
+
     WriteConfigurationLong(devfuncnum, PCFS_ITBAR0, configBase);
 
     WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ0, (PPC_XCSR_BASE | PCFS_ITSZ_4K));
@@ -1302,6 +1339,8 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
         return FALSE;
     }
+
+    D(("Setting up Harrier PIC base at %08lx\n", mpicBase));
 
     writememL(configBase, XCSR_MBAR, (mpicBase | XCSR_MBAR_ENA));
 
@@ -1500,6 +1539,8 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         }
     }
 
+    D(("Done setting up PPC memory at address %08lx with size %08lx\n", ppcmemBase, ppcmemSize));
+
     fakememBase = ppcmemBase + OFFSET_ZEROPAGE;
     harrierData = ((struct InitData*)(fakememBase + OFFSET_KERNEL));
 
@@ -1573,8 +1614,12 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
         romMem = myConsts->ic_gfxMem + 0x600000;   //this is soo wrong
     }
 
+    D(("Fake ROM address located at %08lx\n", romMem));
+
     romMem = (romMem + 0x10000) & 0xffff0000;
     EUMBAddr = ppcdevice->pd_ABaseAddress1;
+
+    D(("Confguration base of MPC107 located at %08lx\n", EUMBAddr));
 
     writememL(EUMBAddr, MPC107_OTWR, swap32(romMem | MPC107_TWR_64KB));
     writememL(EUMBAddr, MPC107_OMBAR, 0x0000f0ff);
@@ -1680,6 +1725,8 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
     }
 
     mpc107Data->id_MemBase = memBase;
+
+    D(("Done setting up PPC memory at address %08lx with size %08lx\n", memBase, mpc107Data->id_MemSize));
 
     mpc107Data->id_Status = STATUS_MEM;
 
