@@ -49,6 +49,7 @@ PATCH68K void   patchRemTask   (__reg("a1") struct Task* myTask, __reg("a6") str
 
 ULONG  readmemL (__reg("a0") ULONG base, __reg("d0") ULONG offset) = "\tmove.l\t0(a0,d0.l),d0\n";
 VOID   writememL(__reg("a0") ULONG base, __reg("d0") ULONG offset, __reg("d1") ULONG value) = "\tmove.l\td1,0(a0,d0.l)\n";
+VOID   cinv(__reg("a0") ULONG mem) = "\tdc.w\t$f448\n";
 
 struct PPCBase* LibInit(__reg("d0") struct PPCBase *ppcbase,
               __reg("a0") BPTR seglist, __reg("a6") struct ExecBase* __sys);

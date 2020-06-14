@@ -609,6 +609,21 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
     }
 
+    ULONG memAddress = cardData->id_MemBase + 0x80;
+    APTR sysStack = SuperState();
+    writememL(memAddress, 0, SUPERKEY);
+    cinv(memAddress);
+    ULONG checkV = readmemL(memAddress, 0);
+    UserState(sysStack);
+
+    if (!(checkV == SUPERKEY))
+    {
+        PrintCrtErr(myConsts, "PPC memory not set as being cache inhibited");
+        return NULL;
+    }
+
+    writememL(memAddress, 0, 0);
+
     myZeroPage = (struct PPCZeroPage*)cardData->id_MemBase;
     myConsts->ic_MemBase = (ULONG)myZeroPage;
 
