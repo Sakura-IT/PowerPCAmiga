@@ -721,8 +721,6 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
             setL2CR(l2Setting);
             l2Size = cz.cz_SizeBytes;
 
-            l2Size = 0;
-
             ULONG* pllTable;
             pll = value1 >> 28;
 
