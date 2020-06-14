@@ -694,10 +694,9 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
         }
         case DEVICE_MPC107:
         {
-//            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
-            value0 |= HID0_ICE;
+            value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
             setHID0(value0);
-#if 0
+
             l2Setting = L2CR_L2SIZ_1M | L2CR_L2CLK_3 | L2CR_L2RAM_BURST | L2CR_TS;
 
             if (!(getL2CR() & L2CR_L2E))
@@ -721,7 +720,7 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
 
             setL2CR(l2Setting);
             l2Size = cz.cz_SizeBytes;
-#endif
+
             l2Size = 0;
 
             ULONG* pllTable;

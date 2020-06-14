@@ -41,7 +41,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
     if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
     {
-        PowerPCBase->pp_L2State = getL2State();
+       PowerPCBase->pp_L2State = getL2State();
     }
 
     ULONG ExceptionVector = iframe->if_Context.ec_ExcID - (PPC_VECLEN * OPCODE_LEN);
@@ -90,7 +90,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
                     while (msgFrame = KGetMsgFramePPC(PowerPCBase))
                     {
-                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
+                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue, (struct Node*)msgFrame);
                     }
 
                     if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_IMISR) & IMMR_IMISR_IM0I)
@@ -118,9 +118,8 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 
                     while (msgFrame = KGetMsgFramePPC(PowerPCBase))
                     {
-                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue , (struct Node*)msgFrame);
+                        AddTailPPC((struct List*)&PowerPCBase->pp_MsgQueue, (struct Node*)msgFrame);
                     }
-
                     storePCI(PPC_EUMB_BASE, MPC107_IMISR, MPC107_IMISR_IPQI);
                     writememLongPPC(PPC_EUMB_EPICPROC, EPIC_EOI, 0);
 			        break;
@@ -950,7 +949,7 @@ PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* Po
             ULONG msgOffset2 = loadPCI(PPC_EUMB_BASE, MPC107_IPTPR);
             if (msgOffset1 != msgOffset2)
             {
-                storePCI(PPC_EUMB_BASE, MPC107_IPTPR, (msgOffset2 + 4) & 0xffff7fff);
+                storePCI(PPC_EUMB_BASE, MPC107_IPTPR, ((msgOffset2 + 4) | 0x4000) & 0xffff7fff);
                 msgFrame = readmemLongPPC(msgOffset2, 0);
             }
 			break;
@@ -1411,7 +1410,7 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     myFrame->mf_Identifier = ID_CRSH;
     KSendMsgFramePPC(PowerPCBase, myFrame);
 
-    while(1);
+//    while(1);
 
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
