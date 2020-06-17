@@ -126,6 +126,8 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 		        }
 	        }
 
+            CPUStats(PowerPCBase);
+
             ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
             if ((PowerPCBase->pp_LowerLimit <= currAddress) && (currAddress < PowerPCBase->pp_UpperLimit))
             {
@@ -204,6 +206,8 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                 struct ExcData* lastExc = eData->ed_LastExc;
                 lastExc->ed_Flags &= ~EXCF_ACTIVE;
             }
+
+            CPUStats(PowerPCBase);
 
             ULONG currAddress = iframe->if_Context.ec_UPC.ec_SRR0;
             if ((PowerPCBase->pp_LowerLimit <= currAddress) && (currAddress < PowerPCBase->pp_UpperLimit))
@@ -837,8 +841,109 @@ PPCKERNEL void CommonExcHandler(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
     return;
 }
 
-#if 0
+/********************************************************************************************
+*
+*
+*
+*********************************************************************************************/
 
+PPCKERNEL VOID CPUStats(__reg("r3") struct PrivatePPCBase* PowerPCBase)
+{
+    ULONG currentTBL = getTBL();
+    ULONG prevTBL = PowerPCBase->pp_CurrentTBL;
+    PowerPCBase->pp_CurrentTBL = currentTBL;
+
+    if (prevTBL)
+    {
+        ULONG systemLoad = 0;
+        ULONG cpuLoad = 0;
+        ULONG cpuUsage = 0;
+
+        ULONG cpuTime = currentTBL - prevTBL;
+
+        struct TaskPtr* currTask = (struct TaskPtr*)PowerPCBase->pp_AllTasks.mlh_Head;
+        struct TaskPtr* nextTask;
+
+        while (nextTask = (struct TaskPtr*)currTask->tptr_Node.ln_Succ)
+        {
+            struct TaskPPC* ppcTask = (struct TaskPPC*)currTask->tptr_Task;
+
+            ppcTask->tp_Totalelapsed += cpuTime;
+            if ((ppcTask->tp_Task.tc_State == TS_RUN) || (ppcTask->tp_Task.tc_State == TS_CHANGING))
+            {
+                ppcTask->tp_Elapsed += cpuTime;
+            }
+            else if (ppcTask->tp_Task.tc_State == TS_WAIT)
+            {
+                ppcTask->tp_Elapsed2 += cpuTime;
+            }
+
+            if (!(PowerPCBase->pp_BusyCounter))
+            {
+                ULONG elapsed = ppcTask->tp_Elapsed;
+                ULONG elapsed2 = ppcTask->tp_Elapsed2;
+                ULONG total = ppcTask->tp_Totalelapsed;
+
+                ULONG activity = (elapsed + elapsed2) >> 10;
+                ULONG actelps = (elapsed >> 10) * 10000;
+
+                if (activity)
+                {
+                    activity = actelps / activity;
+                }
+
+                ppcTask->tp_Activity = activity;
+
+                LONG busy = (total >> 10) - (elapsed2 >> 10);
+
+                if (busy < 0)
+                {
+                    busy = 0;
+                }
+
+                busy = (busy * 10000) / (total >> 10);
+
+                ppcTask->tp_Busy = busy;
+
+                systemLoad += busy;
+
+                ULONG total10 = total >> 10;
+
+                if (total10)
+                {
+                    cpuUsage = actelps / total10;
+                }
+
+                if (cpuUsage > 10000)
+                {
+                   cpuUsage = 10000;
+                }
+
+                ppcTask->tp_CPUusage = cpuUsage;
+
+                cpuLoad += cpuUsage;
+
+                ppcTask->tp_Elapsed = 0;
+                ppcTask->tp_Elapsed2 = 0;
+                ppcTask->tp_Totalelapsed = 0;
+            }
+            currTask = nextTask;
+        }
+
+        if (!(PowerPCBase->pp_BusyCounter))
+        {
+            PowerPCBase->pp_BusyCounter = 25;
+            PowerPCBase->pp_SystemLoad = systemLoad;
+            PowerPCBase->pp_CPULoad = cpuLoad;
+        }
+
+        PowerPCBase->pp_BusyCounter -= 1;
+
+    }
+    return;
+}
+
+#if 0
 /********************************************************************************************
 *
 *

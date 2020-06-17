@@ -331,6 +331,7 @@ void StartTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void KillTask(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* myFrame);
 void CommonExcHandler(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe, struct List* excList);
 void CommonExcError(struct PrivatePPCBase* PowerPCBase, struct iframe* iframe);
+VOID CPUStats(struct PrivatePPCBase* PowerPCBase);
 VOID FlushDCache(struct PrivatePPCBase* PowerPCBase);
 VOID EndTask(VOID);
 ULONG GetLen(STRPTR string);
