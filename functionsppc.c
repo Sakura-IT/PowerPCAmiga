@@ -2904,6 +2904,7 @@ PPCFUNCTION VOID myGetSysTimePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase,
             break;
         }
     }
+
     ULONG busClockMod = PowerPCBase->pp_BusClock >> 2;
 
     secs = Calculator(tbu, tbl, busClockMod);

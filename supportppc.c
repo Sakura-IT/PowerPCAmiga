@@ -1066,13 +1066,13 @@ PPCFUNCTION VOID MakeDecimal(__reg("r3") struct RDFData* rdfData, __reg("r4") BO
         value = -value;
     }
     ULONG* myTable = GetDecTable();
-    ULONG tableValue;
+    ULONG tableValue, number;
     ULONG cmpnumber = '0';
-    ULONG number = cmpnumber;
     {
         while (tableValue = myTable[0])
         {
-            while (tableValue < value)
+            number = '0';
+            while (tableValue <= value)
             {
                value -= tableValue;
                number += 1;
