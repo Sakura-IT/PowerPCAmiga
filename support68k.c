@@ -35,6 +35,7 @@
 #include "Internals68k.h"
 
 extern APTR OldLoadSeg, OldNewLoadSeg, OldAllocMem, OldAddTask, OldRemTask;
+extern struct ExecBase* mySysBase;
 extern struct PPCBase* myPPCBase;
 
 APTR  RemSysTask;
@@ -214,6 +215,99 @@ ULONG FuncStrings[68]   = {(ULONG)&FRun68K, (ULONG)&FWaitFor68K, (ULONG)&FAllocV
                           (ULONG)&FAllocPooledPPC, (ULONG)&FFreePooledPPC, (ULONG)&FRawDoFmtPPC,
                           (ULONG)&FPutPublicMsgPPC, (ULONG)&FAddUniquePortPPC, (ULONG)&FAddUniqueSemaphorePPC,
                           (ULONG)&FAllocatePPC,(ULONG)FDeallocatePPC};
+
+#ifdef DEBUG
+
+ULONG dsi_Count = 0;
+
+struct dsiInfo
+{
+    ULONG dsi_Lower;
+    ULONG dsi_Upper;
+    ULONG dsi_Total;
+};
+
+struct dsiInfo di[10];
+
+
+VOID countDSI(__reg("d0") ULONG dsi_Address)
+{
+    ULONG init = 0;
+    struct PPCBase* PowerPCBase = myPPCBase;
+
+    if (!(dsi_Count))
+    {
+        struct ExecBase* SysBase = mySysBase;
+        struct MemHeader* currMem = (struct MemHeader*)SysBase->MemList.lh_Head;
+        struct MemHeader* nextMem;
+
+        while (nextMem = (struct MemHeader*)currMem->mh_Node.ln_Succ)
+        {
+            di[init].dsi_Lower = (ULONG)(currMem->mh_Lower);
+            di[init].dsi_Upper = (ULONG)(currMem->mh_Upper);
+            di[init].dsi_Total = 0;
+
+            if (init++ == 9)
+            {
+                break;
+            }
+            currMem = nextMem;
+        }
+
+        while (init < 10)
+        {
+            di[init].dsi_Lower = 0;
+            di[init].dsi_Upper = 0;
+            di[init].dsi_Total = 0;
+            init++;
+        }
+    }
+
+    init = 0;
+
+    while (di[init].dsi_Lower)
+    {
+        if ((di[init].dsi_Lower <= dsi_Address) && (di[init].dsi_Upper >= dsi_Address))
+        {
+            di[init].dsi_Total += 1;
+            break;
+        }
+        init++;
+    }
+
+    if (!(di[init].dsi_Lower))
+    {
+        di[9].dsi_Total += 1;
+        mySPrintF68K((struct PPCBase*)PowerPCBase, "Detected DSI hit outside of memory bounds at %08lx\n\0", (APTR)&dsi_Address);
+    }
+
+    dsi_Count += 1;
+
+    if (!(dsi_Count & 0x3ff))
+    {
+        mySPrintF68K((struct PPCBase*)PowerPCBase, "Overview of previous 1024 DSI hits\n\0",0);
+
+        init = 0;
+        while (di[init].dsi_Lower)
+        {
+             mySPrintF68K((struct PPCBase*)PowerPCBase, "DSI Count %08lx - %08lx: %ld\n\0", (APTR)&di[init]);
+             init += 1;
+        }
+
+        if (di[9].dsi_Total)
+        {
+             mySPrintF68K((struct PPCBase*)PowerPCBase, "DSI Count unknown: %ld\n\0", (APTR)&di[9].dsi_Total);
+        }
+
+        mySPrintF68K((struct PPCBase*)PowerPCBase, "End of report\n\0",0);
+
+        dsi_Count = 0;
+    }
+    return;
+}
+
+#endif
+
 
 /********************************************************************************************
 *
@@ -1059,6 +1153,9 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				{
                     myFrame->mf_Arg[0] = *((ULONG*)(myFrame->mf_Arg[1]));
 					myFrame->mf_Identifier = ID_DONE;
+#ifdef DEBUG
+                    countDSI(myFrame->mf_Arg[1]);
+#endif
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
@@ -1066,6 +1163,10 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				{
                     *((ULONG*)(myFrame->mf_Arg[1])) = myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
+#ifdef DEBUG
+                    countDSI(myFrame->mf_Arg[1]);
+#endif
+
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
@@ -1073,6 +1174,9 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				{
                     *((USHORT*)(myFrame->mf_Arg[1])) = (USHORT)myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
+#ifdef DEBUG
+                    countDSI(myFrame->mf_Arg[1]);
+#endif
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
@@ -1080,6 +1184,9 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				{
                     *((UBYTE*)(myFrame->mf_Arg[1])) = (UBYTE)myFrame->mf_Arg[0];
 					myFrame->mf_Identifier = ID_DONE;
+#ifdef DEBUG
+                    countDSI(myFrame->mf_Arg[1]);
+#endif
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}

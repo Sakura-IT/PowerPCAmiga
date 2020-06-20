@@ -115,8 +115,6 @@ static const ULONG atiList[] =
 *
 *********************************************************************************************/
 
-#define DEBUG 1
-
 #ifdef DEBUG
 
 APTR __DRawPutChar(__reg("a6") void *, __reg("d0") UBYTE MyChar)="\tjsr\t-516(a6)";
