@@ -785,6 +785,9 @@ PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
     newFrame->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
     newFrame->if_Context.ec_GPR[4] = (ULONG)myFrame;
 
+    ULONG* EndofStack = (APTR)newFrame->if_Context.ec_GPR[1];
+    EndofStack[0] = 0; //Clear end of stack chain for SwapStack
+
     CopyMemPPC(&PowerPCBase->pp_SystemBATs, &newFrame->if_BATs, sizeof(struct BATArray) * 4);
     CopyMemPPC(&PowerPCBase->pp_SystemBATs, newTask->nt_Task.pt_Task.tp_BATStorage, sizeof(struct BATArray) * 4);
 
