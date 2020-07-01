@@ -772,12 +772,7 @@ FUNC68K void MirrorTask(void)
             myTask->tc_SigRecvd |= (mySignal & andTemp);
             while (myFrame = (struct MsgFrame*)GetMsg(mirrorPort))
             {
-            if (myFrame->mf_Identifier == ID_END)
-            {
-                FreeMsgFrame(PowerPCBase, myFrame);
-                return;
-            }
-            else if (myFrame->mf_Identifier == ID_T68K)
+            if (myFrame->mf_Identifier == ID_T68K)
             {
                 myTask->tc_SigRecvd |= myFrame->mf_Signals;
                 myFrame->mf_MirrorPort = mirrorPort;
@@ -797,6 +792,11 @@ FUNC68K void MirrorTask(void)
 
                 SendMsgFrame(PowerPCBase, doneFrame);
                 FreeMsgFrame(PowerPCBase, myFrame);
+            }
+            else if (myFrame->mf_Identifier == ID_END)
+            {
+                FreeMsgFrame(PowerPCBase, myFrame);
+                return;
             }
             else
             {

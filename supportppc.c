@@ -260,11 +260,11 @@ PPCFUNCTION LONG StricmpPPC(__reg("r3") STRPTR string1, __reg("r4") STRPTR strin
 		{
 			if (s1 < s2)
 			{
-				result = 1;
+				result = -1;
 			}
 			else
 			{
-				result = -1;
+				result = 1;
 			}
 			break;
 		}

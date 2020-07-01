@@ -367,8 +367,7 @@ _detectMem:
         lwz     r31,MS_MCCR1TESTLOW3(r3)
 
 		li      r3,0
-        lis     r4,0x426f
-        ori     r4,r4,0x6f6e
+        loadreg r4,'Boon'
 		li      r5,1
 		li      r8,0
 		li      r9,0
