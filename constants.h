@@ -175,7 +175,12 @@
 #define MEDIATOR_LOGIC          161
 #define MEDIATOR_1200LOGIC      188
 
+#define VENDOR_E3B              0xe3b
+#define PROMETHEUS_FIRESTORM    0xc8
+#define PROMETHEUS_CONFIG0      0x5FC00000
+
 #define MAX_PCI_SLOTS           6
+#define MAX_PPCI_SLOTS          4
 #define PCI_OFFSET_ID           0
 #define PCI_OFFSET_COMMAND      4
 #define DEVICENUMBER_SHIFT      3
@@ -432,6 +437,7 @@
 #define PCFS_ITAT_RAE           0x00000010
 #define PCFS_ITAT_GBL           0x00010000
 #define PCFS_ITSZ_4K            0x00
+#define PCFS_ITSZ_256K          0x06
 #define PCFS_ITSZ_64MB          0x0e
 #define PCFS_ITSZ_128MB         0x0f
 #define PCFS_ITSZ_256MB         0x10
@@ -448,6 +454,7 @@
 #define XCSR_SDBA_16M8          0x00050000
 #define XCSR_SDBA_32M8          0x00080000
 #define XCSR_SDBA_64M8          0x000B0000
+#define XCSR_SDBA_256M4         0x000F0000
 #define XCSR_SDBA_SIZE          0x000F0000
 #define XCSR_SDBA_ENA           0x00000100
 #define XCSR_SDGC_MXRR_7        0x30000000

@@ -93,6 +93,7 @@ ULONG                   ic_env2;
 ULONG                   ic_env3;
 UWORD                   ic_gfxType;
 UWORD                   ic_gfxSubType;
+UWORD                   ic_pciType;
 };
 
 struct InitData {

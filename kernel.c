@@ -274,13 +274,17 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                         //PowerPCBase->pp_Quantum = getDEC() + 1000; //Do not start quantum all over
                         break;
                     }
-                    else
-                    {
-                        CommonExcError(PowerPCBase, iframe);
-                    }
-                    break;
                 }
             }
+#if 0
+            if ((iframe->if_Context.ec_GPR[3] == 0) && (iframe->if_Context.ec_GPR[30] = 0x1e1e1e1e))
+            {
+                iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
+                ULONG* mem = (APTR)iframe->if_Context.ec_GPR[7];
+                mem[0] = (ULONG)PowerPCBase;
+                break;
+            }
+#endif
             CommonExcError(PowerPCBase, iframe);
             break;
         }
@@ -782,6 +786,7 @@ PPCKERNEL void DispatchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
     newFrame->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
     newFrame->if_Context.ec_UPC.ec_SRR0 = *((ULONG*)((ULONG)PowerPCBase + 2 + _LVOStartTask));
     newFrame->if_Context.ec_GPR[1] = (ULONG)newTask->nt_Task.pt_Task.tp_Task.tc_SPReg;
+    newFrame->if_Context.ec_GPR[2] = NULL;
     newFrame->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
     newFrame->if_Context.ec_GPR[4] = (ULONG)myFrame;
 
@@ -1517,8 +1522,6 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
     struct MsgFrame* myFrame = KCreateMsgFramePPC(PowerPCBase);
     myFrame->mf_Identifier = ID_CRSH;
     KSendMsgFramePPC(PowerPCBase, myFrame);
-
-//    while(1);
 
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;

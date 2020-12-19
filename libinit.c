@@ -28,6 +28,7 @@
 #include <proto/utility.h>
 #include <proto/mediatorpci.h>
 #include <proto/expansion.h>
+#include <proto/prometheus.h>
 
 #include <exec/resident.h>
 #include <exec/libraries.h>
@@ -265,19 +266,21 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct DosLibrary *DOSBase;
     struct UtilityBase *UtilityBase;
     struct PciBase *MediatorPCIBase;
+    struct Library *PrometheusBase;
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
     struct Process *myProc;
-    ULONG medflag   = 0;
     ULONG gfxisati  = 0;
     ULONG gfxnotv45 = 0;
     struct ConfigDev *cd = NULL;
     struct PciDevice *ppcdevice = NULL;
     struct PciDevice *gfxdevice = NULL;
+    struct PCIBoard *pppcdevice = NULL;
+    struct PCIBoard *pgfxdevice = NULL;
     struct MemHeader *pcimemDMAnode;
     ULONG cardNumber = 0;
     BYTE memPrio;
-    ULONG card, devfuncnum, res, i, n, testLen;
+    ULONG card, devfuncnum, res, i, n, testLen, deviceID, offset;
     ULONG testSize, bytesFree, initPointer, kernelPointer, funPointer;
     volatile ULONG status;
     struct PPCZeroPage *myZeroPage;
@@ -320,21 +323,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     UtilityBase = (struct UtilityBase*)OpenLibrary("utility.library",0L);
 
-    if (!(MediatorPCIBase = (struct PciBase*)OpenLibrary("pci.library",VERPCI)))
-    {
-        PrintCrtErr(myConsts, "Could not open pci.library V13.8+");
-        return NULL;
-    }
-
-    myConsts->ic_PciBase = MediatorPCIBase;
-
-#if 1
-    if ((MediatorPCIBase->pb_LibNode.lib_Version == VERPCI) && (MediatorPCIBase->pb_LibNode.lib_Revision < REVPCI))
-    {
-        PrintCrtErr(myConsts, "Could not open pci.library V13.8+");
-        return NULL;
-    }
-#endif
 
     if (!(ExpansionBase = (struct ExpansionBase*)OpenLibrary("expansion.library",37L)))
     {
@@ -351,191 +339,337 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             PrintCrtErr(myConsts, "Could not find a supported Mediator board");
             return NULL;
         }
-        medflag = 1;
-    }
 
-    else if (FindConfigDev(NULL, VENDOR_ELBOX, MEDIATOR_1200TX))
-    {
-        if (!(FindConfigDev(NULL, VENDOR_ELBOX, MEDIATOR_1200LOGIC)))
+        D(("Detected supported Elbox Mediator PCI bridge\n"));
+
+        myConsts->ic_pciType = VENDOR_ELBOX;
+
+        if (!(MediatorPCIBase = (struct PciBase*)OpenLibrary("pci.library",VERPCI)))
         {
-            PrintCrtErr(myConsts, "Could not find a supported Mediator board");
+            PrintCrtErr(myConsts, "Could not open pci.library V13.8+");
             return NULL;
+        }
+
+        myConsts->ic_PciBase = MediatorPCIBase;
+        offset = 0;
+
+#if 1
+        if ((MediatorPCIBase->pb_LibNode.lib_Version == VERPCI) && (MediatorPCIBase->pb_LibNode.lib_Revision < REVPCI))
+        {
+            PrintCrtErr(myConsts, "Could not open pci.library V13.8+");
+            return NULL;
+        }
+#endif
+        if (cd)
+        {
+            if (!(cd->cd_BoardSize == 0x20000000))
+            {
+                PrintCrtErr(myConsts, "Mediator WindowSize jumper incorrectly configured");
+                return NULL;
+            }
         }
     }
 
-    if (cd)
+    else if (cd = FindConfigDev(NULL, VENDOR_E3B, PROMETHEUS_FIRESTORM))
     {
-        if (!(cd->cd_BoardSize == 0x20000000))
+        myConsts->ic_pciType = VENDOR_E3B;
+
+        D(("Detected Firestorm/Firebird PCI bridge\n"));
+
+        if (!(PrometheusBase = OpenLibrary("prometheus.library",VERPCIP)))
         {
-            PrintCrtErr(myConsts, "Mediator WindowSize jumper incorrectly configured");
+            PrintCrtErr(myConsts, "Could not open prometheus.library V4+");
             return NULL;
         }
+
+        myConsts->ic_PciBase = (struct PciBase*)PrometheusBase;
+        offset = (ULONG)cd->cd_BoardAddr;
+
+#if 0
+        if ((PrometheusBase->lib_Version == VERPCIP) && (PrometheusBase->lib_Revision < REVPCIP))
+        {
+            PrintCrtErr(myConsts, "Could not open prometheus.library V4.0+");
+            return NULL;
+        }
+#endif
+
+    }
+
+    else
+    {
+        PrintCrtErr(myConsts, "Could not find a supported PCI bridge");
+        return NULL;
     }
 
     D(("Opening of support libraries completed\n"));
 
-    for (i=0; i<MAX_PCI_SLOTS; i++)
-    {
-        devfuncnum = i<<DEVICENUMBER_SHIFT;
-        res = ReadConfigurationLong((UWORD)devfuncnum, PCI_OFFSET_ID);
+    myConsts->ic_startBAT = 0;
+    myConsts->ic_sizeBAT = 0;
 
-        while (card = cardList[cardNumber])
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        for (i=0; i<MAX_PCI_SLOTS; i++)
         {
+            devfuncnum = i<<DEVICENUMBER_SHIFT;
+            res = ReadConfigurationLong((UWORD)devfuncnum, PCI_OFFSET_ID);
+
+            while (card = cardList[cardNumber])
+            {
+                if (card == res)
+                {
+                    break;
+                }
+                cardNumber += 1;
+            }
             if (card == res)
             {
                 break;
             }
-            cardNumber += 1;
+            cardNumber = 0;
         }
-        if (card == res)
+
+        if (!(card))
         {
-            break;
+            PrintCrtErr(myConsts, "No supported PPC PCI bridge detected");
+            return NULL;
         }
+
+        ppcdevice = FindPciDevFunc(devfuncnum);
         cardNumber = 0;
-    }
 
-    if (!(card))
-    {
-        PrintCrtErr(myConsts, "No supported PPC PCI bridge detected");
-        return NULL;
-    }
-
-    ppcdevice = FindPciDevFunc(devfuncnum);
-    cardNumber = 0;
-
-    if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO45, 0)))
-    {
-        gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO3, 0);
-        gfxnotv45 = 1;
-    }
-
-    if (!(gfxdevice))
-    {
-        while (atiList[cardNumber])
+        if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO45, 0)))
         {
-            if (gfxdevice = FindPciDevice(VENDOR_ATI, atiList[cardNumber], 0))
+            gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO3, 0);
+            gfxnotv45 = 1;
+        }
+
+        if (!(gfxdevice))
+        {
+            while (atiList[cardNumber])
             {
-                gfxisati = 1;
-                break;
-            }
-            if (gfxdevice)
-            {
-                break;
-            }
-        cardNumber += 1;
-        }
-    }
-
-    if (!gfxdevice)
-    {
-        PrintCrtErr(myConsts, "No supported VGA card detected");
-        return NULL;
-    }
-
-    if (gfxisati)
-    {
-        myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
-        myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
-        myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
-        myConsts->ic_gfxType = VENDOR_ATI;
-        D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
-    }
-    else
-    {
-        myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
-        myConsts->ic_gfxSize = -(((gfxdevice->pd_Size0)<<1)&-16L);
-        myConsts->ic_gfxConfig = 0;
-        myConsts->ic_gfxType = VENDOR_3DFX;
-        if (gfxnotv45)
-        {
-            myConsts->ic_gfxSubType = DEVICE_VOODOO3;
-        }
-        else
-        {
-            myConsts->ic_gfxSubType = DEVICE_VOODOO45;
-        }
-        D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
-    }
-
-    if ((!(medflag)) && (myConsts->ic_gfxMem >>31))
-    {
-        PrintCrtErr(myConsts, "PPCPCI environment not set in ENVARC:Mediator");
-    }
-
-    getENVs(myConsts);
-
-    //Add ATI Radeon memory as extra memory for K1/M1
-    //Need to have Voodoo as primary VGA output
-    //As the list has twice the memory name, we search it twice
-    //Findname only returns first in the list
-
-    myConsts->ic_startBAT = 0;
-    myConsts->ic_sizeBAT = 0;
-
-    for (i=0; i<1; i++)
-    {
-        if (!(pcimemDMAnode = (struct MemHeader *)FindName(&SysBase->MemList, "pcidma memory")))
-        {
-            break;
-        }
-        if (!(pcimemDMAnode->mh_Node.ln_Succ))
-        {
-            break;
-        }
-
-        memPrio = -20;
-
-        if (!(gfxisati))
-        {
-            testSize = 0x2000000;
-            testLen = ((ULONG)pcimemDMAnode->mh_Upper)-((ULONG)pcimemDMAnode->mh_Lower);
-
-            for (n=0; n<4; n++)
-            {
-                if (testLen <= testSize)
+                if (gfxdevice = FindPciDevice(VENDOR_ATI, atiList[cardNumber], 0))
+                {
+                    gfxisati = 1;
+                    break;
+                }
+                if (gfxdevice)
                 {
                     break;
                 }
-
-                testSize = (testSize<<1);
-            }
-
-            if (0 < n < 4)
-            {
-                memPrio = -15;
-                myConsts->ic_startBAT = (((ULONG)pcimemDMAnode->mh_Lower) & (-(testSize)));
-                myConsts->ic_sizeBAT = testSize;
+            cardNumber += 1;
             }
         }
 
-        Disable();
-        Remove((struct Node *)pcimemDMAnode);
-        pcimemDMAnode->mh_Node.ln_Pri = memPrio;
-        Enqueue(&SysBase->MemList, (struct Node *)pcimemDMAnode);
-        Enable();
+        if (!gfxdevice)
+        {
+            PrintCrtErr(myConsts, "No supported VGA card detected");
+            return NULL;
+        }
+
+        if (gfxisati)
+        {
+            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
+            myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
+            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
+            myConsts->ic_gfxType = VENDOR_ATI;
+            D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
+        }
+        else
+        {
+            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
+            myConsts->ic_gfxSize = -(((gfxdevice->pd_Size0)<<1)&-16L);
+            myConsts->ic_gfxConfig = 0;
+            myConsts->ic_gfxType = VENDOR_3DFX;
+            if (gfxnotv45)
+            {
+                myConsts->ic_gfxSubType = DEVICE_VOODOO3;
+            }
+            else
+            {
+                myConsts->ic_gfxSubType = DEVICE_VOODOO45;
+            }
+            D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
+        }
+
+        //Add ATI Radeon memory as extra memory for K1/M1
+        //Need to have Voodoo as primary VGA output
+        //As the list has twice the memory name, we search it twice
+        //Findname only returns first in the list
+
+        for (i=0; i<1; i++)
+        {
+            if (!(pcimemDMAnode = (struct MemHeader *)FindName(&SysBase->MemList, "pcidma memory")))
+            {
+                break;
+            }
+            if (!(pcimemDMAnode->mh_Node.ln_Succ))
+            {
+                break;
+            }
+
+            memPrio = -20;
+
+            if (!(gfxisati))
+            {
+                testSize = 0x2000000;
+                testLen = ((ULONG)pcimemDMAnode->mh_Upper)-((ULONG)pcimemDMAnode->mh_Lower);
+
+                for (n=0; n<4; n++)
+                {
+                    if (testLen <= testSize)
+                    {
+                        break;
+                    }
+
+                    testSize = (testSize<<1);
+                }
+
+                if (0 < n < 4)
+                {
+                    memPrio = -15;
+                    myConsts->ic_startBAT = (((ULONG)pcimemDMAnode->mh_Lower) & (-(testSize)));
+                    myConsts->ic_sizeBAT = testSize;
+                }
+            }
+
+            Disable();
+            Remove((struct Node *)pcimemDMAnode);
+            pcimemDMAnode->mh_Node.ln_Pri = memPrio;
+            Enqueue(&SysBase->MemList, (struct Node *)pcimemDMAnode);
+            Enable();
+
+            deviceID = ppcdevice->pd_DeviceID;
+
+#if 0
+            if (myConsts->ic_gfxMem >>31)
+            {
+                PrintCrtErr(myConsts, "PPCPCI environment not set in ENVARC:Mediator");
+            }
+#endif
+        }
     }
+    else
+    {
+        while (card = cardList[cardNumber])
+        {
+            deviceID = card >> 16;
+            if (pppcdevice = Prm_FindBoardTags(NULL,
+                                           PRM_Vendor, card & 0xffff,
+                                           PRM_Device, deviceID,
+                                           TAG_DONE))
+            {
+                break;
+            }
+            cardNumber++;
+        }
+
+        if (!(pppcdevice))
+        {
+            PrintCrtErr(myConsts, "No supported PPC PCI bridge detected");
+            return NULL;
+        }
+
+        if (!(pgfxdevice = Prm_FindBoardTags(NULL,
+                                             PRM_Vendor, VENDOR_3DFX,
+                                             PRM_Device, DEVICE_VOODOO45,
+                                             TAG_DONE)))
+        {
+            pgfxdevice = Prm_FindBoardTags(NULL,
+                                           PRM_Vendor, VENDOR_3DFX,
+                                           PRM_Device, DEVICE_VOODOO3,
+                                           TAG_DONE);
+            gfxnotv45 = 1;
+        }
+
+        if (!(pgfxdevice))
+        {
+            cardNumber = 0;
+            while (atiList[cardNumber])
+            {
+                if (pgfxdevice = Prm_FindBoardTags(NULL,
+                                                   PRM_Vendor, VENDOR_ATI,
+                                                   PRM_Device, atiList[cardNumber],
+                                                   TAG_DONE))
+                {
+                    gfxisati = 1;
+                    break;
+                }
+                if (pgfxdevice)
+                {
+                    break;
+                }
+            cardNumber++;
+            }
+        }
+
+        if (!pgfxdevice)
+        {
+            PrintCrtErr(myConsts, "No supported VGA card detected");
+            return NULL;
+        }
+
+        struct TagItem gfxTags[] =
+        {
+            PRM_MemoryAddr1,  (ULONG)&gfxTags[0].ti_Data,
+            PRM_MemorySize1,  (ULONG)&gfxTags[1].ti_Data,
+            PRM_MemoryAddr2,  (ULONG)&gfxTags[2].ti_Data,
+            TAG_DONE
+        };
+
+        Prm_GetBoardAttrsTagList(pgfxdevice, (struct TagItem*)&gfxTags);
+
+        myConsts->ic_gfxMem = gfxTags[0].ti_Data;
+        myConsts->ic_gfxSize = gfxTags[1].ti_Data;
+
+        if (gfxisati)
+        {
+            myConsts->ic_gfxConfig = gfxTags[2].ti_Data;
+            myConsts->ic_gfxType = VENDOR_ATI;
+            D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
+        }
+        else
+        {
+            myConsts->ic_gfxConfig = NULL;
+            myConsts->ic_gfxType = VENDOR_3DFX;
+            if (gfxnotv45)
+            {
+                myConsts->ic_gfxSubType = DEVICE_VOODOO3;
+            }
+            else
+            {
+                myConsts->ic_gfxSubType = DEVICE_VOODOO45;
+            }
+            D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
+        }
+        D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
+
+        devfuncnum = 0;
+        pcimemDMAnode = 0;
+    }
+
+    getENVs(myConsts);
 
     initPointer   = (*((ULONG*)(seglist << 2)) << 2);                   //setup
     kernelPointer = (*((ULONG*)(initPointer)) << 2);                   //kernel
     funPointer    = (*((ULONG*)(kernelPointer)) << 2);                //functions
 
-    switch (ppcdevice->pd_DeviceID)
+    switch (deviceID)
     {
         case DEVICE_HARRIER:
         {
-            cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice, initPointer);
+            cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice, pppcdevice, initPointer);
             break;
         }
 
         case DEVICE_MPC8343E:
         {
-            cardData = SetupKiller(myConsts, devfuncnum, ppcdevice, initPointer);
+            cardData = SetupKiller(myConsts, devfuncnum, ppcdevice, pppcdevice, initPointer);
             break;
         }
 
         case DEVICE_MPC107:
         {
-            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice, initPointer, (ULONG)pcimemDMAnode);
+            cardData = SetupMPC107(myConsts, devfuncnum, ppcdevice, pppcdevice, initPointer, (ULONG)pcimemDMAnode);
             break;
         }
 
@@ -647,7 +781,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     D(("Accessible PPC memory set up with header at %08lx\n", myPPCMemHeader));
 
-    if (ppcdevice->pd_DeviceID == DEVICE_MPC8343E)
+    if (deviceID == DEVICE_MPC8343E)
     {
         myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize));
         bytesFree = (cardData->id_MemSize - MEM_GAP - sizeof(struct MemHeader));
@@ -696,7 +830,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     struct PrivatePPCBase* myBase = (struct PrivatePPCBase*)PowerPCBase;
 
-    switch (ppcdevice->pd_DeviceID)
+    switch (deviceID)
     {
         case DEVICE_HARRIER:
 		{
@@ -712,12 +846,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 		}
         case DEVICE_MPC107:
 		{
-		    myBase->pp_BridgeMsgs      = ppcdevice->pd_ABaseAddress1;
+		    myBase->pp_BridgeMsgs      = cardData->id_MsgsBase;
             break;
 		}
     }
 
-    myBase->pp_DeviceID                = ppcdevice->pd_DeviceID;
+    myBase->pp_DeviceID                = deviceID;
     myBase->pp_MirrorList.mlh_Head     = (struct MinNode*)&myBase->pp_MirrorList.mlh_Tail;
     myBase->pp_MirrorList.mlh_TailPred = (struct MinNode*)&myBase->pp_MirrorList.mlh_Head;
     myBase->pp_UtilityBase             = UtilityBase;
@@ -750,11 +884,20 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct Interrupt* myInt = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     myInt->is_Code = (APTR)&GortInt;
     myInt->is_Data = NULL;
-    myInt->is_Node.ln_Pri = 100;
+    myInt->is_Node.ln_Pri = 95;
     myInt->is_Node.ln_Name = "Gort\0";
     myInt->is_Node.ln_Type = NT_INTERRUPT;
-    AddInterrupt(ppcdevice, myInt);
-    SetInterrupt(ppcdevice);
+
+
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        AddInterrupt(ppcdevice, myInt);
+        SetInterrupt(ppcdevice);
+    }
+    else
+    {
+        Prm_AddIntServer(pppcdevice, myInt);
+    }
 
     D(("Gort 68K interrupt now running at %08lx\n", myInt));
 
@@ -809,27 +952,31 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     {
         case DEVICE_MPC8343E:
         {
-            struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
-            myInt2->is_Code = (APTR)&ZenInt;
-            myInt2->is_Data = NULL;
-            myInt2->is_Node.ln_Pri = -50;
-            myInt2->is_Node.ln_Name = "Zen\0";
-            myInt2->is_Node.ln_Type = NT_INTERRUPT;
-            AddIntServer(INTB_VERTB, myInt2);
-            D(("Zen support interrupt now running at %08lx\n", myInt2));
+            if (myConsts->ic_pciType == VENDOR_ELBOX)
+            {
+                struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
+                myInt2->is_Code = (APTR)&ZenInt;
+                myInt2->is_Data = NULL;
+                myInt2->is_Node.ln_Pri = -50;
+                myInt2->is_Node.ln_Name = "Zen\0";
+                myInt2->is_Node.ln_Type = NT_INTERRUPT;
+                AddIntServer(INTB_VERTB, myInt2);
+                D(("Zen support interrupt now running at %08lx\n", myInt2));
+            }
             break;
         }
         case DEVICE_MPC107:
         {
             while (!(myZeroPage->zp_DECCounter));
 
-            ULONG otwrValue = (swap32(myConsts->ic_gfxMem | MPC107_TWR_512MB)) & -2;
-            writememL(ppcdevice->pd_ABaseAddress1, MPC107_OTWR, otwrValue);
-            writememL(ppcdevice->pd_ABaseAddress1, MPC107_OMBAR, otwrValue + (OFFSET_PCIMEM >> 24));
+            ULONG otwrValue = (swap32(((ULONG)(cd->cd_BoardAddr) - offset) | MPC107_TWR_512MB)) & -2;
+            writememL(myBase->pp_BridgeMsgs, MPC107_OTWR, otwrValue);
+            writememL(myBase->pp_BridgeMsgs, MPC107_OMBAR, otwrValue + ((OFFSET_PCIMEM + offset) >> 24));
             break;
         }
     }
 
+//#if 0
     struct TagItem myTags[] =
     {
         TASKATTR_CODE,   *((ULONG*)(((ULONG)PowerPCBase + _LVOSystemStart + 2))),
@@ -838,7 +985,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         TASKATTR_SYSTEM, TRUE,
         TAG_DONE
     };
-//#if 0
+
     if (!(myCreatePPCTask((struct PrivatePPCBase*)PowerPCBase, (struct TagItem*)&myTags)))
     {
         PrintError(SysBase, "Error setting up Kryten PPC process");
@@ -859,6 +1006,12 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     }
    
 //#endif
+
+    if (myBase->pp_DeviceID == DEVICE_MPC8343E)
+    {
+            PrintCrtErr(myConsts, "No Warp3D currently supported for K1/M1");
+    }
+
     return PowerPCBase;
 }
 
@@ -1081,6 +1234,110 @@ void getENVs(struct InternalConsts* myConsts)
 
     return;
 }
+/********************************************************************************************
+*
+*	Various support routines for the K1/M1 set-up.
+*
+*********************************************************************************************/
+
+void WriteConfigLong(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset, ULONG value)
+{
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        WriteConfigurationLong(devfuncnum, offset, value);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        Prm_WriteConfigLong(board, value, offset);
+    }
+    return;
+}
+
+void WriteConfigWord(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset, UWORD value)
+{
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        WriteConfigurationWord(devfuncnum, offset, value);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        Prm_WriteConfigWord(board, value, offset);
+    }
+    return;
+}
+
+void WriteConfigByte(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset, UBYTE value)
+{
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        WriteConfigurationByte(devfuncnum, offset, value);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        Prm_WriteConfigByte(board, value, offset);
+    }
+    return;
+}
+
+ULONG ReadConfigLong(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset)
+{
+    ULONG result;
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        result = ReadConfigurationLong(devfuncnum, offset);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        result = Prm_ReadConfigLong(board, offset);
+    }
+    return result;
+}
+
+UWORD ReadConfigWord(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset)
+{
+    UWORD result;
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        result = ReadConfigurationWord(devfuncnum, offset);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        result = Prm_ReadConfigWord(board, offset);
+    }
+    return result;
+}
+
+UBYTE ReadConfigByte(struct InternalConsts* myConsts, ULONG devfuncnum, UBYTE offset)
+{
+    UBYTE result;
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
+    {
+        struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+        result = ReadConfigurationByte(devfuncnum, offset);
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+        struct PCIBoard* board = (struct PCIBoard*)devfuncnum;
+        result = Prm_ReadConfigByte(board, offset);
+    }
+    return result;
+}
 
 /********************************************************************************************
 *
@@ -1138,35 +1395,64 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 *********************************************************************************************/
 
 struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
-                             struct PciDevice* ppcdevice, ULONG initPointer)
+                             struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer)
 {
     D(("Detected Killer M1/K1 PPC PCI card\n"));
+
+    if (myConsts->ic_pciType == VENDOR_E3B)
+    {
+        devfuncnum = (ULONG)pppcdevice;
+    }
+
     UWORD res;
-    ULONG ppcmemBase, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize;
+    ULONG ppcmemBase, ppcmBx, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize;
     struct InitData* killerData;
 
     struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
     struct ExecBase* SysBase = myConsts->ic_SysBase;
 
-    res = (ReadConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND)
+    res = (ReadConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND)
           | BUSMASTER_ENABLE);
 
-    WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
+    WriteConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND, res);
+    vgamemBase   = (myConsts->ic_gfxMem & (~(1<<25)));
 
-    if (!(ppcmemBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_1, ppcdevice)))
+    if (myConsts->ic_pciType == VENDOR_ELBOX)
     {
-        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-        return FALSE;
+        if (!(ppcmemBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_1, ppcdevice)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return FALSE;
+        }
+
+        configBase   = ppcdevice->pd_ABaseAddress0;
+        ppcmBx       = ppcmemBase;
+        startAddress = (MediatorPCIBase->pb_MemAddress);        
+    }
+    else
+    {
+        struct Library* PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+
+        struct TagItem cfgTags[] =
+        {
+            PRM_MemoryAddr0,  (ULONG)&configBase,
+            PRM_MemoryAddr1,  (ULONG)&ppcmemBase,
+            TAG_DONE
+        };
+
+        Prm_GetBoardAttrsTagList(pppcdevice, (struct TagItem*)&cfgTags);
+
+        startAddress = myConsts->ic_gfxMem;
+        //ppcmemBase   = (ULONG)Prm_AllocPCIAddressSpace(pppcdevice, 0x8000000UL, PCIBAR_1);
+        ppcmBx       = ppcmemBase - startAddress;
+        vgamemBase  -= startAddress;
     }
 
     D(("Setting up 64MB of PPC memory at %08lx\n", ppcmemBase));
 
-    configBase = ppcdevice->pd_ABaseAddress0;
-
     D(("Setting up card config base at %08lx\n",configBase));
 
-    writememL(configBase, IMMR_PIBAR0, (ppcmemBase >> 12));
-
+    writememL(configBase, IMMR_PIBAR0, (ppcmBx >> 12));
     writememL(configBase, IMMR_PITAR0, 0);
     writememL(configBase, IMMR_PIWAR0,
                 PIWAR_EN|PIWAR_PF|PIWAR_RTT_SNOOP|
@@ -1178,50 +1464,53 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     writememL(configBase, IMMR_POCMR3, 0);
     writememL(configBase, IMMR_POCMR4, 0);
     writememL(configBase, IMMR_POCMR5, 0);
-
-    vgamemBase = (myConsts->ic_gfxMem & (~(1<<25)));
-
-    startAddress = (MediatorPCIBase->pb_MemAddress);
+    writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
     writememL(configBase, IMMR_PCILAWBAR1,
-                (startAddress+0x60000000));
+                (startAddress + OFFSET_PCIMEM));
 
-    winSize = POCMR_EN|POCMR_CM_128MB;
-
-    if (!(myConsts->ic_gfxMem & (~(1<<25))))
+//    winSize = POCMR_EN|POCMR_CM_128MB;
+    winSize = POCMR_EN|POCMR_CM_64MB;
+    if (!(myConsts->ic_gfxMem & (1<<25)))
     {
-        if (myConsts->ic_gfxSize & (~(1<<28)))
+        if (myConsts->ic_gfxSize & (1<<28))
         {
             winSize = POCMR_EN|POCMR_CM_256MB;
         }
-        else if (myConsts->ic_gfxSize & (~(1<<26)))
+        else if (myConsts->ic_gfxSize & (1<<26))
         {
             winSize = POCMR_EN|POCMR_CM_64MB;
         }
     }
-    writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
 
-    if (myConsts->ic_gfxSize & (~(1<<27)))
-    {
-        if (myConsts->ic_gfxMem & (~(1<<27)))
-        {
-            startAddress += myConsts->ic_gfxSize;
-        }
-    }
-    
-    writememL(configBase, IMMR_POBAR0, (startAddress + 0x60000000 >> 12));
+//    writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
+
+//    if (myConsts->ic_gfxSize & (~(1<<27))) //debugdebug
+//    {
+//        if (myConsts->ic_gfxMem & (~(1<<27)))
+//        {
+//            startAddress += myConsts->ic_gfxSize;
+//        }
+//    }
+
+    startAddress += OFFSET_PCIMEM;
+
+    D(("Setting up VGA PCI window at %08lx located from %08lx with size %08lx\n",startAddress, vgamemBase, winSize));
+
+    writememL(configBase, IMMR_POBAR0, (startAddress >> 12));
     writememL(configBase, IMMR_POTAR0, (vgamemBase >> 12));
     writememL(configBase, IMMR_POCMR0, winSize);
 
     if (myConsts->ic_gfxConfig)
     {
-        writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + 0x60000000) >> 12));
+        D(("Setting up VGA config block for ATI Radeon located at %08lx\n",myConsts->ic_gfxConfig));
+        writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
         writememL(configBase, IMMR_POTAR2, (myConsts->ic_gfxConfig >> 12));
         writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
     }
 
     if (myConsts->ic_sizeBAT)
     {
-
+        D(("Setting up extra BAT for extra PCI memory"));
         winSize = POCMR_EN|POCMR_CM_256MB;
 
         if (!(myConsts->ic_sizeBAT & (~(1<<28))))
@@ -1233,7 +1522,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
             }
         }
 
-        writememL(configBase, IMMR_POBAR1, ((myConsts->ic_startBAT + 0x60000000) >> 12));
+        writememL(configBase, IMMR_POBAR1, ((myConsts->ic_startBAT + OFFSET_PCIMEM) >> 12));
         writememL(configBase, IMMR_POTAR1, (myConsts->ic_startBAT >> 12));
         writememL(configBase, IMMR_POCMR1, winSize);
     }
@@ -1261,7 +1550,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_Environment1  = myConsts->ic_env1;
     killerData->id_Environment2  = myConsts->ic_env2;
     killerData->id_Environment3  = myConsts->ic_env3;
-    killerData->id_DeviceID      = ppcdevice->pd_DeviceID;
+    killerData->id_DeviceID      = DEVICE_MPC8343E;
     killerData->id_ConfigBase    = configBase;
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;
@@ -1276,6 +1565,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     return killerData;
 }
 
+
 /********************************************************************************************
 *
 *   Setting up cards based on the Harrier chipset (PowerPlus III).
@@ -1283,62 +1573,84 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 *********************************************************************************************/
 
 struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
-                              struct PciDevice* ppcdevice, ULONG initPointer)
+                              struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer)
 {
-    ULONG pmepBase, configBase, ppcmemBase, mpicBase, fakememBase;
+    ULONG pmepBase, configBase, ppcmemBase, mpicBase, fakememBase, offset;
     struct InitData* harrierData;
+    struct Library* PrometheusBase;
+    struct PciBase* MediatorPCIBase;
 
     D(("Detected Harrier based PPC PCI card\n"));
 
-    struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
     struct ExecBase* SysBase = myConsts->ic_SysBase;
 
-    UWORD resw = (ReadConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND));
-
-    WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, resw | MEMORYSPACE_ENABLE);
-
-    ULONG resl = ReadConfigurationLong(devfuncnum, PCFS_MPAT);
-
-    WriteConfigurationLong(devfuncnum, PCFS_MPAT, resl | (PCFS_MPAT_GBL | PCFS_MPAT_ENA));
-
-    if (!(pmepBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_0, ppcdevice)))
+    if (myConsts->ic_pciType == VENDOR_E3B)
     {
-        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-        return FALSE;
+        devfuncnum = (ULONG)pppcdevice;
+
+        PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+
+        struct TagItem cfgTags[] =
+        {
+            PRM_MemoryAddr0,  (ULONG)&pmepBase,
+            PRM_MemoryAddr1,  (ULONG)&configBase,
+            PRM_MemoryAddr3,  (ULONG)&mpicBase,
+            TAG_DONE
+        };
+
+        Prm_GetBoardAttrsTagList(pppcdevice, (struct TagItem*)&cfgTags);
+        offset = myConsts->ic_gfxMem;
+    }
+    else
+    {
+        MediatorPCIBase = myConsts->ic_PciBase;
+        offset = 0;
+
+        if (!(pmepBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_0, ppcdevice)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return FALSE;
+        }
+        if (!(configBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_1, ppcdevice)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return FALSE;
+        }
+        if (!(mpicBase = AllocPCIBAR(PCIMEM_256KB, PCIBAR_3, ppcdevice)))
+        {
+            PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
+            return FALSE;
+        }
     }
 
     D(("Setting PMEP base at %08lx\n", pmepBase));
+    D(("Setting up Harrier config base at %08lx\n", configBase));
+    D(("Setting up Harrier PIC base at %08lx\n", mpicBase));
 
-    WriteConfigurationLong(devfuncnum, PCFS_MBAR, pmepBase);
+    UWORD resw = (ReadConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND));
 
-    resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT0);
+    WriteConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND, resw | MEMORYSPACE_ENABLE);
 
-    WriteConfigurationLong(devfuncnum, PCFS_ITAT0, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA));
+    ULONG resl = ReadConfigLong(myConsts, devfuncnum, PCFS_MPAT);
 
-    resl = ReadConfigurationLong(devfuncnum, PCFS_ITAT1);
+    WriteConfigLong(myConsts, devfuncnum, PCFS_MPAT, resl | (PCFS_MPAT_GBL | PCFS_MPAT_ENA));
 
-    WriteConfigurationLong(devfuncnum, PCFS_ITAT1, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
+
+    WriteConfigLong(myConsts, devfuncnum, PCFS_MBAR, (pmepBase - offset)); //debugdebug
+
+    resl = ReadConfigLong(myConsts, devfuncnum, PCFS_ITAT0);
+
+    WriteConfigLong(myConsts, devfuncnum, PCFS_ITAT0, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA));
+
+    resl = ReadConfigLong(myConsts, devfuncnum, PCFS_ITAT1);
+
+    WriteConfigLong(myConsts, devfuncnum, PCFS_ITAT1, resl | (PCFS_ITAT_GBL | PCFS_ITAT_ENA
                            | PCFS_ITAT_WPE | PCFS_ITAT_RAE));
 
-    if (!(configBase = AllocPCIBAR(PCIMEM_4K, PCIBAR_1, ppcdevice)))
-    {
-        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-        return FALSE;
-    }
+    WriteConfigLong(myConsts, devfuncnum, PCFS_ITBAR0, (configBase - offset)); //debugdebug
 
-    D(("Setting up Harrier config base at %08lx\n", configBase));
+    WriteConfigLong(myConsts, devfuncnum, PCFS_ITOFSZ0, (PPC_XCSR_BASE | PCFS_ITSZ_4K));
 
-    WriteConfigurationLong(devfuncnum, PCFS_ITBAR0, configBase);
-
-    WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ0, (PPC_XCSR_BASE | PCFS_ITSZ_4K));
-
-    if (!(mpicBase = AllocPCIBAR(PCIMEM_256KB, PCIBAR_3, ppcdevice)))
-    {
-        PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
-        return FALSE;
-    }
-
-    D(("Setting up Harrier PIC base at %08lx\n", mpicBase));
 
     writememL(configBase, XCSR_MBAR, (mpicBase | XCSR_MBAR_ENA));
 
@@ -1363,6 +1675,12 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     {
         case XCSR_SDBA_32M8:
         {
+            if (myConsts->ic_pciType == VENDOR_E3B)
+            {
+                ppcmemBase = myConsts->ic_gfxMem + 0x10000000; //debugdebug
+                ppcmemSize = 0x10000000;
+                break;
+            }
             if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
             {
                 ppcmemSize = 0x10000000;
@@ -1385,12 +1703,21 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
             }
             break;
         }
+        case XCSR_SDBA_256M4:    //debugdebug
         case XCSR_SDBA_16M8:
         {
-            if (ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice))
+            if (myConsts->ic_pciType == VENDOR_E3B)
             {
-                ppcmemSize = 0x8000000;
+                ppcmemBase = myConsts->ic_gfxMem + 0x18000000; //debugdebug
             }
+            else
+            {
+                if (!(ppcmemBase = AllocPCIBAR(PCIMEM_128MB, PCIBAR_2, ppcdevice)))
+                {
+                    break;
+                }
+            }
+            ppcmemSize = 0x8000000;
             break;
         }
         case XCSR_SDBA_64M8:
@@ -1431,6 +1758,10 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         }
         case 0:
         {
+            ppcmemBase = myConsts->ic_gfxMem + 0x10000000;
+            ppcmemSize = 0x10000000;
+            valueSDBAA |= XCSR_SDBA_32M8;
+#if 0 //debugdebug
             if (ppcmemBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_2, ppcdevice))
             {
                 ppcmemSize = 0x10000000;
@@ -1445,6 +1776,7 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
             {
                 break;
             }
+#endif
             writememL(configBase, XCSR_SDTC, XCSR_SDTC_DEFAULT);
             writememL(configBase, XCSR_SDGC, XCSR_SDGC_MXRR_7 | XCSR_SDGC_DERC);
             break;
@@ -1452,24 +1784,25 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
         }
         default:
         {
+            D(("Detected unsupported size of %08lx\n", memSize));
             PrintCrtErr(myConsts, "Could not determine size of PPC memory");
             return FALSE;
         }
     }
 
     writememL(configBase, XCSR_SDBAA, (valueSDBAA | XCSR_SDBA_ENA));
-    WriteConfigurationLong(devfuncnum, PCFS_ITBAR1, ppcmemBase);
+    WriteConfigLong(myConsts, devfuncnum, PCFS_ITBAR1, (ppcmemBase - offset));
 
     switch (ppcmemSize)
     {
         case 0x10000000:
         {
-            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_256MB));
+            WriteConfigLong(myConsts, devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_256MB));
             break;
         }
         case 0x8000000:
         {
-            WriteConfigurationLong(devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_128MB));
+            WriteConfigLong(myConsts, devfuncnum, PCFS_ITOFSZ1, (PPC_RAM_BASE | PCFS_ITSZ_128MB));
             break;
         }
         case 0x18000000:
@@ -1513,12 +1846,26 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     writememL(configBase, XCSR_SDGC, valueSDGC | XCSR_SDGC_ENRV_ENA);
     writememL(configBase, XCSR_XARB, XCSR_XARB_PRKCPU0 | XCSR_XARB_ENA);
 
-    ULONG value = MediatorPCIBase->pb_MemAddress;
-    value += OFFSET_PCIMEM;
-    ULONG value2 = (value >> 16) + 0x2000;
-    value |= value2;
+    ULONG value, value2;
 
-    value2 = ((-OFFSET_PCIMEM) | XCSR_OTAT_ENA | XCSR_OTAT_WPE | XCSR_OTAT_SGE | XCSR_OTAT_RAE | XCSR_OTAT_MEM);
+    if (myConsts->ic_pciType == VENDOR_E3B)
+    {
+        if (ppcmemBase + ppcmemSize == myConsts->ic_gfxMem + 0x20000000)
+        {
+            ppcmemSize -= 0x1000000;
+        }
+        value = myConsts->ic_gfxMem;
+        value2 = ((-(value + OFFSET_PCIMEM)) | XCSR_OTAT_ENA | XCSR_OTAT_WPE | XCSR_OTAT_SGE | XCSR_OTAT_RAE | XCSR_OTAT_MEM);
+    }
+    else
+    {
+        value = MediatorPCIBase->pb_MemAddress;
+        value2 = ((-OFFSET_PCIMEM) | XCSR_OTAT_ENA | XCSR_OTAT_WPE | XCSR_OTAT_SGE | XCSR_OTAT_RAE | XCSR_OTAT_MEM);
+    }
+
+    value += OFFSET_PCIMEM;
+    value |= (value >> 16) + 0x2000;
+
     writememL(configBase, XCSR_OTAD0, value);
     writememL(configBase, XCSR_OTAT0, value2);
 
@@ -1559,7 +1906,7 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
     harrierData->id_Environment1  = myConsts->ic_env1;
     harrierData->id_Environment2  = myConsts->ic_env2;
     harrierData->id_Environment3  = myConsts->ic_env3;
-    harrierData->id_DeviceID      = ppcdevice->pd_DeviceID;
+    harrierData->id_DeviceID      = DEVICE_HARRIER;
     harrierData->id_ConfigBase    = configBase;
     harrierData->id_MsgsBase      = pmepBase;
     harrierData->id_MPICBase      = mpicBase;
@@ -1584,42 +1931,73 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
 *********************************************************************************************/
 
 struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
-                             struct PciDevice* ppcdevice, ULONG initPointer, ULONG vgamem)
+                             struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer, ULONG vgamem)
 {
     struct InitData* mpc107Data;
-    ULONG romMem, EUMBAddr, fakememBase, romMemValue, segSize;
+    struct Library* PrometheusBase;
+    struct PciBase* MediatorPCIBase;
+    ULONG romMem, EUMBAddr, fakememBase, romMemValue, segSize, offset, memBase, itwrSize, revision;
     UWORD res;
-
-    struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
+    
     struct ExecBase* SysBase = myConsts->ic_SysBase;
 
-    if (vgamem)
+    D(("Detected MPC107 based PPC PCI card\n"));
+
+    if (myConsts->ic_pciType == VENDOR_E3B)
     {
-        if(!(romMem = (ULONG)AllocVec(0x20000, MEMF_PUBLIC | MEMF_PPC)))
+        devfuncnum = (ULONG)pppcdevice;
+
+        PrometheusBase = (struct Library*)myConsts->ic_PciBase;
+
+        struct TagItem cfgTags[] =
+        {
+            PRM_MemoryAddr1,  (ULONG)&EUMBAddr,
+            PRM_Revision,     (ULONG)&revision,
+            TAG_DONE
+        };
+
+        Prm_GetBoardAttrsTagList(pppcdevice, (struct TagItem*)&cfgTags);
+        offset = myConsts->ic_gfxMem;
+
+        if (!(romMem = (ULONG)Prm_AllocDMABuffer(0x20000)))
         {
             PrintCrtErr(myConsts, "Could not allocate VGA memory");
             return FALSE;
         }
-
     }
     else
     {
-        if (!(myConsts->ic_gfxMem))
+        if (vgamem)
         {
-            PrintCrtErr(myConsts, "Could not allocate VGA memory");
-            return FALSE;
+            if (!(romMem = (ULONG)AllocVec(0x20000, MEMF_PUBLIC | MEMF_PPC)))
+            {
+                PrintCrtErr(myConsts, "Could not allocate VGA memory");
+                return FALSE;
+            }
+
         }
-        romMem = myConsts->ic_gfxMem + 0x600000;   //this is soo wrong
+        else
+        {
+            if (!(myConsts->ic_gfxMem))
+            {
+                PrintCrtErr(myConsts, "Could not allocate VGA memory");
+                return FALSE;
+            }
+            romMem = myConsts->ic_gfxMem + 0x600000;   //this is soo wrong
+        }
+        MediatorPCIBase = myConsts->ic_PciBase;
+        EUMBAddr = ppcdevice->pd_ABaseAddress1;
+        offset = 0;
+        revision = ppcdevice->pd_RevisionID;
     }
+
+    romMem = (romMem + 0x10000) & 0xffff0000;
 
     D(("Fake ROM address located at %08lx\n", romMem));
 
-    romMem = (romMem + 0x10000) & 0xffff0000;
-    EUMBAddr = ppcdevice->pd_ABaseAddress1;
-
     D(("Confguration base of MPC107 located at %08lx\n", EUMBAddr));
 
-    writememL(EUMBAddr, MPC107_OTWR, swap32(romMem | MPC107_TWR_64KB));
+    writememL(EUMBAddr, MPC107_OTWR, swap32((romMem - offset) | MPC107_TWR_64KB));
     writememL(EUMBAddr, MPC107_OMBAR, 0x0000f0ff);
 
     mpc107Data = ((struct InitData*)(romMem + OFFSET_KERNEL));
@@ -1641,17 +2019,20 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
     mpc107Data->id_Environment1  = myConsts->ic_env1;
     mpc107Data->id_Environment2  = myConsts->ic_env2;
     mpc107Data->id_Environment3  = myConsts->ic_env3;
-    mpc107Data->id_DeviceID      = ppcdevice->pd_DeviceID;
-    mpc107Data->id_ConfigBase    = ppcdevice->pd_RevisionID;
+    mpc107Data->id_DeviceID      = DEVICE_MPC107;
+    mpc107Data->id_ConfigBase    = revision;
+    mpc107Data->id_MsgsBase      = EUMBAddr;
 
     CacheClearU();
 
-    res = (ReadConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND)
+    res = (ReadConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND)
           | BUSMASTER_ENABLE);
 
-    WriteConfigurationWord(devfuncnum, PCI_OFFSET_COMMAND, res);
+    WriteConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND, res);
 
     writememL(EUMBAddr, MPC107_WP_CONTROL, MPC107_WP_TRIG01);
+
+    D(("Waiting on MPC107 PPC card to respond with memory size\n"));
 
     ULONG timer = 0xEC0000;
     while (timer)
@@ -1674,8 +2055,30 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
         return FALSE;
     }
 
-    ULONG itwrSize = MPC107_TWR_256MB;
-    ULONG memBase;
+    if (myConsts->ic_pciType == VENDOR_E3B)
+    {
+        D(("Waiting on MPC107 PPC card memory to settle\n"));
+        illegal();
+        timer = 0x1EC0000;
+        while (timer)
+        {
+            timer--;
+        }
+        D(("MPC107 PPC card memory settled\n"));
+        //APTR test = Prm_AllocPCIAddressSpace(pppcdevice, mpc107Data->id_MemSize, PCIBAR_0); //debugdebug
+
+        itwrSize = MPC107_TWR_256MB;
+        memBase = myConsts->ic_gfxMem + 0x10000000; //debugdebug
+        if (memBase + mpc107Data->id_MemSize == myConsts->ic_gfxMem + 0x20000000)
+        {
+            mpc107Data->id_MemSize -= 0x1000000;
+            CacheClearU();
+        }
+    }
+    else
+    {
+    itwrSize = MPC107_TWR_256MB;
+
     if (mpc107Data->id_MemSize > 0x8000000)
     {
         if (!(memBase = AllocPCIBAR(PCIMEM_256MB, PCIBAR_0, ppcdevice)))
@@ -1714,6 +2117,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
             return FALSE;
         }
     }
+    }
 
     ULONG memAvail = 1 << (itwrSize + 1);
 
@@ -1730,7 +2134,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     writememL(EUMBAddr, MPC107_ITWR, swap32(itwrSize));
 
-    WriteConfigurationLong(devfuncnum, MPC107_LMBAR, memBase);
+    WriteConfigLong(myConsts, devfuncnum, MPC107_LMBAR, (memBase - offset));
 
     return mpc107Data;
 }

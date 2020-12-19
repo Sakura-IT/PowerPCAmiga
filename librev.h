@@ -26,10 +26,13 @@
 #define REVISION    14
 
 #define LIBNAME "powerpc.library"
-#define VSTRING "$VER: powerpc.library 17.14 (20.06.20)\r\n"
+#define VSTRING "$VER: powerpc.library 17.14 beta (29.11.20)\r\n"
 
 #define VERPCI      13
 #define REVPCI      8
+
+#define VERPCIP     4
+#define REVPCIP     0
 
 #define LIB_PRIORITY 0
 

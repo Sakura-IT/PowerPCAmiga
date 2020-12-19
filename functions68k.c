@@ -20,6 +20,7 @@
 
 #include <proto/exec.h>
 #include <proto/powerpc.h>
+#include <proto/prometheus.h>
 #include <exec/execbase.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -370,23 +371,7 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
                 thisTask->tc_SigRecvd |= (Signals & andTemp);
                 while (myFrame = (struct MsgFrame*)GetMsg(myMirror->mt_Port))
                 {
-                    if (myFrame->mf_Identifier == ID_FPPC)
-                    {
-                        thisTask->tc_SigRecvd |= myFrame->mf_Signals;
-                        myMirror->mt_PPCTask = myFrame->mf_PPCTask;
-
-                        if (PPStruct->PP_Stack)
-                        {
-                            FreeVec32(PPStruct->PP_Stack);
-                        }
-
-                        //MyCopy(&myFrame->mf_PPCArgs, (APTR)PPStruct, (sizeof(struct PPCArgs)/4)-1);
-
-                        CopyMemQuick((APTR)(&myFrame->mf_PPCArgs), (APTR)PPStruct, sizeof(struct PPCArgs));
-                        FreeMsgFrame(PowerPCBase, myFrame);
-                        return (PPERR_SUCCESS);
-                    }
-                    else if (myFrame->mf_Identifier == ID_T68K)
+                    if (myFrame->mf_Identifier == ID_T68K)
                     {
                         thisTask->tc_SigRecvd |= myFrame->mf_Signals;
                         myMirror->mt_PPCTask = myFrame->mf_PPCTask;
@@ -406,6 +391,22 @@ LIBFUNC68K LONG myWaitForPPC(__reg("a6") struct PrivatePPCBase* PowerPCBase, __r
 
                         SendMsgFrame(PowerPCBase, doneFrame);
                         FreeMsgFrame(PowerPCBase, myFrame);
+                    }
+                    else if (myFrame->mf_Identifier == ID_FPPC)
+                    {
+                        thisTask->tc_SigRecvd |= myFrame->mf_Signals;
+                        myMirror->mt_PPCTask = myFrame->mf_PPCTask;
+
+                        if (PPStruct->PP_Stack)
+                        {
+                            FreeVec32(PPStruct->PP_Stack);
+                        }
+
+                        //MyCopy(&myFrame->mf_PPCArgs, (APTR)PPStruct, (sizeof(struct PPCArgs)/4)-1);
+
+                        CopyMemQuick((APTR)(&myFrame->mf_PPCArgs), (APTR)PPStruct, sizeof(struct PPCArgs));
+                        FreeMsgFrame(PowerPCBase, myFrame);
+                        return (PPERR_SUCCESS);
                     }
                     else if (myFrame->mf_Identifier == ID_END)
                     {

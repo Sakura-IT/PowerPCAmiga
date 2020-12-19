@@ -172,7 +172,12 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
     PTSizeShift = shiftVal - leadZeros;
 
-    myZP->zp_PageTableSize = (1<<PTSizeShift);
+    if ((myZP->zp_MemSize) & (1 << (30 - leadZeros)))
+    {
+        PTSizeShift++;
+    }
+
+    myZP->zp_PageTableSize = (1 << PTSizeShift);
 
     setupPT();
 
@@ -194,6 +199,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
             {
                 initData->id_Status = ERR_PPCMMU;
+                initData->id_MemBase = 0x1;
                 return;
             }
 
@@ -215,6 +221,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
     {
         initData->id_Status = ERR_PPCMMU;
+        initData->id_MemBase = 0x2;
         return;
     }
 
@@ -227,6 +234,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
     {
         initData->id_Status = ERR_PPCMMU;
+        initData->id_MemBase = 0x3;
         return;
     }
 
@@ -267,7 +275,19 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
         case VENDOR_3DFX:
         {
-            startEffAddr = initData->id_GfxMemBase;
+            ULONG offset1 = 0;
+            ULONG offset2 = 0;
+
+            if (initData->id_GfxMemBase & 0x0fffffff)
+            {
+                offset2 = 0x2000000;
+            }
+            else
+            {
+                offset1 = 0x2000000;
+            }
+
+            startEffAddr = initData->id_GfxMemBase + offset1;
             endEffAddr   = startEffAddr + 0x2000000;
             if (initData->id_GfxSubType == DEVICE_VOODOO45)
             {
@@ -280,11 +300,12 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
             {
                 initData->id_Status = ERR_PPCMMU;
+                initData->id_MemBase = 0x4;
                 return;
             }
 
-            ibatu = initData->id_GfxMemBase + 0x2000000;
-            if (initData->id_GfxSubType == DEVICE_VOODOO45)
+            ibatu = initData->id_GfxMemBase + offset2;
+            if ((initData->id_GfxSubType == DEVICE_VOODOO45) && (offset2 == 0x2000000))
             {
                 ibatu += 0x6000000;
             }
@@ -437,6 +458,7 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
             baseFIFO->kf_MIOFT = memBase + memOF + 4;
             baseFIFO->kf_MIOPT = memBase + memOP;
             baseFIFO->kf_MIOPH = memBase + memOP;
+
             break;
         }
         case DEVICE_MPC107:
@@ -500,6 +522,7 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
 void setupOpenPIC(__reg("r3") struct InitData* initData)
 {
     ULONG volatile value = readmemLongPPC(initData->id_MPICBase, XMPI_GLBC);
+
     writememLongPPC(initData->id_MPICBase, XMPI_GLBC, value | XMPI_GLBC_RESET);
 
     while (1)
@@ -692,6 +715,7 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
                     break;
                 }
             }
+            break;
         }
         case DEVICE_MPC107:
         {
@@ -896,14 +920,29 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
 
     mmuSetup(initData);
 
+    writeTest((ULONG)&initData->id_Reserved, 0xfab40005); //debugdebug
+    dFlush((ULONG)&initData->id_Reserved);
+
     while (initData->id_Status != STATUS_INIT);
 
     initData->id_Status = ERR_PPCOK;
+    dFlush((ULONG)initData);
 
+    writeTest((ULONG)&initData->id_Reserved, 0xfab40006); //debugdebug
+    dFlush((ULONG)&initData->id_Reserved);
+
+    ULONG* memx = 0xa0;
+
+    //while(1)
     while (myZP->zp_Status != STATUS_INIT)
     {
+        //memx[0] += 1;
+        //dFlush((ULONG)memx);
         dInval(0);
     }
+
+    writeTest((ULONG)&initData->id_Reserved, 0xfab40007); //debugdebug
+    dFlush((ULONG)&initData->id_Reserved);
 
     struct PrivatePPCBase* PowerPCBase = (struct PrivatePPCBase*)myZP->zp_PowerPCBase;
 
@@ -993,6 +1032,9 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
         }
     }
 
+    writeTest((ULONG)&initData->id_Reserved, 0xfab40008); //debugdebug
+    dFlush((ULONG)&initData->id_Reserved);
+
     PowerPCBase->pp_LowerLimit = *((ULONG*)(((ULONG)PowerPCBase + _LVOInsertPPC + 2)));
     PowerPCBase->pp_UpperLimit = *((ULONG*)(((ULONG)PowerPCBase + _LVOFindNamePPC + 2)));
     PowerPCBase->pp_StdQuantum = quantum;
@@ -1021,7 +1063,15 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
 
     setupCaches(PowerPCBase, initData);
 
+    writeTest((ULONG)&initData->id_Reserved, 0xfab40009); //debugdebug
+    dFlush((ULONG)&initData->id_Reserved);
+
     myZP->zp_Status = STATUS_READY;
+
+    //ULONG* xxx = (APTR)0x42000000; //debugdebug
+    //writeTest(0x90, xxx[0]);
+    //writeTest(0x94, xxx[1]);
+    //writeTest(0x98, xxx[2]);
 
     setDEC(PowerPCBase->pp_StdQuantum);
     setSRR0((ULONG)(PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM);

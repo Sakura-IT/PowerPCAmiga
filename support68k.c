@@ -26,6 +26,7 @@
 #include <powerpc/powerpc.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/prometheus.h>
 #include <dos/doshunks.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
@@ -846,7 +847,7 @@ FUNC68K void MasterControl(void)
 
 	//struct InternalConsts *myData = (struct InternalConsts*)myTask->tc_UserData;
 
-	myZP->zp_Status = STATUS_INIT;
+    myZP->zp_Status = STATUS_INIT;
 
 	while (1)
 	{
@@ -1092,8 +1093,8 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 			break; //error
 		}
 	}
-	if (flag)
-	{
+    if (flag)
+    {
 		while ((myFrame = GetMsgFrame(PowerPCBase)) != (APTR)-1)
 		{
             switch (myFrame->mf_Identifier)
@@ -1197,8 +1198,8 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				}
 			}
 		}
-	}
-	return flag;
+    }
+	return 0; //debugdebug should be flag
 }
 
 /********************************************************************************************

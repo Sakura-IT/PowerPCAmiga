@@ -158,22 +158,6 @@ PPCFUNCTION LONG myWaitFor68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
             {
                 switch (myFrame->mf_Identifier)
                 {
-                    case ID_DNLL:
-                    {
-                        ULONG value = myFrame->mf_PPCArgs.PP_Regs[0];
-                        FreeMsgFramePPC(PowerPCBase, myFrame);
-                        return (LONG)value;
-                    }
-                    case ID_END:
-                    {
-                        KillTask(PowerPCBase, myFrame);
-                        break;
-                    }
-                    case ID_TPPC:
-                    {
-                        SetupRunPPC(PowerPCBase, myFrame);
-                        break;
-                    }
                     case ID_DONE:
                     {
                         struct NewTask* myNewTask = (struct NewTask*)myTask;
@@ -191,6 +175,22 @@ PPCFUNCTION LONG myWaitFor68K(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
                         FreeMsgFramePPC(PowerPCBase, myFrame);
 
                         return PPERR_SUCCESS;
+                    }
+                    case ID_TPPC:
+                    {
+                        SetupRunPPC(PowerPCBase, myFrame);
+                        break;
+                    }
+                    case ID_DNLL:
+                    {
+                        ULONG value = myFrame->mf_PPCArgs.PP_Regs[0];
+                        FreeMsgFramePPC(PowerPCBase, myFrame);
+                        return (LONG)value;
+                    }
+                    case ID_END:
+                    {
+                        KillTask(PowerPCBase, myFrame);
+                        break;
                     }
                     default:
                     {

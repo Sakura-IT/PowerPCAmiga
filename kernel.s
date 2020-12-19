@@ -59,8 +59,12 @@ _ExcCommon:
         lwz     r4,0x24(r0)
         addi    r4,r4,1
         stw     r4,0x24(r0)
+        mflr    r4
+        stw     r4,0x30(r0)
+        li      r4,0x20
+        dcbf    r0,r4
 
-        lwz     r4,PowerPCBase(r0)
+        lwz     r4,POWERPCBASE(r0)
         lwz     r4,POWERPCBASE_THISPPCTASK(r4)
         mr.     r4,r4
         bne     .NoIdl
@@ -85,10 +89,10 @@ _ExcCommon:
         stw     r0,IF_CONTEXT(r3)
         bl      _StoreFrame                  #r0, r3 and r4 are skipped in this routine and were saved above
 
-        lwz     r3,PowerPCBase(r0)                         #Loads PowerPCBase
+        lwz     r3,POWERPCBASE(r0)                      #Loads PowerPCBase
         bl      _Exception_Entry
 
-        lwz     r31,PowerPCBase(r0)
+        lwz     r31,POWERPCBASE(r0)
         lwz     r31,POWERPCBASE_THISPPCTASK(r31)
         mr.     r31,r31
         bne     .NI2                                       #trash everything, is idle task.
@@ -104,6 +108,11 @@ _ExcCommon:
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
         bl      _FlushICache
+
+        li      r3,0x20
+        li      r0,0
+        stw     r0,0x30(r0)
+        dcbf    r0,r3
 
         lwz     r0,IF_CONTEXT_CR(r1)
         mtcr    r0
