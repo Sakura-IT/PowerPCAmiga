@@ -172,8 +172,10 @@
 #define VENDOR_ELBOX            0x89e
 #define MEDIATOR_MKII           33
 #define MEDIATOR_1200TX         60
+#define MEDIATOR_MKIII          63
 #define MEDIATOR_LOGIC          161
 #define MEDIATOR_1200LOGIC      188
+#define MEDIATOR_LOGICIII       191
 
 #define VENDOR_E3B              0xe3b
 #define PROMETHEUS_FIRESTORM    0xc8
@@ -534,6 +536,7 @@
 #define PCIBAR_2                2
 #define PCIBAR_3                3
 #define PCIBAR_4                4
+#define PCIBAR_5                5
 
 // MPC107 stuff
 
