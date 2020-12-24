@@ -191,7 +191,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
         case DEVICE_HARRIER:
         {
             startEffAddr = initData->id_MPICBase;
-            endEffAddr   = startEffAddr + 0x400000;
+            endEffAddr   = startEffAddr + 0x40000;
             physAddr     = startEffAddr;
             WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
             ppKey        = PP_SUPERVISOR_RW;
@@ -886,10 +886,6 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
         initData->id_Status = STATUS_INIT;
     }
 
-    ULONG* xmem = 0;
-    xmem[0x20] = 0xfab40000;
-    dFlush(0x80);
-
     myZP->zp_MemSize = initData->id_MemSize;
 
     setupFIFOs(initData);
@@ -911,6 +907,8 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
             break;
         }
     }
+
+    ULONG* memx = 0;
 
     ULONG* IdleTask = (ULONG*)OFFSET_SYSMEM;
     IdleTask[0] = OPCODE_NOP;

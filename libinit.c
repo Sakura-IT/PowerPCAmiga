@@ -1971,8 +1971,9 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         if (!(romMem = (ULONG)Prm_AllocDMABuffer(0x20000)))
         {
-            PrintCrtErr(myConsts, "Could not allocate VGA memory");
-            return FALSE;
+            romMem = myConsts->ic_gfxMem + 0x700000;   //this is soo wrong
+            //PrintCrtErr(myConsts, "Could not allocate VGA memory");
+            //return FALSE;
         }
     }
     else
