@@ -1000,10 +1000,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     D(("Opened ppc.library emulator for PowerUP support\n"));
     }
 
-    if ((myConsts->ic_pciType == VENDOR_E3B) && (myBase->pp_DeviceID == DEVICE_MPC8343E))
-    {
-            PrintCrtErr(myConsts, "K1/M1 PPC cards currently not working correctly!");
-    }
+//    if ((myConsts->ic_pciType == VENDOR_E3B) && (myBase->pp_DeviceID == DEVICE_MPC8343E) && (myConsts->ic_gfxType == VENDOR_3DFX))
+//    {
+//            PrintCrtErr(myConsts, "K1/M1 PPC cards currently not working correctly!");
+//    }
 
     return PowerPCBase;
 }
@@ -1432,7 +1432,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     }
 
     UWORD res;
-    ULONG ppcmemBase, ppcmBx, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize;
+    ULONG ppcmemBase, ppcmBx, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize, offset;
     struct InitData* killerData;
 
     struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
@@ -1454,7 +1454,8 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         configBase   = ppcdevice->pd_ABaseAddress0;
         ppcmBx       = ppcmemBase;
-        startAddress = (MediatorPCIBase->pb_MemAddress);        
+        startAddress = MediatorPCIBase->pb_MemAddress + OFFSET_PCIMEM;
+        offset       = 0;
     }
     else
     {
@@ -1469,14 +1470,15 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         Prm_GetBoardAttrsTagList(pppcdevice, (struct TagItem*)&cfgTags);
 
-        startAddress = myConsts->ic_gfxMem;
-        ppcmBx       = ppcmemBase - startAddress;
-        vgamemBase  -= startAddress;
+        offset       = myConsts->ic_gfxMem;
+        startAddress = offset + OFFSET_PCIMEM;
+        ppcmBx       = ppcmemBase - offset;
+        vgamemBase  -= offset;
     }
 
     D(("Setting up 64MB of PPC memory at %08lx\n", ppcmemBase));
 
-    D(("Setting up card config base at %08lx\n",configBase));
+    D(("Setting up PPC card config base at %08lx\n",configBase));
 
     writememL(configBase, IMMR_PIBAR0, (ppcmBx >> 12));
     writememL(configBase, IMMR_PITAR0, 0);
@@ -1491,8 +1493,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     writememL(configBase, IMMR_POCMR4, 0);
     writememL(configBase, IMMR_POCMR5, 0);
     writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
-    writememL(configBase, IMMR_PCILAWBAR1,
-                (startAddress + OFFSET_PCIMEM));
+    writememL(configBase, IMMR_PCILAWBAR1, startAddress);
 
     winSize = POCMR_EN|POCMR_CM_128MB;
 
@@ -1513,8 +1514,6 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 //        }
 //    }
 
-    startAddress += OFFSET_PCIMEM;
-
     D(("Setting up VGA PCI window at %08lx located from %08lx with size %08lx\n",startAddress, vgamemBase, winSize));
 
     writememL(configBase, IMMR_POBAR0, (startAddress >> 12));
@@ -1525,7 +1524,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     {
         D(("Setting up VGA config block for ATI Radeon located at %08lx\n",myConsts->ic_gfxConfig));
         writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
-        writememL(configBase, IMMR_POTAR2, (myConsts->ic_gfxConfig >> 12));
+        writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
         writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
     }
 
