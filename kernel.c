@@ -276,15 +276,6 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                     }
                 }
             }
-#if 0
-            if ((iframe->if_Context.ec_GPR[3] == 0) && (iframe->if_Context.ec_GPR[30] = 0x1e1e1e1e))
-            {
-                iframe->if_Context.ec_GPR[3] = (ULONG)PowerPCBase;
-                ULONG* mem = (APTR)iframe->if_Context.ec_GPR[7];
-                mem[0] = (ULONG)PowerPCBase;
-                break;
-            }
-#endif
             CommonExcError(PowerPCBase, iframe);
             break;
         }
@@ -695,6 +686,8 @@ PPCKERNEL void SwitchPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
             AddTailPPC((struct List*)&PowerPCBase->pp_RemovedTasks, (struct Node*)currTask);
             currTask = NULL;
             PowerPCBase->pp_ThisPPCProc = currTask;
+            iframe->if_Context.ec_SRR1 = MACHINESTATE_DEFAULT;
+            iframe->if_Context.ec_UPC.ec_SRR0 = (PowerPCBase->pp_PPCMemBase) + OFFSET_SYSMEM;
         }
         else if (currTask->tp_Task.tc_State == TS_CHANGING)
         {
@@ -1525,5 +1518,6 @@ PPCKERNEL void CommonExcError(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 
     PowerPCBase->pp_ThisPPCProc->tp_Task.tc_State = TS_REMOVED;
     PowerPCBase->pp_ThisPPCProc->tp_Flags |= TASKPPCF_CRASHED;
+    RemovePPC((struct Node*)PowerPCBase->pp_ThisPPCProc->tp_TaskPtr);
     SwitchPPC(PowerPCBase, iframe);
 }
