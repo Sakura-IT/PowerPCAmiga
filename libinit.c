@@ -483,7 +483,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         {
             myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
             myConsts->ic_gfxSize = -(((gfxdevice->pd_Size0)<<1)&-16L);
-            myConsts->ic_gfxConfig = 0;
+            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress1;
             myConsts->ic_gfxType = VENDOR_3DFX;
             if (gfxnotv45)
             {
@@ -493,7 +493,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             {
                 myConsts->ic_gfxSubType = DEVICE_VOODOO45;
             }
-            D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
+            D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
 
         //Add ATI Radeon memory as extra memory for K1/M1
@@ -624,10 +624,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
         else
         {
-            Prm_GetBoardAttrsTags(pgfxdevice, PRM_MemoryAddr1, (ULONG)&myConsts->ic_gfxMem,
+            Prm_GetBoardAttrsTags(pgfxdevice, PRM_MemoryAddr0, (ULONG)&myConsts->ic_gfxConfig,
+                                              PRM_MemoryAddr1, (ULONG)&myConsts->ic_gfxMem,
                                               PRM_MemorySize1, (ULONG)&myConsts->ic_gfxSize,
                                               TAG_DONE);
-            myConsts->ic_gfxConfig = NULL;
             myConsts->ic_gfxType = VENDOR_3DFX;
             if (gfxnotv45)
             {
@@ -637,7 +637,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             {
                 myConsts->ic_gfxSubType = DEVICE_VOODOO45;
             }
-            D(("3DFX card detected, Gfx address at %08lx\n", myConsts->ic_gfxMem));
+            D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
         D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
 
@@ -883,7 +883,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct Interrupt* myInt = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     myInt->is_Code = (APTR)&GortInt;
     myInt->is_Data = NULL;
-    myInt->is_Node.ln_Pri = 95;
+    myInt->is_Node.ln_Pri = 110;
     myInt->is_Node.ln_Name = "Gort\0";
     myInt->is_Node.ln_Type = NT_INTERRUPT;
 
@@ -1000,10 +1000,10 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     D(("Opened ppc.library emulator for PowerUP support\n"));
     }
 
-//    if ((myConsts->ic_pciType == VENDOR_E3B) && (myBase->pp_DeviceID == DEVICE_MPC8343E) && (myConsts->ic_gfxType == VENDOR_3DFX))
-//    {
-//            PrintCrtErr(myConsts, "K1/M1 PPC cards currently not working correctly!");
-//    }
+    if ((myConsts->ic_pciType == VENDOR_E3B) && (myBase->pp_DeviceID == DEVICE_MPC8343E) && (myConsts->ic_gfxType == VENDOR_3DFX))
+    {
+            PrintCrtErr(myConsts, "K1/M1 PPC cards currently not working correctly!");
+    }
 
     return PowerPCBase;
 }
@@ -1499,7 +1499,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     if (myConsts->ic_gfxSize == 0x2000000)
     {
-        winSize = POCMR_EN|POCMR_CM_64MB;
+        winSize = POCMR_EN|POCMR_CM_32MB;
     }
     else if (myConsts->ic_gfxSize == 0x10000000)
     {
@@ -1522,10 +1522,20 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     if (myConsts->ic_gfxConfig)
     {
-        D(("Setting up VGA config block for ATI Radeon located at %08lx\n",myConsts->ic_gfxConfig));
-        writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
-        writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
-        writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
+        if (myConsts->ic_gfxType == VENDOR_ATI)
+        {
+            D(("Setting up VGA config block for ATI Radeon located at %08lx\n",myConsts->ic_gfxConfig));
+            writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
+            writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
+            writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
+        }
+        else if (myConsts->ic_gfxType == VENDOR_3DFX)
+        {
+            D(("Setting up VGA config block for 3DFX Voodoo located at %08lx\n",myConsts->ic_gfxConfig));
+            writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
+            writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
+            writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_32MB));
+        }
     }
 
     if (myConsts->ic_sizeBAT)
@@ -1774,7 +1784,23 @@ struct InitData* SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum,
             else if (ppcmemBase = AllocPCIMem(myConsts, (ULONG)ppcdevice, PCIMEM_128MB, PCIBAR_2))
             {
                 ppcmemSize = 0x8000000;
-                valueSDBAA |= XCSR_SDBA_16M8;
+                if (baseAlt = AllocPCIMem(myConsts, (ULONG)ppcdevice, PCIMEM_64MB, PCIBAR_4))
+                {
+                    if (baseAlt + 0x4000000 == ppcmemBase)
+                    {
+                        ppcmemSize += 0x4000000;
+                        ppcmemBase = baseAlt;
+                        valueSDBAA |= XCSR_SDBA_32M8;
+                    }
+                    else
+                    {
+                        FreePCIMem(myConsts, (ULONG)ppcdevice, PCIBAR_4);
+                    }
+                }
+                if (ppcmemSize == 0x8000000)
+                {
+                    valueSDBAA |= XCSR_SDBA_16M8;
+                }
             }
             else
             {
