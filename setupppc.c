@@ -273,11 +273,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
         case VENDOR_3DFX:
         {
             startEffAddr = initData->id_GfxConfigBase;
-            endEffAddr   = startEffAddr + 0x2000000;
-            if (initData->id_GfxSubType == DEVICE_VOODOO45)
-            {
-                endEffAddr += 0x6000000;
-            }
+            endEffAddr   = startEffAddr + initData->id_GfxMemSize;
             physAddr     = startEffAddr + OFFSET_PCIMEM;
             WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
             ppKey        = PP_USER_RW;
@@ -291,7 +287,6 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             ibatu = initData->id_GfxMemBase;
             if (initData->id_GfxSubType == DEVICE_VOODOO45)
             {
-                ibatu += 0x6000000;
                 ibatu |= BAT_BL_128M;
             }
             else

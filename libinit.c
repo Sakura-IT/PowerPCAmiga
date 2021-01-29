@@ -481,9 +481,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         }
         else
         {
-            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
-            myConsts->ic_gfxSize = -(((gfxdevice->pd_Size0)<<1)&-16L);
-            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress1;
+            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress1;
+            myConsts->ic_gfxSize = -(((gfxdevice->pd_Size1)<<1)&-16L);
+            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress0;
             myConsts->ic_gfxType = VENDOR_3DFX;
             if (gfxnotv45)
             {
@@ -1506,14 +1506,6 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         winSize = POCMR_EN|POCMR_CM_256MB;
     }
 
-//    if (myConsts->ic_gfxSize & (~(1<<27))) //debugdebug
-//    {
-//        if (myConsts->ic_gfxMem & (~(1<<27)))
-//        {
-//            startAddress += myConsts->ic_gfxSize;
-//        }
-//    }
-
     D(("Setting up VGA PCI window at %08lx located from %08lx with size %08lx\n",startAddress, vgamemBase, winSize));
 
     writememL(configBase, IMMR_POBAR0, (startAddress >> 12));
@@ -1534,7 +1526,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
             D(("Setting up VGA config block for 3DFX Voodoo located at %08lx\n",myConsts->ic_gfxConfig));
             writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
             writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
-            writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_32MB));
+            writememL(configBase, IMMR_POCMR2, winSize);
         }
     }
 
