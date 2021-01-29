@@ -172,7 +172,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
     PTSizeShift = shiftVal - leadZeros;
 
-    if ((myZP->zp_MemSize) & (1 << (30 - leadZeros)))
+    if ((myZP->zp_MemSize) & (1 << (30 - leadZeros)) || (initData->id_GfxSubType == DEVICE_VOODOO45))
     {
         PTSizeShift++;
     }
@@ -193,7 +193,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             startEffAddr = initData->id_MPICBase;
             endEffAddr   = startEffAddr + 0x40000;
             physAddr     = startEffAddr;
-            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
             ppKey        = PP_SUPERVISOR_RW;
 
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
@@ -214,7 +214,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
     endEffAddr   = startEffAddr + 0x100000;
     physAddr     = startEffAddr;
-    WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+    WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
     ppKey        = PP_USER_RW;
 
     if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
@@ -242,7 +242,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             startEffAddr = initData->id_GfxConfigBase;
             endEffAddr   = startEffAddr + 0x10000;
             physAddr     = startEffAddr + OFFSET_PCIMEM;
-            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
@@ -272,26 +272,14 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
 
         case VENDOR_3DFX:
         {
-            ULONG offset1 = 0;
-            ULONG offset2 = 0;
-
-            if (initData->id_GfxMemBase & 0x0fffffff)
-            {
-                offset2 = 0x2000000;
-            }
-            else
-            {
-                offset1 = 0x2000000;
-            }
-
-            startEffAddr = initData->id_GfxMemBase + offset1;
+            startEffAddr = initData->id_GfxConfigBase;
             endEffAddr   = startEffAddr + 0x2000000;
             if (initData->id_GfxSubType == DEVICE_VOODOO45)
             {
                 endEffAddr += 0x6000000;
             }
             physAddr     = startEffAddr + OFFSET_PCIMEM;
-            WIMG         = PTE_CACHE_INHIBITED|PTE_GUARDED;
+            WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
             ppKey        = PP_USER_RW;
 
             if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
@@ -300,14 +288,19 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
                 return;
             }
 
-            ibatu = initData->id_GfxMemBase + offset2;
-            if ((initData->id_GfxSubType == DEVICE_VOODOO45) && (offset2 == 0x2000000))
+            ibatu = initData->id_GfxMemBase;
+            if (initData->id_GfxSubType == DEVICE_VOODOO45)
             {
                 ibatu += 0x6000000;
+                ibatu |= BAT_BL_128M;
+            }
+            else
+            {
+                ibatu |= BAT_BL_32M;
             }
             ibatl = ibatu + OFFSET_PCIMEM | BAT_READ_WRITE;
             dbatl = ibatl | BAT_WRITE_THROUGH;
-            ibatu |= (BAT_BL_32M | BAT_VALID_SUPERVISOR | BAT_VALID_USER);
+            ibatu |= (BAT_VALID_SUPERVISOR | BAT_VALID_USER);
 
             setBAT1(ibatl, ibatu, dbatl, ibatu);
             mSync();
