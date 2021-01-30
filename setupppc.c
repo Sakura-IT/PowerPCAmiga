@@ -1,4 +1,4 @@
-// Copyright (c) 2019, 2020 Dennis van der Boon
+// Copyright (c) 2019-2021 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -259,14 +259,6 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             {
                 batSize = BAT_BL_256M;
             }
-
-            ibatl = ((initData->id_GfxMemBase + OFFSET_PCIMEM) | BAT_READ_WRITE);
-            ibatu = initData->id_GfxMemBase | batSize | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
-            dbatl = ibatl | BAT_WRITE_THROUGH;
-
-            setBAT1(ibatl, ibatu, dbatl, ibatu);
-            mSync();
-
             break;
         }
 
@@ -284,25 +276,24 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
                 return;
             }
 
-            ibatu = initData->id_GfxMemBase;
             if (initData->id_GfxSubType == DEVICE_VOODOO45)
             {
-                ibatu |= BAT_BL_128M;
+                batSize = BAT_BL_128M;
             }
             else
             {
-                ibatu |= BAT_BL_32M;
+                batSize = BAT_BL_32M;
             }
-            ibatl = ibatu + OFFSET_PCIMEM | BAT_READ_WRITE;
-            dbatl = ibatl | BAT_WRITE_THROUGH;
-            ibatu |= (BAT_VALID_SUPERVISOR | BAT_VALID_USER);
-
-            setBAT1(ibatl, ibatu, dbatl, ibatu);
-            mSync();
-
             break;
         }
     }
+
+    ibatl = ((initData->id_GfxMemBase + OFFSET_PCIMEM) | BAT_READ_WRITE);
+    ibatu = initData->id_GfxMemBase | batSize | BAT_VALID_SUPERVISOR | BAT_VALID_USER;
+    dbatl = ibatl | BAT_WRITE_THROUGH;
+
+    setBAT1(ibatl, ibatu, dbatl, ibatu);
+    mSync();
 
     ibatl = BAT_READ_WRITE;
     ibatu = BAT_BL_2M | BAT_VALID_SUPERVISOR;

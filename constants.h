@@ -1,4 +1,4 @@
-// Copyright (c) 2019, 2020 Dennis van der Boon
+// Copyright (c) 2019-2021 Dennis van der Boon
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -179,7 +179,6 @@
 
 #define VENDOR_E3B              0xe3b
 #define PROMETHEUS_FIRESTORM    0xc8
-#define PROMETHEUS_CONFIG0      0x5FC00000
 
 #define MAX_PCI_SLOTS           6
 #define MAX_PPCI_SLOTS          4
@@ -407,6 +406,7 @@
 #define POCMR_CM_256MB          0x000F0000
 #define POCMR_CM_128MB          0x000F8000
 #define POCMR_CM_64MB           0x000FC000
+#define POCMR_CM_32MB           0x000FE000
 #define POCMR_CM_64KB           0x000FFFF0
 
 #define LAWAR_EN                0x80000000
