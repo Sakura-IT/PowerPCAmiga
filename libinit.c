@@ -542,16 +542,15 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             pcimemDMAnode->mh_Node.ln_Pri = memPrio;
             Enqueue(&SysBase->MemList, (struct Node *)pcimemDMAnode);
             Enable();
-
-            deviceID = ppcdevice->pd_DeviceID;
-
-#if 0
-            if (myConsts->ic_gfxMem >>31)
-            {
-                PrintCrtErr(myConsts, "PPCPCI environment not set in ENVARC:Mediator");
-            }
-#endif
         }
+
+        deviceID = ppcdevice->pd_DeviceID;
+#if 0
+        if (myConsts->ic_gfxMem >>31)
+        {
+            PrintCrtErr(myConsts, "PPCPCI environment not set in ENVARC:Mediator");
+        }
+#endif
     }
     else
     {
