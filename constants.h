@@ -313,6 +313,7 @@
 #define BAT_BL_64M              0x000007FC
 #define BAT_BL_128M             0x00000FFC
 #define BAT_BL_256M             0x00001FFC
+#define BAT_BL_512M             0x00003FFC
 
 // supervisor/user valid mode definitions  - Upper BAT
 #define BAT_VALID_SUPERVISOR    0x00000002
@@ -380,9 +381,12 @@
 #define IMMR_POTAR0             0x8400
 #define IMMR_POTAR1             0x8418
 #define IMMR_POTAR2             0x8430
+#define IMMR_POTAR3             0x8448
+
 #define IMMR_POBAR0             0x8408
 #define IMMR_POBAR1             0x8420
 #define IMMR_POBAR2             0x8438
+#define IMMR_POBAR3             0x8450
 
 #define IMMR_POCMR0             0x8410
 #define IMMR_POCMR1             0x8428
@@ -403,10 +407,12 @@
 #define PIWAR_IWS_64MB          0x00000019
 
 #define POCMR_EN                0x80000000
+#define POCMR_CM_512MB          0x000E0000
 #define POCMR_CM_256MB          0x000F0000
 #define POCMR_CM_128MB          0x000F8000
 #define POCMR_CM_64MB           0x000FC000
 #define POCMR_CM_32MB           0x000FE000
+#define POCMR_CM_4MB            0x000FFC00
 #define POCMR_CM_64KB           0x000FFFF0
 
 #define LAWAR_EN                0x80000000

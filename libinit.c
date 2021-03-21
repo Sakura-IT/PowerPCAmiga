@@ -529,11 +529,13 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                     testSize = (testSize<<1);
                 }
 
-                if (n < 4)
+                if ((n > 0) && (n < 4))
                 {
                     memPrio = -15;
                     myConsts->ic_startBAT = (((ULONG)pcimemDMAnode->mh_Lower) & (-(testSize)));
                     myConsts->ic_sizeBAT = testSize;
+
+                    D(("Detected pcidma memory at %08lx of size %08lx\n", myConsts->ic_startBAT, myConsts->ic_sizeBAT));
                 }
             }
 
