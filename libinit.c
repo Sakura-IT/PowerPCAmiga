@@ -501,7 +501,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         //As the list has twice the memory name, we search it twice
         //Findname only returns first in the list
 
-        for (i=0; i<1; i++)
+        for (i=0; i<2; i++)
         {
             if (!(pcimemDMAnode = (struct MemHeader *)FindName(&SysBase->MemList, "pcidma memory")))
             {
@@ -521,7 +521,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
                 for (n=0; n<4; n++)
                 {
-                    if (testLen <= testSize)
+                    if (testSize > testLen)
                     {
                         break;
                     }
@@ -529,7 +529,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                     testSize = (testSize<<1);
                 }
 
-                if (0 < n < 4)
+                if (n < 4)
                 {
                     memPrio = -15;
                     myConsts->ic_startBAT = (((ULONG)pcimemDMAnode->mh_Lower) & (-(testSize)));
@@ -1531,7 +1531,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     if (myConsts->ic_sizeBAT)
     {
-        D(("Setting up extra BAT for extra PCI memory"));
+        D(("Setting up extra BAT for extra PCI memory\n"));
         winSize = POCMR_EN|POCMR_CM_256MB;
 
         if (!(myConsts->ic_sizeBAT & (~(1<<28))))
