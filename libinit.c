@@ -482,7 +482,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         else
         {
             myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress1;
-            myConsts->ic_gfxSize = -(((gfxdevice->pd_Size1)<<1)&-16L);
+            myConsts->ic_gfxSize = -((gfxdevice->pd_Size1)&-16L);
             myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress0;
             myConsts->ic_gfxType = VENDOR_3DFX;
             if (gfxnotv45)
@@ -495,6 +495,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             }
             D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
+        D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
 
         //Add ATI Radeon memory as extra memory for K1/M1
         //Need to have Voodoo as primary VGA output
@@ -1443,7 +1444,6 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
           | BUSMASTER_ENABLE);
 
     WriteConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND, res);
-    vgamemBase   = (myConsts->ic_gfxMem & (~(1<<25)));
 
     if (myConsts->ic_pciType == VENDOR_ELBOX)
     {
@@ -1455,8 +1455,9 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         configBase   = ppcdevice->pd_ABaseAddress0;
         ppcmBx       = ppcmemBase;
-        startAddress = MediatorPCIBase->pb_MemAddress + OFFSET_PCIMEM;
+        startAddress = myConsts->ic_gfxMem + OFFSET_PCIMEM;
         offset       = 0;
+        vgamemBase   = myConsts->ic_gfxMem;
     }
     else
     {
@@ -1474,7 +1475,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         offset       = myConsts->ic_gfxMem;
         startAddress = offset + OFFSET_PCIMEM;
         ppcmBx       = ppcmemBase - offset;
-        vgamemBase  -= offset;
+        vgamemBase = 0; //vga memory alsways sits at PCI address 0x0 for Prm
     }
 
     D(("Setting up 64MB of PPC memory at %08lx\n", ppcmemBase));
