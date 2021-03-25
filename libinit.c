@@ -439,7 +439,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
-        ppcdevice = FindPciDevFunc(devfuncnum);
+        ppcdevice  = FindPciDevFunc(devfuncnum);
+        deviceID   = ppcdevice->pd_DeviceID;
         cardNumber = 0;
 
         if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO45, 0)))
@@ -512,10 +513,14 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             {
                 break;
             }
+            if (pcimemDMAnode->mh_Node.ln_Pri == -20)
+            {
+                break;
+            }
 
             memPrio = -20;
 
-            if (!(gfxisati))
+            if ((!(gfxisati)) && (deviceID == DEVICE_MPC8343E))
             {
                 testSize = 0x2000000;
                 testLen = ((ULONG)pcimemDMAnode->mh_Upper)-((ULONG)pcimemDMAnode->mh_Lower);
@@ -536,10 +541,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                     myConsts->ic_startBAT = (((ULONG)pcimemDMAnode->mh_Lower) & (-(testSize)));
                     myConsts->ic_sizeBAT = testSize;
 
-                    D(("Detected pcidma memory at %08lx of size %08lx\n", myConsts->ic_startBAT, myConsts->ic_sizeBAT));
+                    D(("Detected usable pcidma memory at %08lx of size %08lx\n", myConsts->ic_startBAT, myConsts->ic_sizeBAT));
                 }
             }
-
             Disable();
             Remove((struct Node *)pcimemDMAnode);
             pcimemDMAnode->mh_Node.ln_Pri = memPrio;
@@ -547,7 +551,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             Enable();
         }
 
-        deviceID = ppcdevice->pd_DeviceID;
 #if 0
         if (myConsts->ic_gfxMem >>31)
         {
