@@ -283,6 +283,7 @@ PPCFUNCTION APTR myAllocVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
         values[-1] = size + align + 32;
         values[-2] = (ULONG)currPool;
         values[-3] = origmem;
+        values[-4] = MAGIC_COOKIE;
     }
     args.db_Arg[0] = (ULONG)mem;
     printDebug(PowerPCBase, (struct DebugArgs*)&args);
@@ -306,7 +307,14 @@ PPCFUNCTION LONG myFreeVecPPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, __
 	if (memblock)
 	{
 		ULONG* myMemblock = memblock;
-		myFreePooledPPC(PowerPCBase, (APTR)myMemblock[-2], (APTR)myMemblock[-3], myMemblock[-1]);
+        if (myMemblock[-4] != MAGIC_COOKIE)
+        {
+            HaltError(ERR_ECOR);
+        }
+        else
+        {
+		    myFreePooledPPC(PowerPCBase, (APTR)myMemblock[-2], (APTR)myMemblock[-3], myMemblock[-1]);
+        }
 	}
 	
     return MEMERR_SUCCESS;

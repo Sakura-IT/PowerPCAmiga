@@ -34,6 +34,7 @@
 #define NEGSIZEALIGN            ((NEGSIZE + 3) & -4)
 #define MSGLEN                  192
 #define SUPERKEY                0xABADBEEF
+#define MAGIC_COOKIE            0x07041776
 
 #define RDFF_JUSTIFY            1
 #define RDFF_PREPEND            2
@@ -89,6 +90,7 @@
 #define ERR_EFIF                0x45464946
 #define ERR_ESNC                0x45534E43
 #define ERR_EMEM                0x454D454D
+#define ERR_ECOR                0x45434F52
 #define ERR_ETIM                0x4554494D
 #define ERR_DEAD                0xDEADDEAD
 #define ERR_R68K                0x5236384B
@@ -199,6 +201,7 @@
 #define VENDOR_3DFX             0x121a
 #define DEVICE_VOODOO45         0x0009
 #define DEVICE_VOODOO3          0x0005
+#define DEVICE_VBANSHEE         0x0003
 #define DEVICE_RV280PRO         0x5960
 #define DEVICE_RV280            0x5961
 #define DEVICE_RV280_2          0x5962

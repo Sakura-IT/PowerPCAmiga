@@ -271,7 +271,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct PPCBase *PowerPCBase;
     struct Process *myProc;
     ULONG gfxisati  = 0;
-    ULONG gfxnotv45 = 0;
     ULONG deviceID = 0;
     struct ConfigDev *cd = NULL;
     struct PciDevice *ppcdevice = NULL;
@@ -443,10 +442,16 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
         deviceID   = ppcdevice->pd_DeviceID;
         cardNumber = 0;
 
+        myConsts->ic_gfxSubType = DEVICE_VOODOO45;
+
         if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO45, 0)))
         {
-            gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO3, 0);
-            gfxnotv45 = 1;
+            myConsts->ic_gfxSubType = DEVICE_VOODOO3;
+
+            if (!(gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VOODOO3, 0)))
+            {
+                gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VBANSHEE, 0);
+            }
         }
 
         if (!(gfxdevice))
@@ -478,6 +483,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
             myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
             myConsts->ic_gfxType = VENDOR_ATI;
+            myConsts->ic_gfxSubType = 0;
             D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
         else
@@ -486,14 +492,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             myConsts->ic_gfxSize = -((gfxdevice->pd_Size1)&-16L);
             myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress0;
             myConsts->ic_gfxType = VENDOR_3DFX;
-            if (gfxnotv45)
-            {
-                myConsts->ic_gfxSubType = DEVICE_VOODOO3;
-            }
-            else
-            {
-                myConsts->ic_gfxSubType = DEVICE_VOODOO45;
-            }
+
             D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
         D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
@@ -579,6 +578,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
+        myConsts->ic_gfxSubType = DEVICE_VOODOO45;
+
         if (!(pgfxdevice = Prm_FindBoardTags(NULL,
                                              PRM_Vendor, VENDOR_3DFX,
                                              PRM_Device, DEVICE_VOODOO45,
@@ -588,7 +589,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                                            PRM_Vendor, VENDOR_3DFX,
                                            PRM_Device, DEVICE_VOODOO3,
                                            TAG_DONE);
-            gfxnotv45 = 1;
+            myConsts->ic_gfxSubType = DEVICE_VOODOO3;
         }
 
         if (!(pgfxdevice))
@@ -602,10 +603,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                                                    TAG_DONE))
                 {
                     gfxisati = 1;
-                    break;
-                }
-                if (pgfxdevice)
-                {
                     break;
                 }
             cardNumber++;
@@ -625,6 +622,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                                               PRM_MemoryAddr2, (ULONG)&myConsts->ic_gfxConfig,
                                               TAG_DONE);
             myConsts->ic_gfxType = VENDOR_ATI;
+            myConsts->ic_gfxSubType = 0;
             D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
         else
@@ -634,14 +632,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                                               PRM_MemorySize1, (ULONG)&myConsts->ic_gfxSize,
                                               TAG_DONE);
             myConsts->ic_gfxType = VENDOR_3DFX;
-            if (gfxnotv45)
-            {
-                myConsts->ic_gfxSubType = DEVICE_VOODOO3;
-            }
-            else
-            {
-                myConsts->ic_gfxSubType = DEVICE_VOODOO45;
-            }
+
             D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
         D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
@@ -1993,9 +1984,14 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
 
         if (!(romMem = (ULONG)Prm_AllocDMABuffer(0x20000)))
         {
-            romMem = myConsts->ic_gfxMem + 0x700000;   //this is soo wrong
-            //PrintCrtErr(myConsts, "Could not allocate VGA memory");
-            //return FALSE;
+            if (myConsts->ic_gfxType == VENDOR_ATI)
+            {
+                romMem = myConsts->ic_gfxMem + myConsts->ic_gfxSize - 0x700000;   //this is soo wrong
+            }
+            else
+            {
+                romMem = myConsts->ic_gfxMem + 0x700000;
+            }
         }
     }
     else

@@ -264,6 +264,13 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                         if (!(myData.dm_LoadFlag))
                         {
                             while (myFrame->mf_Identifier != ID_DONE);
+//#ifdef DEBUG
+                            if (myFrame->mf_Arg[0] == ERR_EMEM)
+                            {
+                                CommonExcError(PowerPCBase, iframe);
+                                break;
+                            }
+//#endif
                             if (!(FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData)))
                             {
                                 CommonExcError(PowerPCBase, iframe);

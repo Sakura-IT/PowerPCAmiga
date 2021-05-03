@@ -231,9 +231,10 @@ struct dsiInfo
 struct dsiInfo di[10];
 
 
-VOID countDSI(__reg("d0") ULONG dsi_Address)
+ULONG countDSI(__reg("d0") ULONG dsi_Address)
 {
     ULONG init = 0;
+    ULONG result = 1;
     struct PPCBase* PowerPCBase = myPPCBase;
 
     if (!(dsi_Count))
@@ -278,8 +279,12 @@ VOID countDSI(__reg("d0") ULONG dsi_Address)
 
     if (!(di[init].dsi_Lower))
     {
-        di[9].dsi_Total += 1;
-        mySPrintF68K((struct PPCBase*)PowerPCBase, "Detected DSI hit outside of memory bounds at %08lx\n\0", (APTR)&dsi_Address);
+        if (dsi_Address != 4)
+        {
+            di[9].dsi_Total += 1;
+            result = 0;
+            mySPrintF68K((struct PPCBase*)PowerPCBase, "Detected DSI hit outside of memory bounds at %08lx\n\0", (APTR)&dsi_Address);
+        }
     }
 
     dsi_Count += 1;
@@ -304,7 +309,7 @@ VOID countDSI(__reg("d0") ULONG dsi_Address)
 
         dsi_Count = 0;
     }
-    return;
+    return result;
 }
 
 #endif
@@ -986,7 +991,7 @@ FUNC68K void MasterControl(void)
 					}
 					case ID_CRSH:
 					{
-						struct DosLibrary* DOSBase = PowerPCBase->pp_PowerPCBase.PPC_DosLib;
+                        struct DosLibrary* DOSBase = PowerPCBase->pp_PowerPCBase.PPC_DosLib;
 						FreeMsgFrame(PowerPCBase, myFrame);
 						BPTR excWindow;
 						if (!(excWindow = Open("CON:0/20/680/250/PowerPC Exception/AUTO/CLOSE/WAIT/INACTIVE", MODE_NEWFILE)))
@@ -1022,6 +1027,11 @@ FUNC68K void MasterControl(void)
 							case ERR_EMEM:
 							{
 								PrintError(SysBase, "PPC CPU ran out of memory");
+								break;
+							}
+							case ERR_ECOR:
+							{
+								PrintError(SysBase, "PPC Memory corruption detected during freeing");
 								break;
 							}
 							case ERR_ETIM:
@@ -1153,10 +1163,13 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 				case ID_GETV:
 				{
                     myFrame->mf_Arg[0] = *((ULONG*)(myFrame->mf_Arg[1]));
-					myFrame->mf_Identifier = ID_DONE;
 #ifdef DEBUG
-                    countDSI(myFrame->mf_Arg[1]);
+                    if (!(countDSI(myFrame->mf_Arg[1])))
+                    {
+                        myFrame->mf_Arg[0] = ERR_EMEM;
+                    }
 #endif
+					myFrame->mf_Identifier = ID_DONE;
 					FreeMsgFrame(PowerPCBase, myFrame);
 					break;
 				}
@@ -1199,7 +1212,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
 			}
 		}
     }
-	return 0; //debugdebug should be flag
+	return flag; //debugdebug should be flag or 0
 }
 
 /********************************************************************************************
