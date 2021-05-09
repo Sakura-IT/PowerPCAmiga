@@ -2380,6 +2380,7 @@ PPCFUNCTION VOID myGetInfo(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg
                     switch (PowerPCBase->pp_DeviceID)
                     {
                         case DEVICE_MPC8343E:
+                        case DEVICE_MPC8314E:
                         {
                             myTagItem->ti_Data = CPUF_603E;
                             break;

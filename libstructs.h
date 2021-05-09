@@ -88,6 +88,7 @@ ULONG                   ic_gfxSize;
 ULONG                   ic_gfxConfig;
 ULONG                   ic_startBAT;
 ULONG                   ic_sizeBAT;
+ULONG                   ic_deviceID;
 ULONG                   ic_env1;
 ULONG                   ic_env2;
 ULONG                   ic_env3;

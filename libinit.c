@@ -97,6 +97,7 @@ static const ULONG cardList[] =
     DEVICE_MPC107<<16|VENDOR_MOTOROLA,
     DEVICE_HARRIER<<16|VENDOR_MOTOROLA,
     DEVICE_MPC8343E<<16|VENDOR_FREESCALE,
+    DEVICE_MPC8314E<<16|VENDOR_FREESCALE,
     0
 };
 
@@ -438,6 +439,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
+        myConsts->ic_deviceID = card;
         ppcdevice  = FindPciDevFunc(devfuncnum);
         deviceID   = ppcdevice->pd_DeviceID;
         cardNumber = 0;
@@ -578,6 +580,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
+        myConsts->ic_deviceID = deviceID;
         myConsts->ic_gfxSubType = DEVICE_VOODOO45;
 
         if (!(pgfxdevice = Prm_FindBoardTags(NULL,
@@ -654,8 +657,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             cardData = SetupHarrier(myConsts, devfuncnum, ppcdevice, pppcdevice, initPointer);
             break;
         }
-
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             cardData = SetupKiller(myConsts, devfuncnum, ppcdevice, pppcdevice, initPointer);
             break;
@@ -776,7 +779,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
     D(("Accessible PPC memory set up with header at %08lx\n", myPPCMemHeader));
 
-    if (deviceID == DEVICE_MPC8343E)
+    if ((deviceID == DEVICE_MPC8343E) || (deviceID == DEVICE_MPC8314E))
     {
         myPPCMemHeader->mh_Upper = (APTR)((ULONG)myZeroPage + (cardData->id_MemSize));
         bytesFree = (cardData->id_MemSize - MEM_GAP - sizeof(struct MemHeader));
@@ -835,6 +838,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             break;
 		}
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
 		    myBase->pp_BridgeConfig    = cardData->id_ConfigBase;
             break;
@@ -892,6 +896,8 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     else
     {
         Prm_AddIntServer(pppcdevice, myInt);
+        Prm_SetBoardAttrsTags(pppcdevice, PRM_BoardOwner,
+                             (ULONG)PowerPCBase, TAG_END);
     }
 
     D(("Gort 68K interrupt now running at %08lx\n", myInt));
@@ -946,6 +952,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     switch (myBase->pp_DeviceID)
     {
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             struct Interrupt* myInt2 = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
             myInt2->is_Code = (APTR)&ZenInt;
@@ -996,9 +1003,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     D(("Opened ppc.library emulator for PowerUP support\n"));
     }
 
-    if ((myConsts->ic_pciType == VENDOR_E3B) && (myBase->pp_DeviceID == DEVICE_MPC8343E) && (myConsts->ic_gfxType == VENDOR_3DFX))
+    if ((myConsts->ic_pciType == VENDOR_E3B) && ((myBase->pp_DeviceID == DEVICE_MPC8343E) || (myBase->pp_DeviceID == DEVICE_MPC8314E)) && (myConsts->ic_gfxType == VENDOR_3DFX))
     {
-            PrintCrtErr(myConsts, "K1/M1 PPC cards currently not working correctly!");
+            PrintCrtErr(myConsts, "e300 based PPC cards currently not working correctly!");
     }
 
     return PowerPCBase;
@@ -1420,7 +1427,7 @@ void resetKiller(struct InternalConsts* myConsts, ULONG configBase, ULONG ppcmem
 struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
                              struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer)
 {
-    D(("Detected Killer M1/K1 PPC PCI card\n"));
+    D(("Detected e300 based PPC PCI card\n"));
 
     if (myConsts->ic_pciType == VENDOR_E3B)
     {
@@ -1428,11 +1435,25 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     }
 
     UWORD res;
-    ULONG ppcmemBase, ppcmBx, configBase, fakememBase, vgamemBase, winSize, startAddress, segSize, offset;
+    ULONG ppcmemBase, ppcmBx, configBase, fakememBase, vgamemBase, winSize, startAddress;
+    ULONG segSize, offset, memsize, barsize, piwarsize;
     struct InitData* killerData;
 
     struct PciBase* MediatorPCIBase = myConsts->ic_PciBase;
     struct ExecBase* SysBase = myConsts->ic_SysBase;
+
+    if (myConsts->ic_deviceID == DEVICE_MPC8343E)
+    {
+        memsize   = 0x4000000;
+        piwarsize = PIWAR_IWS_64MB;
+        barsize   = PCIMEM_64MB;
+    }
+    else
+    {
+        memsize   = 0x8000000;
+        piwarsize = PIWAR_IWS_128MB;
+        barsize   = PCIMEM_128MB;
+    }
 
     res = (ReadConfigWord(myConsts, devfuncnum, PCI_OFFSET_COMMAND)
           | BUSMASTER_ENABLE);
@@ -1441,7 +1462,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     if (myConsts->ic_pciType == VENDOR_ELBOX)
     {
-        if (!(ppcmemBase = AllocPCIBAR(PCIMEM_64MB, PCIBAR_1, ppcdevice)))
+        if (!(ppcmemBase = AllocPCIBAR(barsize, PCIBAR_1, ppcdevice)))
         {
             PrintCrtErr(myConsts, "Could not allocate sufficient PCI memory");
             return FALSE;
@@ -1472,16 +1493,13 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
         vgamemBase = 0; //vga memory alsways sits at PCI address 0x0 for Prm
     }
 
-    D(("Setting up 64MB of PPC memory at %08lx\n", ppcmemBase));
+    D(("Setting up %08lx of PPC memory at %08lx\n", memsize, ppcmemBase));
 
     D(("Setting up PPC card config base at %08lx\n",configBase));
 
     writememL(configBase, IMMR_PIBAR0, (ppcmBx >> 12));
     writememL(configBase, IMMR_PITAR0, 0);
-    writememL(configBase, IMMR_PIWAR0,
-                PIWAR_EN|PIWAR_PF|PIWAR_RTT_SNOOP|
-                PIWAR_WTT_SNOOP|PIWAR_IWS_64MB);
-
+    writememL(configBase, IMMR_PIWAR0, piwarsize|PIWAR_EN|PIWAR_PF|PIWAR_RTT_SNOOP|PIWAR_WTT_SNOOP);
     writememL(configBase, IMMR_POCMR0, 0);
     writememL(configBase, IMMR_POCMR1, 0);
     writememL(configBase, IMMR_POCMR2, 0);
@@ -1559,7 +1577,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
 
     killerData->id_Status        = 0xabcdabcd;
     killerData->id_MemBase       = ppcmemBase;
-    killerData->id_MemSize       = 0x4000000;
+    killerData->id_MemSize       = memsize;
     killerData->id_GfxMemBase    = myConsts->ic_gfxMem;
     killerData->id_GfxMemSize    = myConsts->ic_gfxSize;
     killerData->id_GfxType       = myConsts->ic_gfxType;
@@ -1568,7 +1586,7 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     killerData->id_Environment1  = myConsts->ic_env1;
     killerData->id_Environment2  = myConsts->ic_env2;
     killerData->id_Environment3  = myConsts->ic_env3;
-    killerData->id_DeviceID      = DEVICE_MPC8343E;
+    killerData->id_DeviceID      = myConsts->ic_deviceID;
     killerData->id_ConfigBase    = configBase;
     killerData->id_StartBat      = myConsts->ic_startBAT;
     killerData->id_SizeBat       = myConsts->ic_sizeBAT;

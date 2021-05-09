@@ -26,7 +26,7 @@
 #define REVISION    14
 
 #define LIBNAME "powerpc.library"
-#define VSTRING "$VER: powerpc.library 17.14 beta (02.05.21)\r\n"
+#define VSTRING "$VER: powerpc.library 17.14 beta (09.05.21)\r\n"
 
 #define VERPCI      13
 #define REVPCI      8

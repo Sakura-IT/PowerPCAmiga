@@ -113,7 +113,7 @@ PPCSETUP void setupPT(void)
 
     if ((myPVR >> 16) == ID_MPC834X)
     {
-        ptLoc      = 0x100000;
+        ptLoc      = OFFSET_MESSAGES - ptSize;
     }
     else
     {
@@ -184,6 +184,7 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
     switch (initData->id_DeviceID)
     {
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             startEffAddr = IMMR_ADDR_DEFAULT;
             break;
@@ -418,6 +419,7 @@ PPCSETUP void setupFIFOs(__reg("r3") struct InitData* initData)
             break;
         }
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             memIF    = FIFO_OFFSET;
             memIP    = memIF + SIZE_KFIFO;
@@ -693,6 +695,14 @@ PPCSETUP void setupCaches(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg(
             }
             break;
         }
+        case DEVICE_MPC8314E:
+        {
+            value0 |= HID0_ICE | HID0_DCE;
+            setHID0(value0);
+            l2Size = 0;
+            PowerPCBase->pp_CPUSpeed = 400000000;
+            break;
+        }
         case DEVICE_MPC107:
         {
             value0 |= HID0_ICE | HID0_DCE | HID0_SGE | HID0_BTIC | HID0_BHTE;
@@ -877,6 +887,7 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
             break;
         }
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             break;
         }
@@ -970,14 +981,20 @@ PPCSETUP void setupPPC(__reg("r3") struct InitData* initData)
         }
         case DEVICE_MPC8343E:
         {
-            quantum = QUANTUM_KILLER;
-            busclock = BUSCLOCK_KILLER;
+            quantum = QUANTUM_E300;
+            busclock = BUSCLOCK_E300;
 
             if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_RCWLR) & (1<<RCWLR_DDRCM))
             {
                 quantum = quantum >> 1;
                 busclock = busclock >> 1;
             }
+            break;
+        }
+        case DEVICE_MPC8314E:
+        {
+            quantum = QUANTUM_E300 >> 1;
+            busclock = BUSCLOCK_E300 >> 1;
             break;
         }
         case DEVICE_MPC107:

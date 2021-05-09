@@ -39,7 +39,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
     PowerPCBase->pp_CPUSDR1 = getSDR1();
     PowerPCBase->pp_CPUHID0 = getHID0();
 
-    if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
+    if ((PowerPCBase->pp_DeviceID != DEVICE_MPC8343E) && (PowerPCBase->pp_DeviceID != DEVICE_MPC8314E))
     {
        PowerPCBase->pp_L2State = getL2State();
     }
@@ -80,6 +80,7 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
 		        }
 
 		        case DEVICE_MPC8343E:
+                case DEVICE_MPC8314E:
 		        {
                     if (loadPCI(IMMR_ADDR_DEFAULT, IMMR_IMISR) & IMMR_IMISR_IDI)
                     {
@@ -264,13 +265,13 @@ PPCKERNEL void Exception_Entry(__reg("r3") struct PrivatePPCBase* PowerPCBase, _
                         if (!(myData.dm_LoadFlag))
                         {
                             while (myFrame->mf_Identifier != ID_DONE);
-//#ifdef DEBUG
+#ifdef DEBUG
                             if (myFrame->mf_Arg[0] == ERR_EMEM)
                             {
                                 CommonExcError(PowerPCBase, iframe);
                                 break;
                             }
-//#endif
+#endif
                             if (!(FinDataStore(myFrame->mf_Arg[0], iframe, iframe->if_Context.ec_UPC.ec_SRR0, &myData)))
                             {
                                 CommonExcError(PowerPCBase, iframe);
@@ -998,6 +999,7 @@ PPCKERNEL struct MsgFrame* KCreateMsgFramePPC(__reg("r3") struct PrivatePPCBase*
 		}
 
 		case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
 			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			msgFrame = *((ULONG*)(myFIFO->kf_MIOFT));
@@ -1046,6 +1048,7 @@ PPCKERNEL struct MsgFrame* KGetMsgFramePPC(__reg("r3") struct PrivatePPCBase* Po
 		}
 
 		case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
 			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			if (myFIFO->kf_MIIPH != myFIFO->kf_MIIPT)
@@ -1095,6 +1098,7 @@ PPCKERNEL VOID KSendMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 		}
 
 		case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
             struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIOPH)) = (ULONG)msgFrame;
@@ -1140,6 +1144,7 @@ PPCKERNEL VOID KFreeMsgFramePPC(__reg("r3") struct PrivatePPCBase* PowerPCBase, 
 		}
 
 		case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
 			struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 			*((ULONG*)(myFIFO->kf_MIIFH)) = (ULONG)msgFrame;
@@ -1391,7 +1396,7 @@ PPCKERNEL VOID KSetCache(__reg("r3") struct PrivatePPCBase* PowerPCBase, __reg("
             break;
         }
     }
-    if (PowerPCBase->pp_DeviceID != DEVICE_MPC8343E)
+    if ((PowerPCBase->pp_DeviceID != DEVICE_MPC8343E) && (PowerPCBase->pp_DeviceID != DEVICE_MPC8314E))
     {
         switch (flags) //To prevent SDA_BASE
         {

@@ -1090,6 +1090,7 @@ FUNC68K ULONG GortInt(__reg("a1") APTR data, __reg("a5") APTR code)
             break;
 		}
 		case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
 		{
 			if ((data == (APTR)SUPERKEY) || (readmemL(PowerPCBase->pp_BridgeConfig, IMMR_OMISR) & IMMR_OMISR_OM0I))
 			{
@@ -1267,6 +1268,7 @@ struct MsgFrame* CreateMsgFrame(struct PrivatePPCBase* PowerPCBase)
                 break;
             }
             case DEVICE_MPC8343E:
+            case DEVICE_MPC8314E:
             {
                 msgFrame = *((ULONG*)(myFIFO->kf_MIIFT));
                 myFIFO->kf_MIIFT = (myFIFO->kf_MIIFT + 4) & 0xffff3fff;
@@ -1321,6 +1323,7 @@ void SendMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
         }
 
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
@@ -1371,6 +1374,7 @@ void FreeMsgFrame(struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame)
             break;
         }
         case DEVICE_MPC8343E:
+        case DEVICE_MPC8314E:
         {
             struct killFIFO* myFIFO = (struct killFIFO*)((ULONG)(PowerPCBase->pp_PPCMemBase + FIFO_END));
 
@@ -1424,6 +1428,7 @@ struct MsgFrame* GetMsgFrame(struct PrivatePPCBase* PowerPCBase)
                 break;
             }
             case DEVICE_MPC8343E:
+            case DEVICE_MPC8314E:
             {
                 if (myFIFO->kf_MIOPT == myFIFO->kf_MIOPH)
                 {

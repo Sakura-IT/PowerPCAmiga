@@ -57,8 +57,8 @@
 #define OPCODE_BBRANCH          0x4C000000  //only for backward jump
 #define OPCODE_FBRANCH          0x48000000
 
-#define QUANTUM_KILLER          1333333
-#define BUSCLOCK_KILLER         266666666
+#define QUANTUM_E300            1333333
+#define BUSCLOCK_E300           266666666
 #define RCWLR_DDRCM             1
 #define BUSCLOCK_100            100000000
 #define BUSCLOCK_66             66666666
@@ -194,6 +194,7 @@
 #define DEVICE_MPC107           0x0004
 #define VENDOR_MOTOROLA         0x1057
 #define DEVICE_HARRIER          0x480B
+#define DEVICE_MPC8314E         0x00B6
 #define DEVICE_MPC8343E         0x0086
 #define VENDOR_FREESCALE        0x1957
 
@@ -408,6 +409,7 @@
 #define PIWAR_RTT_SNOOP         0x00060000
 #define PIWAR_WTT_SNOOP         0x00006000
 #define PIWAR_IWS_64MB          0x00000019
+#define PIWAR_IWS_128MB         0x0000001A
 
 #define POCMR_EN                0x80000000
 #define POCMR_CM_512MB          0x000E0000
