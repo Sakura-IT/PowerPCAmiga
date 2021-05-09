@@ -111,7 +111,7 @@ PPCSETUP void setupPT(void)
 
     ULONG myPVR = getPVR();
 
-    if ((myPVR >> 16) == ID_MPC834X)
+    if (((myPVR >> 16) == ID_MPC834X) || ((myPVR >> 16) == ID_MPC831X))
     {
         ptLoc      = OFFSET_MESSAGES - ptSize;
     }
