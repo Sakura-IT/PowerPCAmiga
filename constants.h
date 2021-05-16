@@ -166,6 +166,7 @@
 #define HINFO_DSEXC_HIGH        0x80103002
 #define HINFO_DSEXC_LOW         0x80103003
 #define ID_MPC834X              0x8083
+#define ID_MPC831X              0x8085
 
 #define MEMF_PPC                (1L<<13)
 #define MMUF_BAT                (1L<<1)
@@ -199,10 +200,12 @@
 #define VENDOR_FREESCALE        0x1957
 
 #define VENDOR_ATI              0x1002
+#define VENDOR_TI               0x104c
 #define VENDOR_3DFX             0x121a
 #define DEVICE_VOODOO45         0x0009
 #define DEVICE_VOODOO3          0x0005
 #define DEVICE_VBANSHEE         0x0003
+#define DEVICE_PERMEDIA2        0x3d07
 #define DEVICE_RV280PRO         0x5960
 #define DEVICE_RV280            0x5961
 #define DEVICE_RV280_2          0x5962
@@ -417,8 +420,11 @@
 #define POCMR_CM_128MB          0x000F8000
 #define POCMR_CM_64MB           0x000FC000
 #define POCMR_CM_32MB           0x000FE000
+#define POCMR_CM_16MB           0x000FF000
+#define POCMR_CM_8MB            0x000FF800
 #define POCMR_CM_4MB            0x000FFC00
 #define POCMR_CM_64KB           0x000FFFF0
+#define POCMR_CM_128KB          0x000FFFE0
 
 #define LAWAR_EN                0x80000000
 #define LAWAR_64MB              0x00000019

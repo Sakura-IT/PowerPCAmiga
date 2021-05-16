@@ -271,7 +271,6 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
     struct ExpansionBase *ExpansionBase;
     struct PPCBase *PowerPCBase;
     struct Process *myProc;
-    ULONG gfxisati  = 0;
     ULONG deviceID = 0;
     struct ConfigDev *cd = NULL;
     struct PciDevice *ppcdevice = NULL;
@@ -455,21 +454,30 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
                 gfxdevice = FindPciDevice(VENDOR_3DFX, DEVICE_VBANSHEE, 0);
             }
         }
+        if (gfxdevice)
+        {
+            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress1;
+            myConsts->ic_gfxSize = -((gfxdevice->pd_Size1)&-16L);
+            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress0;
+            myConsts->ic_gfxType = VENDOR_3DFX;
 
-        if (!(gfxdevice))
+            D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
+        }
+        else
         {
             while (atiList[cardNumber])
             {
                 if (gfxdevice = FindPciDevice(VENDOR_ATI, atiList[cardNumber], 0))
                 {
-                    gfxisati = 1;
+                    myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
+                    myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
+                    myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
+                    myConsts->ic_gfxType = VENDOR_ATI;
+                    myConsts->ic_gfxSubType = 0;
+                    D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
                     break;
                 }
-                if (gfxdevice)
-                {
-                    break;
-                }
-            cardNumber += 1;
+            cardNumber++;
             }
         }
 
@@ -479,30 +487,13 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
-        if (gfxisati)
-        {
-            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress0;
-            myConsts->ic_gfxSize = -((gfxdevice->pd_Size0)&-16L);
-            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress2;
-            myConsts->ic_gfxType = VENDOR_ATI;
-            myConsts->ic_gfxSubType = 0;
-            D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
-        }
-        else
-        {
-            myConsts->ic_gfxMem = gfxdevice->pd_ABaseAddress1;
-            myConsts->ic_gfxSize = -((gfxdevice->pd_Size1)&-16L);
-            myConsts->ic_gfxConfig = gfxdevice->pd_ABaseAddress0;
-            myConsts->ic_gfxType = VENDOR_3DFX;
-
-            D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
-        }
         D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
 
         //Add ATI Radeon memory as extra memory for K1/M1
         //Need to have Voodoo as primary VGA output
         //As the list has twice the memory name, we search it twice
         //Findname only returns first in the list
+        //Also moved pcidma memory to bottom of memory list
 
         for (i=0; i<2; i++)
         {
@@ -521,7 +512,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
             memPrio = -20;
 
-            if ((!(gfxisati)) && (deviceID == DEVICE_MPC8343E))
+            if ((!(myConsts->ic_gfxType == VENDOR_ATI)) && (deviceID == DEVICE_MPC8343E))
             {
                 testSize = 0x2000000;
                 testLen = ((ULONG)pcimemDMAnode->mh_Upper)-((ULONG)pcimemDMAnode->mh_Lower);
@@ -595,40 +586,7 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             myConsts->ic_gfxSubType = DEVICE_VOODOO3;
         }
 
-        if (!(pgfxdevice))
-        {
-            cardNumber = 0;
-            while (atiList[cardNumber])
-            {
-                if (pgfxdevice = Prm_FindBoardTags(NULL,
-                                                   PRM_Vendor, VENDOR_ATI,
-                                                   PRM_Device, atiList[cardNumber],
-                                                   TAG_DONE))
-                {
-                    gfxisati = 1;
-                    break;
-                }
-            cardNumber++;
-            }
-        }
-
-        if (!pgfxdevice)
-        {
-            PrintCrtErr(myConsts, "No supported VGA card detected");
-            return NULL;
-        }
-
-        if (gfxisati)
-        {
-            Prm_GetBoardAttrsTags(pgfxdevice, PRM_MemoryAddr0, (ULONG)&myConsts->ic_gfxMem,
-                                              PRM_MemorySize0, (ULONG)&myConsts->ic_gfxSize,
-                                              PRM_MemoryAddr2, (ULONG)&myConsts->ic_gfxConfig,
-                                              TAG_DONE);
-            myConsts->ic_gfxType = VENDOR_ATI;
-            myConsts->ic_gfxSubType = 0;
-            D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
-        }
-        else
+        if (pgfxdevice)
         {
             Prm_GetBoardAttrsTags(pgfxdevice, PRM_MemoryAddr0, (ULONG)&myConsts->ic_gfxConfig,
                                               PRM_MemoryAddr1, (ULONG)&myConsts->ic_gfxMem,
@@ -638,6 +596,54 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
 
             D(("3DFX card detected, Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
         }
+        else
+        {
+            cardNumber = 0;
+            while (atiList[cardNumber])
+            {
+                if (pgfxdevice = Prm_FindBoardTags(NULL,
+                                                   PRM_Vendor, VENDOR_ATI,
+                                                   PRM_Device, atiList[cardNumber],
+                                                   TAG_DONE))
+                {
+                    Prm_GetBoardAttrsTags(pgfxdevice,
+                          PRM_MemoryAddr0, (ULONG)&myConsts->ic_gfxMem,
+                          PRM_MemorySize0, (ULONG)&myConsts->ic_gfxSize,
+                          PRM_MemoryAddr2, (ULONG)&myConsts->ic_gfxConfig,
+                          TAG_DONE);
+                    myConsts->ic_gfxType = VENDOR_ATI;
+                    myConsts->ic_gfxSubType = 0;
+                    D(("ATI card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
+                    break;
+                }
+            cardNumber++;
+            }
+        }
+
+        if (!pgfxdevice)
+        {
+            if (pgfxdevice = Prm_FindBoardTags(NULL,
+                                             PRM_Vendor, VENDOR_TI,
+                                             PRM_Device, DEVICE_PERMEDIA2,
+                                             TAG_DONE))
+            {
+                    Prm_GetBoardAttrsTags(pgfxdevice,
+                          PRM_MemoryAddr1, (ULONG)&myConsts->ic_gfxMem,
+                          PRM_MemorySize1, (ULONG)&myConsts->ic_gfxSize,
+                          PRM_MemoryAddr0, (ULONG)&myConsts->ic_gfxConfig,
+                          TAG_DONE);
+                    myConsts->ic_gfxType = VENDOR_TI;
+                    myConsts->ic_gfxSubType = 0;
+                    D(("Permedia2 card detected. Gfx address at %08lx, config address at %08lx\n", myConsts->ic_gfxMem, myConsts->ic_gfxConfig));
+            }
+            else
+            {
+                PrintCrtErr(myConsts, "No supported VGA card detected");
+                return NULL;
+            }
+
+        }
+
         D(("Size of Gfx card in PCI memory is %08lx\n", myConsts->ic_gfxSize));
 
         devfuncnum = 0;
@@ -1509,59 +1515,11 @@ struct InitData* SetupKiller(struct InternalConsts* myConsts, ULONG devfuncnum,
     writememL(configBase, IMMR_PCILAWAR1, (LAWAR_EN|LAWAR_512MB));
     writememL(configBase, IMMR_PCILAWBAR1, startAddress);
 
-    winSize = POCMR_EN|POCMR_CM_128MB;
-
-    if (myConsts->ic_gfxSize == 0x2000000)
-    {
-        winSize = POCMR_EN|POCMR_CM_32MB;
-    }
-    else if (myConsts->ic_gfxSize == 0x10000000)
-    {
-        winSize = POCMR_EN|POCMR_CM_256MB;
-    }
-
-    D(("Setting up VGA PCI window at %08lx located from %08lx with size %08lx\n",startAddress, vgamemBase, winSize));
+    D(("Setting up VGA PCI window at %08lx located from %08lx\n",startAddress, vgamemBase));
 
     writememL(configBase, IMMR_POBAR0, (startAddress >> 12));
     writememL(configBase, IMMR_POTAR0, (vgamemBase >> 12));
-    writememL(configBase, IMMR_POCMR0, winSize);
-
-    if (myConsts->ic_gfxConfig)
-    {
-        if (myConsts->ic_gfxType == VENDOR_ATI)
-        {
-            D(("Setting up VGA config block for ATI Radeon located at %08lx\n",myConsts->ic_gfxConfig));
-            writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
-            writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
-            writememL(configBase, IMMR_POCMR2, (POCMR_EN|POCMR_CM_64KB));
-        }
-        else if (myConsts->ic_gfxType == VENDOR_3DFX)
-        {
-            D(("Setting up VGA config block for 3DFX Voodoo located at %08lx\n",myConsts->ic_gfxConfig));
-            writememL(configBase, IMMR_POBAR2, ((myConsts->ic_gfxConfig + OFFSET_PCIMEM) >> 12));
-            writememL(configBase, IMMR_POTAR2, ((myConsts->ic_gfxConfig - offset) >> 12));
-            writememL(configBase, IMMR_POCMR2, winSize);
-        }
-    }
-
-    if (myConsts->ic_sizeBAT)
-    {
-        D(("Setting up extra BAT for extra PCI memory\n"));
-        winSize = POCMR_EN|POCMR_CM_256MB;
-
-        if (!(myConsts->ic_sizeBAT & (~(1<<28))))
-        {
-            winSize = POCMR_EN|POCMR_CM_64MB;
-            if (!(myConsts->ic_sizeBAT & (~(1<<26))))
-            {
-                winSize = POCMR_EN|POCMR_CM_128MB;
-            }
-        }
-
-        writememL(configBase, IMMR_POBAR1, ((myConsts->ic_startBAT + OFFSET_PCIMEM) >> 12));
-        writememL(configBase, IMMR_POTAR1, (myConsts->ic_startBAT >> 12));
-        writememL(configBase, IMMR_POCMR1, winSize);
-    }
+    writememL(configBase, IMMR_POCMR0, POCMR_EN|POCMR_CM_512MB);
 
     writememL(ppcmemBase, VEC_SYSTEMRESET - 4, OPCODE_FBRANCH);
     writememL(ppcmemBase, VEC_SYSTEMRESET, OPCODE_BBRANCH - 4);

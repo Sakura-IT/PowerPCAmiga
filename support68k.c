@@ -528,7 +528,9 @@ LONG ReadFunc(__reg("d1") BPTR readhandle, __reg("d2") APTR buffer, __reg("d3") 
     {
         if ((myBuffer[0] == HUNK_HEADER) && (myBuffer[1] == NULL) && (myBuffer[3] == NULL) && (myBuffer[2] - myBuffer[4] - 1 == NULL))
         {
-            if (((myBuffer[5] == 0x71E) && (myBuffer[6] == 0x710)) || ((myBuffer[5] == 0x84E) && (myBuffer[6] == 0xEE)))
+            if (((myBuffer[5] == 0x71E) && (myBuffer[6] == 0x710)) ||  //Cybermand
+                ((myBuffer[5] == 0x84E) && (myBuffer[6] == 0xEE)) ||  //CyberPi
+                ((myBuffer[5] == 0x9468) && (myBuffer[6] == 0x4F3))) //Radeon
             {
                 return result;
             }

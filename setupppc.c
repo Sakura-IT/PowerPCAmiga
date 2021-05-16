@@ -287,6 +287,22 @@ PPCSETUP void mmuSetup(__reg("r3") struct InitData* initData)
             }
             break;
         }
+        case VENDOR_TI:
+        {
+            startEffAddr = initData->id_GfxConfigBase;
+            endEffAddr   = startEffAddr + 0x20000;
+            physAddr     = startEffAddr + OFFSET_PCIMEM;
+            WIMG         = PTE_CACHE_INHIBITED | PTE_GUARDED;
+            ppKey        = PP_USER_RW;
+
+            if (!(setupTBL(startEffAddr, endEffAddr, physAddr, WIMG, ppKey)))
+            {
+                initData->id_Status = ERR_PPCMMU;
+                return;
+            }
+            batSize = BAT_BL_16M;
+            break;
+        }
     }
 
     ibatl = ((initData->id_GfxMemBase + OFFSET_PCIMEM) | BAT_READ_WRITE);

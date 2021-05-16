@@ -59,10 +59,6 @@ _ExcCommon:
         lwz     r4,0x24(r0)
         addi    r4,r4,1
         stw     r4,0x24(r0)
-        mflr    r4
-        stw     r4,0x30(r0)
-        li      r4,0x20
-        dcbf    r0,r4
 
         lwz     r4,POWERPCBASE(r0)
         lwz     r4,POWERPCBASE_THISPPCTASK(r4)
@@ -108,11 +104,6 @@ _ExcCommon:
         bl      _LoadFrame                   #LR, r0,r1 and r3 are skipped in this routine and are loaded below
 
         bl      _FlushICache
-
-        li      r3,0x20
-        li      r0,0
-        stw     r0,0x30(r0)
-        dcbf    r0,r3
 
         lwz     r0,IF_CONTEXT_CR(r1)
         mtcr    r0
