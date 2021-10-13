@@ -438,9 +438,9 @@ __entry struct PPCBase *LibInit(__reg("d0") struct PPCBase *ppcbase,
             return NULL;
         }
 
-        myConsts->ic_deviceID = card;
         ppcdevice  = FindPciDevFunc(devfuncnum);
         deviceID   = ppcdevice->pd_DeviceID;
+        myConsts->ic_deviceID = deviceID;
         cardNumber = 0;
 
         myConsts->ic_gfxSubType = DEVICE_VOODOO45;
@@ -1958,6 +1958,7 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
         Prm_GetBoardAttrsTagList(pppcdevice, (struct TagItem*)&cfgTags);
         offset = myConsts->ic_gfxMem;
 
+#if 0
         if (!(romMem = (ULONG)Prm_AllocDMABuffer(0x20000)))
         {
             if (myConsts->ic_gfxType == VENDOR_ATI)
@@ -1969,6 +1970,11 @@ struct InitData* SetupMPC107(struct InternalConsts* myConsts, ULONG devfuncnum,
                 romMem = myConsts->ic_gfxMem + 0x700000;
             }
         }
+#else
+
+        romMem = myConsts->ic_gfxMem + myConsts->ic_gfxSize - 0x700000;
+#endif
+
     }
     else
     {
