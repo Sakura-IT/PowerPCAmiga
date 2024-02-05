@@ -23,16 +23,16 @@
 #include <exec/initializers.h>
 
 #define VERSION     17
-#define REVISION    14
+#define REVISION    15
 
 #define LIBNAME "powerpc.library"
-#define VSTRING "$VER: powerpc.library 17.14 (13.10.21)\r\n"
+#define VSTRING "$VER: powerpc.library 17.15 (16.01.24)\r\n"
 
 #define VERPCI      13
 #define REVPCI      8
 
 #define VERPCIP     4
-#define REVPCIP     0
+#define REVPCIP     5
 
 #define LIB_PRIORITY 0
 

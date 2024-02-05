@@ -361,19 +361,26 @@
 #define CHMMU_BAT3              3
 
 // IMMR offsets
-#define IMMR_ADDR_DEFAULT       0xFF400000
+//#define IMMR_ADDR_DEFAULT       0xFF400000
+#define IMMR_ADDR_DEFAULT       0xE0000000
 #define IMMR_IMMRBAR            0x0
+
+#define IMMR_PCILAWBAR0         0x60
+#define IMMR_PCILAWAR0          0x64
+#define IMMR_PCILAWBAR1         0x68
+#define IMMR_PCILAWAR1          0x6C
+#define IMMR_PCIEXP1LAWBAR      0x80
+#define IMMR_PCIEXP1LAWAR       0x84
+
+#define IMMR_SWCRR              0x204
+#define IMMR_SWCNR              0x208
+#define IMMR_SWSRR              0x20E
 
 #define IMMR_RCWLR              0x900
 #define IMMR_RSR                0x910
 #define IMMR_RPR                0x918
 #define IMMR_RCR                0x91C
 #define IMMR_RCER               0x920
-
-#define IMMR_PCILAWBAR0         0x60
-#define IMMR_PCILAWAR0          0x64
-#define IMMR_PCILAWBAR1         0x68
-#define IMMR_PCILAWAR1          0x6C
 
 #define IMMR_OMISR              0x8030
 #define IMMR_IMR0               0x8050
@@ -401,6 +408,18 @@
 #define IMMR_POCMR3             0x8458
 #define IMMR_POCMR4             0x8470
 #define IMMR_POCMR5             0x8488
+
+#define IMMR_PEX_BAR_SIZEL      0x94D8
+#define IMMR_PEX_BAR_SEL        0x94E0
+#define IMMR_PEX_OWAR0          0x9CA0
+#define IMMR_PEX_OWBAR0         0x9CA4
+#define IMMR_PEX_OWTARL0        0x9CA8
+#define IMMR_PEX_OWTARH0        0x9CAC
+#define IMMR_PEX_EPIWTAR1       0x9DE4
+#define IMMR_PEX_RCIWAR0        0x9E60
+#define IMMR_PEX_RCIWTAR0       0x9E64
+#define IMMR_PEX_RCIBARL0       0x9E68
+#define IMMR_PEX_RCIBARH0       0x9E6C
 
 #define IMMR_OMISR_OM0I         0x01000000
 #define IMMR_IMISR_IM0I         0x00000001
@@ -432,9 +451,23 @@
 #define LAWAR_256MB             0x0000001b
 #define LAWAR_512MB             0x0000001c
 
+#define PEX_BAR_SIZEL_128MB     0xF8000000
+#define PEX_OWAR_SIZE_512MB     0x1FFFF000
+#define PEX_IWAR_SIZE_1MB       0x000FF000
+#define PEX_IWAR_SIZE_128MB     0x07FFF000
+
+#define PEX_EPIWTAR_EN          0x00000001
+#define PEX_OWAR_EN             0x00000001
+#define PEX_OWAR_TYPE_MEM       0x00000004
+#define PEX_BAR_SEL_1           0x00000001
+
 #define IMMR_SIMSR_L            0x724
 #define SIMSR_L_MU              0x04000000
 #define KILLER_RESET            0x52535445
+#define SWCRR_SWTC_DEFAULT      0x10000000
+#define SWCRR_SWEN_EN           0x00000004
+#define SWCRR_SWRI_MPC          0x00000000
+#define SWCRR_SWPR_NOPR         0x00000000
 
 // Harrier Stuff
 

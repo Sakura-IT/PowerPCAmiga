@@ -71,9 +71,10 @@ void              SendMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgF
 void              FreeMsgFrame  (struct PrivatePPCBase* PowerPCBase, struct MsgFrame* msgFrame);
 struct MsgFrame*  GetMsgFrame   (struct PrivatePPCBase* PowerPCBase);
 
-struct InitData *SetupKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer);
-struct InitData *SetupHarrier(struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer);
-struct InitData *SetupMPC107 (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer, ULONG DMAMemory);
+struct InitData *SetupPKiller (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer);
+struct InitData *SetupKiller  (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer);
+struct InitData *SetupHarrier (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer);
+struct InitData *SetupMPC107  (struct InternalConsts* myConsts, ULONG devfuncnum, struct PciDevice* ppcdevice, PCIBoard* pppcdevice, ULONG initPointer, ULONG DMAMemory);
 
 struct Library* warpOpen         (__reg("a6") struct Library* WarpBase);
 BPTR            warpClose        (__reg("a6") struct Library* WarpBase);
